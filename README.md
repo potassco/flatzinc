@@ -1,7 +1,7 @@
-# flatzinc parser
 [![Build Status](https://github.com/sthiele/flatzinc-parser/workflows/CI%20test/badge.svg)](https://github.com/sthiele/flatzinc-parser)
 [![Latest Version](https://img.shields.io/crates/v/flatzinc.svg)](https://crates.io/crates/flatzinc)
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/flatzinc)
+# flatzinc
 
 A parser for the [FlatZinc](https://www.minizinc.org/doc-2.4.1/en/fzn-spec.html#specification-of-flatzinc) modelling language.
 
