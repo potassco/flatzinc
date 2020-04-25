@@ -168,28 +168,39 @@ pub fn domain<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Do
 }
 pub fn int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Domain, E> {
     let (input, lb) = int_literal(input)?;
+    let (input, _) = space0(input)?;
     let (input, _tag) = tag("..")(input)?;
+    let (input, _) = space0(input)?;
     let (input, ub) = int_literal(input)?;
     Ok((input, Domain::IntRange(lb, ub)))
 }
 pub fn float_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Domain, E> {
     let (input, lb) = float_literal(input)?;
+    let (input, _) = space0(input)?;
     let (input, _tag) = tag("..")(input)?;
+    let (input, _) = space0(input)?;
     let (input, ub) = float_literal(input)?;
     Ok((input, Domain::FloatRange(lb, ub)))
 }
 // "set" "of" <int_literal> ".." <int_literal>
 pub fn set_of_int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Domain, E> {
-    let (input, _tag) = tag("set of")(input)?;
+    let (input, _tag) = tag("set")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, _tag) = tag("of")(input)?;
+    let (input, _) = space1(input)?;
     let (input, lb) = int_literal(input)?;
+    let (input, _) = space0(input)?;
     let (input, _tag) = tag("..")(input)?;
+    let (input, _) = space0(input)?;
     let (input, ub) = int_literal(input)?;
     Ok((input, Domain::SetIntRange(lb, ub)))
 }
 // "set" "of" "{" [ <int-literal> "," ... ] "}"
 pub fn set_of_ints<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Domain, E> {
     let (input, _tag) = tag("set of {")(input)?;
+    let (input, _) = space0(input)?;
     let (input, v) = separated_list(char(','), int_literal)(input)?;
+    let (input, _) = space0(input)?;
     let (input, _tag) = tag("}")(input)?;
     Ok((input, Domain::SetInt(v)))
 }
@@ -198,7 +209,9 @@ pub fn set_of_ints_non_empty<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Domain, E> {
     let (input, _) = char('{')(input)?;
+    let (input, _) = space0(input)?;
     let (input, v) = separated_list(char(','), int_literal)(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, Domain::SetIntNonEmpty(v)))
 }
@@ -211,7 +224,7 @@ pub fn array_var_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ArrayVarType, E> {
     let (input, _tag) = tag("array")(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = space1(input)?;
     let (input, _) = char('[')(input)?;
     let (input, _) = space0(input)?;
     let (input, index_set) = index_set(input)?;
