@@ -11,3 +11,5 @@ edition = "2018"
 
 [dependencies]
 nom = "5.1"
+structopt = "0.3"
+anyhow = "1.0"

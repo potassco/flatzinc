@@ -1,11 +1,12 @@
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take, take_while, take_while1},
-    character::complete::{alphanumeric0, char, one_of, space0, space1},
-    combinator::{map_res, not, opt},
+    bytes::complete::{tag, take_while, take_while1},
+    character::complete::{char, one_of, space0, space1},
+    combinator::{map_res, opt},
     error::ParseError,
-    multi::{count, many0, many1, many_till, separated_list},
-    Err, IResult,
+    multi::{many0, separated_list},
+    number::complete::double,
+    IResult,
 };
 
 #[derive(PartialEq, Clone, Debug)]
@@ -18,11 +19,8 @@ pub struct Model {
 }
 pub fn model<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Model, E> {
     let (input, predicate_items) = many0(predicate_item)(input)?;
-    // let (input, predicate_items) = separated_list(tag(";"), predicate_item)(input)?;
     let (input, par_decl_items) = many0(par_decl_item)(input)?;
-    // let (input, par_decl_items) = separated_list(tag(";"), par_decl_item)(input)?;
     let (input, var_decl_items) = many0(var_decl_item)(input)?;
-    // let (input, var_decl_items) = separated_list(tag(";"), var_decl_item)(input)?;
     let (input, constraint_items) = many0(constraint_item)(input)?;
     let (input, solve_item) = solve_item(input)?;
     Ok((
@@ -38,7 +36,7 @@ pub fn model<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Mod
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct PredicateItem {
-    ident: String,
+    id: String,
     parameters: Vec<(PredParamType, String)>,
 }
 pub fn predicate_item<'a, E: ParseError<&'a str>>(
@@ -46,14 +44,14 @@ pub fn predicate_item<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, PredicateItem, E> {
     let (input, _) = tag("predicate")(input)?;
     let (input, _) = space1(input)?;
-    let (input, ident) = identifier(input)?;
+    let (input, id) = identifier(input)?;
     let (input, _) = char('(')(input)?;
-    let (input, parameters) = separated_list(tag(","), pred_param_type_ident_pair)(input)?;
+    let (input, parameters) = separated_list(char(','), pred_param_type_ident_pair)(input)?;
     let (input, _) = char(')')(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
     let (input, _) = char('\n')(input)?; // CHECK
-    Ok((input, PredicateItem { ident, parameters }))
+    Ok((input, PredicateItem { id, parameters }))
 }
 pub fn pred_param_type_ident_pair<'a, E: ParseError<&'a str>>(
     input: &'a str,
@@ -128,12 +126,9 @@ pub enum BasicVarType {
 pub fn basic_var_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicVarType, E> {
-    dbg!("in basic_var_type");
     let (input, _tag) = tag("var")(input)?;
     let (input, _) = space1(input)?;
-    dbg!(_tag);
     let (input, bvt) = alt((bvt_bool, bvt_int, bvt_float, bvt_domain))(input)?;
-    dbg!(&bvt);
     Ok((input, bvt))
 }
 pub fn bvt_bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
@@ -162,7 +157,6 @@ pub enum Domain {
     SetInt(Vec<i128>), // possibly empty
 }
 pub fn domain<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Domain, E> {
-    dbg!("in domain");
     let (input, domain) = alt((
         int_range,
         float_range,
@@ -170,7 +164,6 @@ pub fn domain<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Do
         set_of_ints,
         set_of_ints_non_empty,
     ))(input)?;
-    dbg!(&domain);
     Ok((input, domain))
 }
 pub fn int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Domain, E> {
@@ -196,7 +189,7 @@ pub fn set_of_int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&
 // "set" "of" "{" [ <int-literal> "," ... ] "}"
 pub fn set_of_ints<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Domain, E> {
     let (input, _tag) = tag("set of {")(input)?;
-    let (input, v) = separated_list(tag(","), int_literal)(input)?;
+    let (input, v) = separated_list(char(','), int_literal)(input)?;
     let (input, _tag) = tag("}")(input)?;
     Ok((input, Domain::SetInt(v)))
 }
@@ -205,7 +198,7 @@ pub fn set_of_ints_non_empty<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Domain, E> {
     let (input, _) = char('{')(input)?;
-    let (input, v) = separated_list(tag(","), int_literal)(input)?;
+    let (input, v) = separated_list(char(','), int_literal)(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, Domain::SetIntNonEmpty(v)))
 }
@@ -218,10 +211,15 @@ pub fn array_var_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ArrayVarType, E> {
     let (input, _tag) = tag("array")(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char('[')(input)?;
+    let (input, _) = space0(input)?;
     let (input, index_set) = index_set(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char(']')(input)?;
+    let (input, _) = space1(input)?;
     let (input, _tag) = tag("of")(input)?;
+    let (input, _) = space1(input)?;
     let (input, basic_var_type) = basic_var_type(input)?;
     Ok((
         input,
@@ -234,7 +232,7 @@ pub fn array_var_type<'a, E: ParseError<&'a str>>(
 #[derive(PartialEq, Clone, Debug)]
 pub struct IndexSet(i128);
 pub fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, IndexSet, E> {
-    let (input, _tag) = tag("1")(input)?;
+    let (input, _) = char('1')(input)?;
     let (input, _tag) = tag("..")(input)?;
     let (input, int) = int_literal(input)?;
     Ok((input, IndexSet(int)))
@@ -253,7 +251,7 @@ pub fn basic_pred_param_type<'a, E: ParseError<&'a str>>(
         bppt_basic_par_type,
         bppt_basic_var_type,
         bppt_domain,
-        var_set_of_int, // TODO remove if "var set of int" is in <basic_var_type>
+        var_set_of_int, // TODO: remove if "var set of int" is in <basic_var_type>
     ))(input)?;
     Ok((input, bppt))
 }
@@ -304,13 +302,15 @@ pub fn array_of_pred_index_set<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, PredParamType, E> {
     let (input, _tag) = tag("array")(input)?;
-    let (input, _space) = space1(input)?;
+    let (input, _) = space1(input)?;
     let (input, _) = char('[')(input)?;
-    let (input, _) = char(']')(input)?;
+    let (input, _) = space0(input)?;
     let (input, pis) = pred_index_set(input)?;
-    let (input, _space) = space1(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char(']')(input)?;
+    let (input, _) = space1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _space) = space1(input)?;
+    let (input, _) = space1(input)?;
     let (input, bppt) = basic_pred_param_type(input)?;
     Ok((input, PredParamType::Array(pis, bppt)))
 }
@@ -347,9 +347,9 @@ pub fn basic_literal_expr<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, BasicLiteralExpr, E> {
     let (input, ble) = alt((
         ble_bool_literal,
+        ble_set_literal,
         ble_int_literal,
         ble_float_literal,
-        ble_set_literal,
     ))(input)?;
     Ok((input, ble))
 }
@@ -423,9 +423,7 @@ pub enum ParExpr {
     ParArrayLiteral(ParArrayLiteral),
 }
 pub fn par_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParExpr, E> {
-    println!("Hi par_expr");
     let (input, expr) = alt((pe_basic_literal_expr, pe_par_array_literal))(input)?;
-    println!("Bye par_expr {:?}", expr);
     Ok((input, expr))
 }
 pub fn pe_basic_literal_expr<'a, E: ParseError<&'a str>>(
@@ -466,7 +464,10 @@ pub fn bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a s
     }
 }
 pub fn int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
-    // TODO support hexadecimals and octals
+    let (input, int) = alt((decimal, hexadecimal, octal))(input)?;
+    Ok((input, int as i128))
+}
+pub fn decimal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
     let (input, negation) = opt(char('-'))(input)?;
     let (input, int) = map_res(take_while1(is_dec_digit), from_dec)(input)?;
     if negation.is_some() {
@@ -475,16 +476,79 @@ pub fn int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a st
         Ok((input, int as i128))
     }
 }
+#[test]
+fn test_hex() {
+    use nom::error::VerboseError;
+    assert_eq!(hexadecimal::<VerboseError<&str>>("-0x2f"), Ok(("", -47)));
+}
+pub fn hexadecimal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
+    let (input, negation) = opt(char('-'))(input)?;
+    let (input, _tag) = tag("0x")(input)?;
+    let (input, int) = map_res(take_while1(is_hex_digit), from_hex)(input)?;
+    if negation.is_some() {
+        Ok((input, -(int as i128)))
+    } else {
+        Ok((input, int as i128))
+    }
+}
+#[test]
+fn test_oct() {
+    use nom::error::VerboseError;
+    assert_eq!(octal::<VerboseError<&str>>("0o21"), Ok(("", 17)));
+}
+pub fn octal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
+    let (input, negation) = opt(char('-'))(input)?;
+    let (input, _tag) = tag("0o")(input)?;
+    let (input, int) = map_res(take_while1(is_oct_digit), from_oct)(input)?;
+    if negation.is_some() {
+        Ok((input, -(int as i128)))
+    } else {
+        Ok((input, int as i128))
+    }
+}
+fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
+    u8::from_str_radix(input, 16)
+}
+fn is_hex_digit(c: char) -> bool {
+    c.is_digit(16)
+}
+fn from_oct(input: &str) -> Result<u8, std::num::ParseIntError> {
+    u8::from_str_radix(input, 8)
+}
+fn is_oct_digit(c: char) -> bool {
+    c.is_digit(8)
+}
 fn from_dec(input: &str) -> Result<u128, std::num::ParseIntError> {
     u128::from_str_radix(input, 10)
 }
 fn is_dec_digit(c: char) -> bool {
     c.is_digit(10)
 }
+#[test]
+fn test_float() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        float_literal::<VerboseError<&str>>("023.21"),
+        Ok(("", 023.21))
+    );
+    assert_eq!(
+        float_literal::<VerboseError<&str>>("0023.21E-098"),
+        Ok(("", 0023.21E-098))
+    );
+    assert_eq!(
+        float_literal::<VerboseError<&str>>("0023.21e+098"),
+        Ok(("", 0023.21e+098))
+    );
+    assert_eq!(
+        float_literal::<VerboseError<&str>>("002e+098"),
+        Ok(("", 002e+098))
+    );
+    assert_eq!(float_literal::<VerboseError<&str>>("0.21"), Ok(("", 0.21)));
+}
 pub fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
     // TODO
-    let (input, _tag) = tag("TODO")(input)?;
-    Ok((input, 0.0))
+    let (input, f) = double(input)?;
+    Ok((input, f))
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum SetLiteral {
@@ -504,7 +568,9 @@ pub fn set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a st
 }
 pub fn sl_int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
     let (input, lb) = int_literal(input)?;
+    let (input, _) = space0(input)?;
     let (input, _tag) = tag("..")(input)?;
+    let (input, _) = space0(input)?;
     let (input, ub) = int_literal(input)?;
     Ok((input, SetLiteral::IntRange(lb, ub)))
 }
@@ -512,7 +578,9 @@ pub fn sl_float_range<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, SetLiteral, E> {
     let (input, lb) = float_literal(input)?;
+    let (input, _) = space0(input)?;
     let (input, _tag) = tag("..")(input)?;
+    let (input, _) = space0(input)?;
     let (input, ub) = float_literal(input)?;
     Ok((input, SetLiteral::FloatRange(lb, ub)))
 }
@@ -521,7 +589,9 @@ pub fn sl_set_of_ints<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, SetLiteral, E> {
     let (input, _) = char('{')(input)?;
-    let (input, v) = separated_list(tag(","), int_literal)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, v) = separated_list(char(','), int_literal)(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetInts(v)))
 }
@@ -529,9 +599,11 @@ pub fn sl_set_of_ints<'a, E: ParseError<&'a str>>(
 pub fn sl_set_of_floats<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, SetLiteral, E> {
-    let (input, _tag) = tag("{")(input)?;
-    let (input, v) = separated_list(tag(","), float_literal)(input)?;
-    let (input, _tag) = tag("}")(input)?;
+    let (input, _) = char('{')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, v) = separated_list(char(','), float_literal)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetFloats(v)))
 }
 type ArrayLiteral = Vec<BasicExpr>;
@@ -539,7 +611,9 @@ pub fn array_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ArrayLiteral, E> {
     let (input, _) = char('[')(input)?;
-    let (input, al) = separated_list(tag(","), basic_expr)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, al) = separated_list(char(','), basic_expr)(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -547,16 +621,17 @@ type ParArrayLiteral = Vec<BasicLiteralExpr>;
 pub fn par_array_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ParArrayLiteral, E> {
-    print!("hi par_array_literal");
     let (input, _) = char('[')(input)?;
-    let (input, v) = separated_list(tag(","), basic_literal_expr)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, v) = separated_list(char(','), basic_literal_expr)(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct ParDeclItem {
     parameter_type: ParType,
-    identifier: String,
+    id: String,
     expr: ParExpr,
 }
 pub fn par_decl_item<'a, E: ParseError<&'a str>>(
@@ -564,22 +639,21 @@ pub fn par_decl_item<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, ParDeclItem, E> {
     let (input, parameter_type) = par_type(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _tag) = space1(input)?;
-    let (input, identifier) = var_par_identifier(input)?;
-    println!("identifier {}", identifier);
+    let (input, _) = space1(input)?;
+    let (input, id) = var_par_identifier(input)?;
     let (input, _) = space1(input)?;
     let (input, _) = char('=')(input)?;
-    let (input, _tag) = space1(input)?;
+    let (input, _) = space1(input)?;
     let (input, expr) = par_expr(input)?;
-    let (input, _tag) = space0(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _tag) = space0(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char('\n')(input)?;
     Ok((
         input,
         ParDeclItem {
             parameter_type,
-            identifier,
+            id,
             expr,
         },
     ))
@@ -592,34 +666,27 @@ pub enum VarDeclItem {
 pub fn var_decl_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
-    dbg!("in var_decl_item");
     let (input, vdi) = alt((vdi_basic_var, vdi_array))(input)?;
     let (input, _tag) = space0(input)?;
     let (input, _) = char(';')(input)?;
     let (input, _tag) = space0(input)?;
     let (input, _) = char('\n')(input)?;
-    dbg!(&vdi);
     Ok((input, vdi))
 }
 pub fn vdi_basic_var<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
-    dbg!("in vdi_basic_var");
     let (input, bvt) = basic_var_type(input)?;
-    dbg!(&bvt);
     let (input, _) = space0(input)?;
     let (input, _) = char(':')(input)?;
     let (input, _) = space0(input)?;
     let (input, vpi) = var_par_identifier(input)?;
-    dbg!(&vpi);
     let (input, _) = space0(input)?;
     let (input, anno) = annotations(input)?;
-    dbg!(&anno);
     let (input, _) = space0(input)?;
     let (input, _) = opt(char('='))(input)?;
     let (input, _) = space0(input)?;
     let (input, be) = opt(basic_expr)(input)?;
-    dbg!(&be);
     Ok((input, VarDeclItem::Basic(bvt, vpi, anno, be)))
 }
 pub fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
@@ -638,7 +705,7 @@ pub fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct ConstraintItem {
-    ident: String,
+    id: String,
     exprs: Vec<Expr>,
     annos: Vec<Annotation>,
 }
@@ -647,10 +714,10 @@ pub fn constraint_item<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, ConstraintItem, E> {
     let (input, _tag) = tag("constraint")(input)?;
     let (input, _) = space1(input)?;
-    let (input, ident) = identifier(input)?;
+    let (input, id) = identifier(input)?;
     let (input, _) = char('(')(input)?;
     let (input, _) = space0(input)?;
-    let (input, exprs) = separated_list(tag(","), expr)(input)?;
+    let (input, exprs) = separated_list(char(','), expr)(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(')')(input)?;
     let (input, _) = space0(input)?;
@@ -659,44 +726,88 @@ pub fn constraint_item<'a, E: ParseError<&'a str>>(
     let (input, _) = char(';')(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char('\n')(input)?;
-    Ok((
-        input,
-        ConstraintItem {
-            ident,
-            exprs,
-            annos,
-        },
-    ))
+    Ok((input, ConstraintItem { id, exprs, annos }))
 }
 #[derive(PartialEq, Clone, Debug)]
-pub struct SolveItem;
-pub fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E> {
-    // TODO
-    Ok((input, SolveItem))
+pub struct SolveItem {
+    annotation: Annotations,
+    goal: Goal,
 }
-pub fn _annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
-    let (input, _mark) = tag("::")(input)?;
-    let (input, annotation) = annotation(input)?;
-    Ok((input, annotation))
+fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E> {
+    let (input, _) = tag("solve")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, annotation) = annotations(input)?;
+    let (input, _) = space0(input)?;
+    let (input, goal) = alt((satisfy, maximize, minimize))(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char(';')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('\n')(input)?;
+    Ok((input, SolveItem { annotation, goal }))
+}
+#[derive(PartialEq, Clone, Debug)]
+pub enum Goal {
+    Satisfy,
+    Minimize(BasicExpr),
+    Maximize(BasicExpr),
+}
+fn satisfy<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+    let (input, _) = tag("satisfy")(input)?;
+    Ok((input, Goal::Satisfy))
+}
+fn maximize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+    let (input, _) = tag("maximize")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, be) = basic_expr(input)?;
+    Ok((input, Goal::Maximize(be)))
+}
+fn minimize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+    let (input, _) = tag("minimize")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, be) = basic_expr(input)?;
+    Ok((input, Goal::Minimize(be)))
 }
 type Annotations = Vec<Annotation>;
-pub fn annotations<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotations, E> {
-    dbg!("in annotations");
+fn annotations<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotations, E> {
     let (input, annos) = many0(annotation)(input)?;
     Ok((input, annos))
 }
-type Annotation = String;
-pub fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
-    dbg!("in annotation");
+#[derive(PartialEq, Clone, Debug)]
+pub struct Annotation {
+    string: String,
+    expressions: Vec<AnnExpr>,
+}
+fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
     let (input, _) = tag("::")(input)?;
     let (input, _) = space0(input)?;
-    let (input, anno) = identifier(input)?;
-    dbg!(&anno);
-    let (input, _) = space0(input)?;
-    Ok((input, anno))
+    let (input, string) = identifier(input)?;
+    let (input, we) = opt(char('('))(input)?;
+    // let (input, expressions) = opt(separated_list(char(','), ann_expr))(input)?; // TODO: use proper ann_expr
+    if we.is_some() {
+        let (input, expressions) = separated_list(char(','), expr)(input)?;
+        let (input, _) = char(')')(input)?;
+        Ok((
+            input,
+            Annotation {
+                string,
+                expressions,
+            },
+        ))
+    } else {
+        let (input, _) = space0(input)?;
+        Ok((
+            input,
+            Annotation {
+                string,
+                expressions: vec![],
+            },
+        ))
+    }
 }
-pub struct AnnExpr;
-pub fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    // TODO
-    Ok((input, AnnExpr))
-}
+type AnnExpr = Expr;
+// TODO: implement proper ann_expr
+// <ann_expr>  := <expr> | <annotation>
+// pub struct AnnExpr;
+// pub fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+// Ok((input, AnnExpr))
+// }
