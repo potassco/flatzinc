@@ -4,9 +4,10 @@ version = "0.1.0"
 authors = ["Sven Thiele <sthiele78@gmail.com>"]
 description = "A flatzinc parser"
 readme = "README.md"
-documentation = ""
-repository = "https://github.com/sthiele/flat-parser"
-publish = false
+categories = ["Parser"]
+documentation = "https://docs.rs/flatzinc"
+repository = "https://github.com/sthiele/flatzinc-parser"
+license = "MIT"
 edition = "2018"
 
 [dependencies]
