@@ -42,4 +42,4 @@ An example parser can be found in the `target/release/fz-parser`
 
 ### Example
 
-    ❯ fz-parser -f jobshop.fz
+    ❯ fz-parser -f jobshop.fzn
