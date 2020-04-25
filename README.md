@@ -10,7 +10,20 @@ A parser for the [FlatZinc](https://www.minizinc.org/doc-2.4.1/en/fzn-spec.html#
 
 ## Usage
 
+In your Cargo.toml
+
+```toml
+[dependencies]
+flatzinc = "0.1"
+```
+
+In your code:
+
 ```rust
+use nom::error::{convert_error, VerboseError};
+use nom::Err;
+use flatzinc
+
 match flatzinc::model::<VerboseError<&str>>(&buf) {
     Ok((_, result)) => println!("{:#?}", result),
     Err(Err::Error(e)) | Err(Err::Failure(e)) => {
