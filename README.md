@@ -1,12 +1,12 @@
 # flatzinc parser
 
-[flatzinc specification](https://www.minizinc.org/doc-2.4.1/en/fzn-spec.html#specification-of-flatzinc)
-
-[Where is mzn2fzn?](https://github.com/MiniZinc/libminizinc/issues/342)
+A parser for the [FlatZinc](https://www.minizinc.org/doc-2.4.1/en/fzn-spec.html#specification-of-flatzinc) modelling language.
 
 ## Compile
 
-    cargo build --release
+```text
+❯ cargo build --release
+```
 
 ## Usage
 
@@ -22,24 +22,16 @@ match flatzinc::model::<VerboseError<&str>>(&buf) {
 
 ## fz-parser
 
-An example parser can be found in the `target/release/fz-parser`
+An example parser can be found in the `examples/fz-parser.rs`
 
-### Usage
+To run the parser call:
 
-    ❯ fz-parser --help
-    fz-parser 0.1.0
-    flatzinc parser
+```text
+❯ cargo run --example fz-parser -- -i jobshop.fzn
+```
 
-    USAGE:
-        fz_parser --input <file>
+The binary can be found under `target/release/examples/fz-parser`
 
-    FLAGS:
-        -h, --help       Prints help information
-        -V, --version    Prints version information
+## Other
 
-    OPTIONS:
-        -i, --input <file>    Input in flatzinc format
-
-### Example
-
-    ❯ fz-parser -f jobshop.fzn
+- [Where is mzn2fzn?](https://github.com/MiniZinc/libminizinc/issues/342)

@@ -3,8 +3,8 @@ use nom::Err;
 use std::path::PathBuf;
 
 use anyhow::Result;
-
 use structopt::StructOpt;
+
 /// flatzinc parser
 #[derive(StructOpt, Debug)]
 #[structopt(name = "fz-parser")]
