@@ -36,8 +36,8 @@ pub fn model<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Mod
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct PredicateItem {
-    id: String,
-    parameters: Vec<(PredParamType, String)>,
+    pub id: String,
+    pub parameters: Vec<(PredParamType, String)>,
 }
 fn predicate_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
@@ -210,32 +210,7 @@ fn set_of_ints_non_empty<'a, E: ParseError<&'a str>>(
     Ok((input, Domain::SetIntNonEmpty(v)))
 }
 #[derive(PartialEq, Clone, Debug)]
-pub struct ArrayVarType {
-    index_set: IndexSet,
-    basic_var_type: BasicVarType,
-}
-fn array_var_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ArrayVarType, E> {
-    let (input, _tag) = tag("array")(input)?;
-    let (input, _) = space1(input)?;
-    let (input, _) = char('[')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, index_set) = index_set(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char(']')(input)?;
-    let (input, _) = space1(input)?;
-    let (input, _tag) = tag("of")(input)?;
-    let (input, _) = space1(input)?;
-    let (input, basic_var_type) = basic_var_type(input)?;
-    Ok((
-        input,
-        ArrayVarType {
-            index_set,
-            basic_var_type,
-        },
-    ))
-}
-#[derive(PartialEq, Clone, Debug)]
-pub struct IndexSet(i128);
+pub struct IndexSet(pub i128);
 fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, IndexSet, E> {
     let (input, _) = char('1')(input)?;
     let (input, _tag) = tag("..")(input)?;
@@ -620,13 +595,22 @@ fn par_array_literal<'a, E: ParseError<&'a str>>(
     Ok((input, v))
 }
 #[derive(PartialEq, Clone, Debug)]
-pub struct ParDeclItem {
-    parameter_type: ParType,
-    id: String,
-    expr: ParExpr,
+pub enum ParDeclItem {
+    BasicParType {
+        par_type: BasicParType,
+        id: String,
+        expr: ParExpr,
+    },
+    Array {
+        ix: IndexSet,
+        par_type: BasicParType,
+        id: String,
+        expr: ParExpr,
+    },
 }
 fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParDeclItem, E> {
-    let (input, parameter_type) = par_type(input)?;
+    let (input, ptype) = par_type(input)?;
+
     let (input, _) = char(':')(input)?;
     let (input, _) = space1(input)?;
     let (input, id) = var_par_identifier(input)?;
@@ -638,19 +622,25 @@ fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
     let (input, _) = char(';')(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char('\n')(input)?;
-    Ok((
-        input,
-        ParDeclItem {
-            parameter_type,
-            id,
-            expr,
-        },
-    ))
+    match ptype {
+        ParType::Array(ix, par_type) => Ok((
+            input,
+            ParDeclItem::Array {
+                ix,
+                par_type,
+                id,
+                expr,
+            },
+        )),
+        ParType::BasicParType(par_type) => {
+            Ok((input, ParDeclItem::BasicParType { par_type, id, expr }))
+        }
+    }
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarDeclItem {
     Basic(BasicVarType, String, Annotations, Option<BasicExpr>),
-    Array(ArrayVarType, String, Annotations, ArrayLiteral),
+    Array(IndexSet, BasicVarType, String, Annotations, ArrayLiteral),
 }
 fn var_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
     let (input, vdi) = alt((vdi_basic_var, vdi_array))(input)?;
@@ -675,7 +665,20 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
     Ok((input, VarDeclItem::Basic(bvt, vpi, anno, be)))
 }
 fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
-    let (input, avt) = array_var_type(input)?;
+    // let (input, avt) = array_var_type(input)?;
+
+    let (input, _tag) = tag("array")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, _) = char('[')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, index_set) = index_set(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char(']')(input)?;
+    let (input, _) = space1(input)?;
+    let (input, _tag) = tag("of")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, basic_var_type) = basic_var_type(input)?;
+
     let (input, _) = space0(input)?;
     let (input, _) = char(':')(input)?;
     let (input, _) = space0(input)?;
@@ -686,13 +689,16 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
     let (input, _) = char('=')(input)?;
     let (input, _) = space0(input)?;
     let (input, al) = array_literal(input)?;
-    Ok((input, VarDeclItem::Array(avt, vpi, anno, al)))
+    Ok((
+        input,
+        VarDeclItem::Array(index_set, basic_var_type, vpi, anno, al),
+    ))
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct ConstraintItem {
-    id: String,
-    exprs: Vec<Expr>,
-    annos: Vec<Annotation>,
+    pub id: String,
+    pub exprs: Vec<Expr>,
+    pub annos: Vec<Annotation>,
 }
 fn constraint_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
