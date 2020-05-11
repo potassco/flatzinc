@@ -118,11 +118,12 @@ pub enum BasicVarType {
     Int,
     Float,
     Domain(Domain),
+    VarSetOFInt, // added var_set_of_int from basic_pred_param_type
 }
 fn basic_var_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
     let (input, _tag) = tag("var")(input)?;
     let (input, _) = space1(input)?;
-    let (input, bvt) = alt((bvt_bool, bvt_int, bvt_float, bvt_domain))(input)?;
+    let (input, bvt) = alt((bvt_bool, bvt_int, bvt_float, bvt_domain, bvt_set_of_int))(input)?;
     Ok((input, bvt))
 }
 fn bvt_bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
@@ -140,6 +141,12 @@ fn bvt_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Bas
 fn bvt_domain<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
     let (input, domain) = domain(input)?;
     Ok((input, BasicVarType::Domain(domain)))
+}
+// "var" "set" "of" "int"
+// Moved this be a basic-var-type basic-par-type
+fn bvt_set_of_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
+    let (input, _tag) = tag("set of int")(input)?;
+    Ok((input, BasicVarType::VarSetOFInt))
 }
 // introduced by me used in basic-var-type and basic-pred-param-type
 #[derive(PartialEq, Clone, Debug)]
@@ -222,17 +229,11 @@ pub enum BasicPredParamType {
     BasicParType(BasicParType),
     BasicVarType(BasicVarType),
     Domain(Domain),
-    VarSetOFInt, // shouldn't this be a basic-var-type
 }
 fn basic_pred_param_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicPredParamType, E> {
-    let (input, bppt) = alt((
-        bppt_basic_par_type,
-        bppt_basic_var_type,
-        bppt_domain,
-        var_set_of_int, // TODO: remove if "var set of int" is in <basic_var_type>
-    ))(input)?;
+    let (input, bppt) = alt((bppt_basic_par_type, bppt_basic_var_type, bppt_domain))(input)?;
     Ok((input, bppt))
 }
 fn bppt_basic_par_type<'a, E: ParseError<&'a str>>(
@@ -252,14 +253,6 @@ fn bppt_domain<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, BasicPredParamType, E> {
     let (input, domain) = domain(input)?;
     Ok((input, BasicPredParamType::Domain(domain)))
-}
-// "var" "set" "of" "int"
-// shouldn't this be a basic-var-type basic-par-type
-fn var_set_of_int<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, BasicPredParamType, E> {
-    let (input, _tag) = tag("var set of int")(input)?;
-    Ok((input, BasicPredParamType::VarSetOFInt))
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum PredParamType {
@@ -324,8 +317,8 @@ fn basic_literal_expr<'a, E: ParseError<&'a str>>(
     let (input, ble) = alt((
         ble_bool_literal,
         ble_set_literal,
-        ble_int_literal,
         ble_float_literal,
+        ble_int_literal,
     ))(input)?;
     Ok((input, ble))
 }
@@ -372,8 +365,8 @@ fn be_basic_literal_expr<'a, E: ParseError<&'a str>>(
 fn be_var_par_identifier<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicExpr, E> {
-    let (input, expr) = var_par_identifier(input)?;
-    Ok((input, BasicExpr::VarParIdentifier(expr)))
+    let (input, id) = var_par_identifier(input)?;
+    Ok((input, BasicExpr::VarParIdentifier(id)))
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -518,9 +511,9 @@ fn test_float() {
         Ok(("", 002e+098))
     );
     assert_eq!(float_literal::<VerboseError<&str>>("0.21"), Ok(("", 0.21)));
+    assert_eq!(float_literal::<VerboseError<&str>>("1.0,"), Ok((",", 1.0)));
 }
 fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
-    // TODO
     let (input, f) = double(input)?;
     Ok((input, f))
 }
@@ -610,7 +603,6 @@ pub enum ParDeclItem {
 }
 fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParDeclItem, E> {
     let (input, ptype) = par_type(input)?;
-
     let (input, _) = char(':')(input)?;
     let (input, _) = space1(input)?;
     let (input, id) = var_par_identifier(input)?;
@@ -721,20 +713,20 @@ fn constraint_item<'a, E: ParseError<&'a str>>(
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct SolveItem {
-    annotation: Annotations,
+    annotations: Annotations,
     goal: Goal,
 }
 fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E> {
     let (input, _) = tag("solve")(input)?;
     let (input, _) = space1(input)?;
-    let (input, annotation) = annotations(input)?;
+    let (input, annotations) = annotations(input)?;
     let (input, _) = space0(input)?;
     let (input, goal) = alt((satisfy, maximize, minimize))(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char('\n')(input)?;
-    Ok((input, SolveItem { annotation, goal }))
+    Ok((input, SolveItem { annotations, goal }))
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum Goal {
@@ -760,45 +752,127 @@ fn minimize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal
 }
 type Annotations = Vec<Annotation>;
 fn annotations<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotations, E> {
-    let (input, annos) = many0(annotation)(input)?;
+    let (input, annos) = many0(annotation1)(input)?;
     Ok((input, annos))
 }
-#[derive(PartialEq, Clone, Debug)]
-pub struct Annotation {
-    string: String,
-    expressions: Vec<AnnExpr>,
-}
-fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
+fn annotation1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
     let (input, _) = tag("::")(input)?;
     let (input, _) = space0(input)?;
-    let (input, string) = identifier(input)?;
+    annotation(input)
+}
+#[derive(PartialEq, Clone, Debug)]
+pub enum Annotation {
+    Id {
+        id: String,
+        expressions: Vec<Annotation>,
+    },
+    AnnExpr(AnnExpr),
+}
+// <annotation> ::= <identifier>
+//                | <identifier> "(" <ann-expr> "," ... ")"
+// better
+// annotation ::= <identifier> "(" <annotation> "," ... ")"
+//     | <annotation_expr>
+fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
+    let (input, anno) = alt((ann_identifier, anno_ann_expr))(input)?;
+    Ok((input, anno))
+}
+fn anno_ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
+    let (input, expr) = ann_expr(input)?;
+    Ok((input, Annotation::AnnExpr(expr)))
+}
+fn ann_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
+    let (input, id) = identifier(input)?;
     let (input, we) = opt(char('('))(input)?;
-    // let (input, expressions) = opt(separated_list(char(','), ann_expr))(input)?; // TODO: use proper ann_expr
     if we.is_some() {
-        let (input, expressions) = separated_list(char(','), expr)(input)?;
+        let (input, expressions_what) = separated_list(char(','), annotation)(input)?;
         let (input, _) = char(')')(input)?;
         Ok((
             input,
-            Annotation {
-                string,
-                expressions,
+            Annotation::Id {
+                id,
+                expressions: expressions_what,
             },
         ))
     } else {
         let (input, _) = space0(input)?;
         Ok((
             input,
-            Annotation {
-                string,
+            Annotation::Id {
+                id,
                 expressions: vec![],
             },
         ))
     }
 }
-type AnnExpr = Expr;
-// TODO: implement proper ann_expr
 // <ann_expr>  := <expr> | <annotation>
-// pub struct AnnExpr;
-// fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-// Ok((input, AnnExpr))
-// }
+// better
+// ann_expr ::=  ann_non_array_expr
+//          | "[" <annotation> "," ... "]"
+#[derive(PartialEq, Clone, Debug)]
+pub struct AnnExpr;
+fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, res) = alt((xxx_expr, xxx_annotation))(input)?;
+    Ok((input, res))
+}
+fn xxx_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, res) = ann_non_array_expr(input)?;
+    Ok((input, res))
+}
+fn xxx_annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, _) = char('[')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, res) = separated_list(char(','), annotation)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char(']')(input)?;
+    Ok((input, AnnExpr))
+}
+// ann_non_array_expr ::=
+//       FZ_BOOL_LIT
+//     | FZ_INT_LIT
+//     | FZ_FLOAT_LIT
+//     | set_literal
+//     | var_par_id /* variable, possibly array */
+//     | var_par_id '[' ann_non_array_expr ']' /* array access */
+//     | FZ_STRING_LIT
+fn ann_non_array_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, res) = alt((
+        my_basic_par_type, // TODO maybe basic_literal_expr this should include the special_case
+        my_special_case,
+        my_var_par_id,
+        string_lit,
+    ))(input)?;
+    Ok((input, AnnExpr))
+}
+fn my_basic_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, res) = basic_var_type(input)?;
+    Ok((input, AnnExpr))
+}
+// TODO
+// there are atleast examples with array of int-ranges, maybe array of expr?
+fn my_special_case<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, _) = char('[')(input)?;
+    // let (input, res) = index_set(input)?;
+    let (input, res) = separated_list(char(','), int_range)(input)?;
+    let (input, _) = char(']')(input)?;
+    Ok((input, AnnExpr))
+}
+// TODO: implement parsing string literals
+fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, _) = char('"')(input)?;
+    let (input, string) = tag("TODO")(input)?;
+    let (input, _) = char('"')(input)?;
+    Ok((input, AnnExpr))
+}
+fn my_var_par_id<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, id) = var_par_identifier(input)?;
+    let (input, we) = opt(char('('))(input)?;
+    if we.is_some() {
+        let (input, expressions_what) = separated_list(char(','), ann_non_array_expr)(input)?;
+        let (input, _) = char(')')(input)?;
+        Ok((input, AnnExpr))
+    } else {
+        let (input, _) = space0(input)?;
+        Ok((input, AnnExpr))
+    }
+}
