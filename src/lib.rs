@@ -774,11 +774,11 @@ pub enum Annotation {
 // annotation ::= <identifier> "(" <annotation> "," ... ")"
 //     | <annotation_expr>
 fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
-    let (input, anno) = alt((ann_identifier, anno_ann_expr))(input)?;
+    let (input, anno) = alt((ann_identifier, ann_expr))(input)?;
     Ok((input, anno))
 }
-fn anno_ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
-    let (input, expr) = ann_expr(input)?;
+fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
+    let (input, expr) = alt((ann_non_array_expr, xxx_annotation))(input)?;
     Ok((input, Annotation::AnnExpr(expr)))
 }
 fn ann_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
@@ -812,16 +812,12 @@ fn ann_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 #[derive(PartialEq, Clone, Debug)]
 pub enum AnnExpr {
     Annotations(Annotations),
-    Annotation {
-        id: String,
-        expressions: Vec<AnnExpr>,
-    },
+    // Annotation {
+    //     id: String,
+    //     expressions: Vec<Annotation>,
+    // },
     String(String),
-    BasicLiteralExpr(BasicLiteralExpr),
-}
-fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, res) = alt((ann_non_array_expr, xxx_annotation))(input)?;
-    Ok((input, res))
+    Expr(Expr),
 }
 fn xxx_annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, _) = char('[')(input)?;
@@ -841,18 +837,16 @@ fn xxx_annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 //     | FZ_STRING_LIT
 fn ann_non_array_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, res) = alt((
-        my_basic_literal_expr, // TODO basic_literal_expr check if its too permissive
-        my_var_par_id,
+        my_expr, // TODO check if its too permissive
+        // my_var_par_id,
         string_lit,
     ))(input)?;
     Ok((input, res))
 }
-fn my_basic_literal_expr<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, AnnExpr, E> {
+fn my_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     // let (input, res) = basic_var_type(input)?;
-    let (input, ble) = basic_literal_expr(input)?;
-    Ok((input, AnnExpr::BasicLiteralExpr(ble)))
+    let (input, expr) = expr(input)?;
+    Ok((input, AnnExpr::Expr(expr)))
 }
 // TODO: implement parsing string literals
 fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
@@ -861,21 +855,21 @@ fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
     let (input, _) = char('"')(input)?;
     Ok((input, AnnExpr::String(string.to_string())))
 }
-fn my_var_par_id<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, id) = var_par_identifier(input)?;
-    let (input, we) = opt(char('('))(input)?;
-    if we.is_some() {
-        let (input, expressions) = separated_list(char(','), ann_non_array_expr)(input)?;
-        let (input, _) = char(')')(input)?;
-        Ok((input, AnnExpr::Annotation { id, expressions }))
-    } else {
-        let (input, _) = space0(input)?;
-        Ok((
-            input,
-            AnnExpr::Annotation {
-                id,
-                expressions: vec![],
-            },
-        ))
-    }
-}
+// fn my_var_par_id<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+//     let (input, id) = var_par_identifier(input)?;
+//     let (input, we) = opt(char('('))(input)?;
+//     if we.is_some() {
+//         let (input, expressions) = separated_list(char(','), annotation)(input)?;
+//         let (input, _) = char(')')(input)?;
+//         Ok((input, AnnExpr::Annotation { id, expressions }))
+//     } else {
+//         let (input, _) = space0(input)?;
+//         Ok((
+//             input,
+//             AnnExpr::Annotation {
+//                 id,
+//                 expressions: vec![],
+//             },
+//         ))
+//     }
+// }
