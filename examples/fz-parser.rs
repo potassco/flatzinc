@@ -1,10 +1,9 @@
+use anyhow::Result;
 use log::error;
 use nom::error::{convert_error, VerboseError};
 use nom::Err;
 use std::path::PathBuf;
 use stderrlog;
-
-use anyhow::Result;
 use structopt::StructOpt;
 
 /// flatzinc parser

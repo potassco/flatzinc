@@ -810,13 +810,17 @@ fn ann_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 // ann_expr ::=  ann_non_array_expr
 //          | "[" <annotation> "," ... "]"
 #[derive(PartialEq, Clone, Debug)]
-pub struct AnnExpr;
-fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, res) = alt((xxx_expr, xxx_annotation))(input)?;
-    Ok((input, res))
+pub enum AnnExpr {
+    Annotations(Annotations),
+    Annotation {
+        id: String,
+        expressions: Vec<AnnExpr>,
+    },
+    String(String),
+    BasicLiteralExpr(BasicLiteralExpr),
 }
-fn xxx_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, res) = ann_non_array_expr(input)?;
+fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, res) = alt((ann_non_array_expr, xxx_annotation))(input)?;
     Ok((input, res))
 }
 fn xxx_annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
@@ -825,7 +829,7 @@ fn xxx_annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
     let (input, res) = separated_list(char(','), annotation)(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(']')(input)?;
-    Ok((input, AnnExpr))
+    Ok((input, AnnExpr::Annotations(res)))
 }
 // ann_non_array_expr ::=
 //       FZ_BOOL_LIT
@@ -837,42 +841,41 @@ fn xxx_annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 //     | FZ_STRING_LIT
 fn ann_non_array_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, res) = alt((
-        my_basic_par_type, // TODO maybe basic_literal_expr this should include the special_case
-        my_special_case,
+        my_basic_literal_expr, // TODO basic_literal_expr check if its too permissive
         my_var_par_id,
         string_lit,
     ))(input)?;
-    Ok((input, AnnExpr))
+    Ok((input, res))
 }
-fn my_basic_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, res) = basic_var_type(input)?;
-    Ok((input, AnnExpr))
-}
-// TODO
-// there are atleast examples with array of int-ranges, maybe array of expr?
-fn my_special_case<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, _) = char('[')(input)?;
-    // let (input, res) = index_set(input)?;
-    let (input, res) = separated_list(char(','), int_range)(input)?;
-    let (input, _) = char(']')(input)?;
-    Ok((input, AnnExpr))
+fn my_basic_literal_expr<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, AnnExpr, E> {
+    // let (input, res) = basic_var_type(input)?;
+    let (input, ble) = basic_literal_expr(input)?;
+    Ok((input, AnnExpr::BasicLiteralExpr(ble)))
 }
 // TODO: implement parsing string literals
 fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, _) = char('"')(input)?;
     let (input, string) = tag("TODO")(input)?;
     let (input, _) = char('"')(input)?;
-    Ok((input, AnnExpr))
+    Ok((input, AnnExpr::String(string.to_string())))
 }
 fn my_var_par_id<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, id) = var_par_identifier(input)?;
     let (input, we) = opt(char('('))(input)?;
     if we.is_some() {
-        let (input, expressions_what) = separated_list(char(','), ann_non_array_expr)(input)?;
+        let (input, expressions) = separated_list(char(','), ann_non_array_expr)(input)?;
         let (input, _) = char(')')(input)?;
-        Ok((input, AnnExpr))
+        Ok((input, AnnExpr::Annotation { id, expressions }))
     } else {
         let (input, _) = space0(input)?;
-        Ok((input, AnnExpr))
+        Ok((
+            input,
+            AnnExpr::Annotation {
+                id,
+                expressions: vec![],
+            },
+        ))
     }
 }
