@@ -713,8 +713,8 @@ fn constraint_item<'a, E: ParseError<&'a str>>(
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct SolveItem {
-    annotations: Annotations,
-    goal: Goal,
+    pub annotations: Annotations,
+    pub goal: Goal,
 }
 fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E> {
     let (input, _) = tag("solve")(input)?;
