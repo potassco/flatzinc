@@ -37,7 +37,7 @@ pub fn model<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Mod
 #[derive(PartialEq, Clone, Debug)]
 pub struct PredicateItem {
     pub id: String,
-    pub parameters: Vec<(PredParamType, String)>,
+    pub parameters: Vec<(PredParType, String)>,
 }
 fn predicate_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
@@ -46,22 +46,22 @@ fn predicate_item<'a, E: ParseError<&'a str>>(
     let (input, _) = space1(input)?;
     let (input, id) = identifier(input)?;
     let (input, _) = char('(')(input)?;
-    let (input, parameters) = separated_list(char(','), pred_param_type_ident_pair)(input)?;
+    let (input, parameters) = separated_list(char(','), pred_par_type_ident_pair)(input)?;
     let (input, _) = char(')')(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
     let (input, _) = char('\n')(input)?; // CHECK
     Ok((input, PredicateItem { id, parameters }))
 }
-fn pred_param_type_ident_pair<'a, E: ParseError<&'a str>>(
+fn pred_par_type_ident_pair<'a, E: ParseError<&'a str>>(
     input: &'a str,
-) -> IResult<&'a str, (PredParamType, String), E> {
-    let (input, pred_param_type) = pred_param_type(input)?;
+) -> IResult<&'a str, (PredParType, String), E> {
+    let (input, pred_par_type) = pred_par_type(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(':')(input)?;
     let (input, _) = space0(input)?;
     let (input, ident) = identifier(input)?;
-    Ok((input, (pred_param_type, ident)))
+    Ok((input, (pred_par_type, ident)))
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -115,7 +115,7 @@ pub enum BasicVarType {
     Int,
     Float,
     Domain(Domain),
-    VarSetOFInt, // added var_set_of_int from basic_pred_param_type
+    VarSetOFInt, // added var_set_of_int from basic_pred_par_type
 }
 fn basic_var_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
     let (input, _) = space0(input)?;
@@ -223,55 +223,53 @@ fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Ind
     Ok((input, IndexSet(int)))
 }
 #[derive(PartialEq, Clone, Debug)]
-pub enum BasicPredParamType {
+pub enum BasicPredParType {
     BasicParType(BasicParType),
     BasicVarType(BasicVarType),
     Domain(Domain),
 }
-fn basic_pred_param_type<'a, E: ParseError<&'a str>>(
+fn basic_pred_par_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
-) -> IResult<&'a str, BasicPredParamType, E> {
+) -> IResult<&'a str, BasicPredParType, E> {
     let (input, bppt) = alt((bppt_basic_par_type, bppt_basic_var_type, bppt_domain))(input)?;
     Ok((input, bppt))
 }
 fn bppt_basic_par_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
-) -> IResult<&'a str, BasicPredParamType, E> {
+) -> IResult<&'a str, BasicPredParType, E> {
     let (input, bpt) = basic_par_type(input)?;
-    Ok((input, BasicPredParamType::BasicParType(bpt)))
+    Ok((input, BasicPredParType::BasicParType(bpt)))
 }
 fn bppt_basic_var_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
-) -> IResult<&'a str, BasicPredParamType, E> {
+) -> IResult<&'a str, BasicPredParType, E> {
     let (input, bvt) = basic_var_type(input)?;
-    Ok((input, BasicPredParamType::BasicVarType(bvt)))
+    Ok((input, BasicPredParType::BasicVarType(bvt)))
 }
 fn bppt_domain<'a, E: ParseError<&'a str>>(
     input: &'a str,
-) -> IResult<&'a str, BasicPredParamType, E> {
+) -> IResult<&'a str, BasicPredParType, E> {
     let (input, domain) = domain(input)?;
-    Ok((input, BasicPredParamType::Domain(domain)))
+    Ok((input, BasicPredParType::Domain(domain)))
 }
 #[derive(PartialEq, Clone, Debug)]
-pub enum PredParamType {
-    BasicPredParamType(BasicPredParamType),
-    Array(PredIndexSet, BasicPredParamType),
+pub enum PredParType {
+    Basic(BasicPredParType),
+    Array(PredIndexSet, BasicPredParType),
 }
-fn pred_param_type<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, PredParamType, E> {
-    let (input, ppt) = alt((ppt_basic_pred_param_type, array_of_pred_index_set))(input)?;
+fn pred_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, PredParType, E> {
+    let (input, ppt) = alt((ppt_basic_pred_par_type, array_of_pred_index_set))(input)?;
     Ok((input, ppt))
 }
-fn ppt_basic_pred_param_type<'a, E: ParseError<&'a str>>(
+fn ppt_basic_pred_par_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
-) -> IResult<&'a str, PredParamType, E> {
-    let (input, bppt) = basic_pred_param_type(input)?;
-    Ok((input, PredParamType::BasicPredParamType(bppt)))
+) -> IResult<&'a str, PredParType, E> {
+    let (input, bppt) = basic_pred_par_type(input)?;
+    Ok((input, PredParType::Basic(bppt)))
 }
 fn array_of_pred_index_set<'a, E: ParseError<&'a str>>(
     input: &'a str,
-) -> IResult<&'a str, PredParamType, E> {
+) -> IResult<&'a str, PredParType, E> {
     let (input, _) = space0(input)?;
     let (input, _tag) = tag("array")(input)?;
     let (input, _) = space1(input)?;
@@ -283,8 +281,8 @@ fn array_of_pred_index_set<'a, E: ParseError<&'a str>>(
     let (input, _) = space1(input)?;
     let (input, _tag) = tag("of")(input)?;
     let (input, _) = space1(input)?;
-    let (input, bppt) = basic_pred_param_type(input)?;
-    Ok((input, PredParamType::Array(pis, bppt)))
+    let (input, bppt) = basic_pred_par_type(input)?;
+    Ok((input, PredParType::Array(pis, bppt)))
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum PredIndexSet {
