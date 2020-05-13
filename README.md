@@ -1,9 +1,10 @@
 [![Build Status](https://github.com/sthiele/flatzinc-parser/workflows/CI%20test/badge.svg)](https://github.com/sthiele/flatzinc-parser)
 [![Latest Version](https://img.shields.io/crates/v/flatzinc.svg)](https://crates.io/crates/flatzinc)
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/flatzinc)
+
 # flatzinc
 
-A parser for the [FlatZinc](https://www.minizinc.org/doc-2.4.1/en/fzn-spec.html#specification-of-flatzinc) modelling language.
+A parser for the [FlatZinc](https://www.minizinc.org/doc-2.4.3/en/fzn-spec.html#specification-of-flatzinc) modelling language version 2.4.3.
 
 ## Compile
 
@@ -48,6 +49,6 @@ To run the parser call:
 
 The binary can be found under `target/release/examples/fz-parser`
 
-## Other
+## FAQ
 
-- [Where is mzn2fzn?](https://github.com/MiniZinc/libminizinc/issues/342)
+- [How to create flatzinc from minizinc?](https://github.com/MiniZinc/libminizinc/issues/342)
