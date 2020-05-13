@@ -56,9 +56,7 @@ fn predicate_item<'a, E: ParseError<&'a str>>(
 fn pred_param_type_ident_pair<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, (PredParamType, String), E> {
-    println!("in pred_param_type_ident_pair: {}", input);
     let (input, pred_param_type) = pred_param_type(input)?;
-    dbg!(&pred_param_type);
     let (input, _) = space0(input)?;
     let (input, _) = char(':')(input)?;
     let (input, _) = space0(input)?;
@@ -90,7 +88,6 @@ pub enum ParType {
     Array(IndexSet, BasicParType),
 }
 fn par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
-    print!("in par_type: {}", input);
     let (input, par_type) = alt((pt_basic_par_type, array_par_type))(input)?;
     Ok((input, par_type))
 }
@@ -234,9 +231,7 @@ pub enum BasicPredParamType {
 fn basic_pred_param_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicPredParamType, E> {
-    println!("in basic_pred_param_type: {}", input);
     let (input, bppt) = alt((bppt_basic_par_type, bppt_basic_var_type, bppt_domain))(input)?;
-    dbg!(&bppt);
     Ok((input, bppt))
 }
 fn bppt_basic_par_type<'a, E: ParseError<&'a str>>(
@@ -265,9 +260,7 @@ pub enum PredParamType {
 fn pred_param_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, PredParamType, E> {
-    println!("in pred_param_type: {}", input);
     let (input, ppt) = alt((ppt_basic_pred_param_type, array_of_pred_index_set))(input)?;
-    dbg!(&ppt);
     Ok((input, ppt))
 }
 fn ppt_basic_pred_param_type<'a, E: ParseError<&'a str>>(
@@ -279,21 +272,18 @@ fn ppt_basic_pred_param_type<'a, E: ParseError<&'a str>>(
 fn array_of_pred_index_set<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, PredParamType, E> {
-    println!("in array_of_pred_index_set: {}", input);
     let (input, _) = space0(input)?;
     let (input, _tag) = tag("array")(input)?;
     let (input, _) = space1(input)?;
     let (input, _) = char('[')(input)?;
     let (input, _) = space0(input)?;
     let (input, pis) = pred_index_set(input)?;
-    dbg!(&pis);
     let (input, _) = space0(input)?;
     let (input, _) = char(']')(input)?;
     let (input, _) = space1(input)?;
     let (input, _tag) = tag("of")(input)?;
     let (input, _) = space1(input)?;
     let (input, bppt) = basic_pred_param_type(input)?;
-    dbg!(&bppt);
     Ok((input, PredParamType::Array(pis, bppt)))
 }
 #[derive(PartialEq, Clone, Debug)]
@@ -433,11 +423,9 @@ pub enum ParDeclItem {
 }
 fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParDeclItem, E> {
     let (input, ptype) = par_type(input)?;
-    dbg!(&ptype);
     let (input, _) = char(':')(input)?;
     let (input, _) = space0(input)?;
     let (input, id) = var_par_identifier(input)?;
-    dbg!(&id);
     let (input, _) = space0(input)?;
     let (input, _) = char('=')(input)?;
     let (input, _) = space0(input)?;
