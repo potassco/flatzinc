@@ -764,28 +764,16 @@ fn annotation1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, A
 pub enum Annotation {
     Id {
         id: String,
-        expressions: Vec<Annotation>,
+        expressions: Vec<AnnExpr>,
     },
-    AnnExpr(AnnExpr),
 }
 // <annotation> ::= <identifier>
 //                | <identifier> "(" <ann-expr> "," ... ")"
-// better
-// annotation ::= <identifier> "(" <annotation> "," ... ")"
-//     | <annotation_expr>
 fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
-    let (input, anno) = alt((ann_identifier, ann_expr))(input)?;
-    Ok((input, anno))
-}
-fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
-    let (input, expr) = alt((ann_non_array_expr, xxx_annotation))(input)?;
-    Ok((input, Annotation::AnnExpr(expr)))
-}
-fn ann_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
     let (input, id) = identifier(input)?;
     let (input, we) = opt(char('('))(input)?;
     if we.is_some() {
-        let (input, expressions_what) = separated_list(char(','), annotation)(input)?;
+        let (input, expressions_what) = separated_list(char(','), ann_expr)(input)?;
         let (input, _) = char(')')(input)?;
         Ok((
             input,
@@ -807,19 +795,20 @@ fn ann_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 }
 // <ann_expr>  := <expr> | <annotation>
 // better
-// ann_expr ::=  ann_non_array_expr
-//          | "[" <annotation> "," ... "]"
+// <ann_expr> ::= <expr>
+//              | <string_literal>
+//              | "[" <annotation>, "]"
 #[derive(PartialEq, Clone, Debug)]
 pub enum AnnExpr {
     Annotations(Annotations),
-    // Annotation {
-    //     id: String,
-    //     expressions: Vec<Annotation>,
-    // },
     String(String),
     Expr(Expr),
 }
-fn xxx_annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
+    let (input, expr) = alt((ann_non_array_expr, ae_annotations))(input)?;
+    Ok((input, expr))
+}
+fn ae_annotations<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, _) = char('[')(input)?;
     let (input, _) = space0(input)?;
     let (input, res) = separated_list(char(','), annotation)(input)?;
@@ -836,15 +825,10 @@ fn xxx_annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 //     | var_par_id '[' ann_non_array_expr ']' /* array access */
 //     | FZ_STRING_LIT
 fn ann_non_array_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, res) = alt((
-        my_expr, // TODO check if its too permissive
-        // my_var_par_id,
-        string_lit,
-    ))(input)?;
-    Ok((input, res))
+    let (input, expr) = alt((ae_expr, string_lit))(input)?;
+    Ok((input, expr))
 }
-fn my_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    // let (input, res) = basic_var_type(input)?;
+fn ae_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, expr) = expr(input)?;
     Ok((input, AnnExpr::Expr(expr)))
 }
@@ -855,21 +839,3 @@ fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
     let (input, _) = char('"')(input)?;
     Ok((input, AnnExpr::String(string.to_string())))
 }
-// fn my_var_par_id<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-//     let (input, id) = var_par_identifier(input)?;
-//     let (input, we) = opt(char('('))(input)?;
-//     if we.is_some() {
-//         let (input, expressions) = separated_list(char(','), annotation)(input)?;
-//         let (input, _) = char(')')(input)?;
-//         Ok((input, AnnExpr::Annotation { id, expressions }))
-//     } else {
-//         let (input, _) = space0(input)?;
-//         Ok((
-//             input,
-//             AnnExpr::Annotation {
-//                 id,
-//                 expressions: vec![],
-//             },
-//         ))
-//     }
-// }
