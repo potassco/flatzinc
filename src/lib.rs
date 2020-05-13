@@ -56,17 +56,16 @@ fn predicate_item<'a, E: ParseError<&'a str>>(
 fn pred_param_type_ident_pair<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, (PredParamType, String), E> {
+    println!("in pred_param_type_ident_pair: {}", input);
     let (input, pred_param_type) = pred_param_type(input)?;
+    dbg!(&pred_param_type);
+    let (input, _) = space0(input)?;
     let (input, _) = char(':')(input)?;
+    let (input, _) = space0(input)?;
     let (input, ident) = identifier(input)?;
     Ok((input, (pred_param_type, ident)))
 }
 
-fn identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
-    let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")(input)?;
-    let (input, rest) = take_while(is_identifier_rest)(input)?;
-    Ok((input, format!("{}{}", first, rest)))
-}
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicParType {
     Bool,
@@ -91,6 +90,7 @@ pub enum ParType {
     Array(IndexSet, BasicParType),
 }
 fn par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
+    print!("in par_type: {}", input);
     let (input, par_type) = alt((pt_basic_par_type, array_par_type))(input)?;
     Ok((input, par_type))
 }
@@ -121,6 +121,7 @@ pub enum BasicVarType {
     VarSetOFInt, // added var_set_of_int from basic_pred_param_type
 }
 fn basic_var_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
+    let (input, _) = space0(input)?;
     let (input, _tag) = tag("var")(input)?;
     let (input, _) = space1(input)?;
     let (input, bvt) = alt((bvt_bool, bvt_int, bvt_float, bvt_domain, bvt_set_of_int))(input)?;
@@ -233,7 +234,9 @@ pub enum BasicPredParamType {
 fn basic_pred_param_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicPredParamType, E> {
+    println!("in basic_pred_param_type: {}", input);
     let (input, bppt) = alt((bppt_basic_par_type, bppt_basic_var_type, bppt_domain))(input)?;
+    dbg!(&bppt);
     Ok((input, bppt))
 }
 fn bppt_basic_par_type<'a, E: ParseError<&'a str>>(
@@ -262,7 +265,9 @@ pub enum PredParamType {
 fn pred_param_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, PredParamType, E> {
+    println!("in pred_param_type: {}", input);
     let (input, ppt) = alt((ppt_basic_pred_param_type, array_of_pred_index_set))(input)?;
+    dbg!(&ppt);
     Ok((input, ppt))
 }
 fn ppt_basic_pred_param_type<'a, E: ParseError<&'a str>>(
@@ -274,17 +279,21 @@ fn ppt_basic_pred_param_type<'a, E: ParseError<&'a str>>(
 fn array_of_pred_index_set<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, PredParamType, E> {
+    println!("in array_of_pred_index_set: {}", input);
+    let (input, _) = space0(input)?;
     let (input, _tag) = tag("array")(input)?;
     let (input, _) = space1(input)?;
     let (input, _) = char('[')(input)?;
     let (input, _) = space0(input)?;
     let (input, pis) = pred_index_set(input)?;
+    dbg!(&pis);
     let (input, _) = space0(input)?;
     let (input, _) = char(']')(input)?;
     let (input, _) = space1(input)?;
     let (input, _tag) = tag("of")(input)?;
     let (input, _) = space1(input)?;
     let (input, bppt) = basic_pred_param_type(input)?;
+    dbg!(&bppt);
     Ok((input, PredParamType::Array(pis, bppt)))
 }
 #[derive(PartialEq, Clone, Debug)]
@@ -407,189 +416,10 @@ fn pe_par_array_literal<'a, E: ParseError<&'a str>>(
     let (input, expr) = par_array_literal(input)?;
     Ok((input, ParExpr::ParArrayLiteral(expr)))
 }
-fn var_par_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
-    let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")(input)?;
-    let (input, rest) = take_while(is_identifier_rest)(input)?;
-    Ok((input, format!("{}{}", first, rest)))
-}
-fn is_identifier_rest(c: char) -> bool {
-    match c {
-        'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o'
-        | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C'
-        | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q'
-        | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '_' | '0' | '1' | '2' | '3'
-        | '4' | '5' | '6' | '7' | '8' | '9' => true, //one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")(input.into()) {
-        _ => false,
-    }
-}
-fn bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, bool, E> {
-    let (input, string) = alt((tag("true"), tag("false")))(input)?;
-    match string {
-        "true" => Ok((input, true)),
-        "false" => Ok((input, false)),
-        x => panic!("unmatched bool literal {}", x),
-    }
-}
-fn int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
-    let (input, int) = alt((decimal, hexadecimal, octal))(input)?;
-    Ok((input, int as i128))
-}
-fn decimal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
-    let (input, negation) = opt(char('-'))(input)?;
-    let (input, int) = map_res(take_while1(is_dec_digit), from_dec)(input)?;
-    if negation.is_some() {
-        Ok((input, -(int as i128)))
-    } else {
-        Ok((input, int as i128))
-    }
-}
-#[test]
-fn test_hex() {
-    use nom::error::VerboseError;
-    assert_eq!(hexadecimal::<VerboseError<&str>>("-0x2f"), Ok(("", -47)));
-}
-fn hexadecimal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
-    let (input, negation) = opt(char('-'))(input)?;
-    let (input, _tag) = tag("0x")(input)?;
-    let (input, int) = map_res(take_while1(is_hex_digit), from_hex)(input)?;
-    if negation.is_some() {
-        Ok((input, -(int as i128)))
-    } else {
-        Ok((input, int as i128))
-    }
-}
-#[test]
-fn test_oct() {
-    use nom::error::VerboseError;
-    assert_eq!(octal::<VerboseError<&str>>("0o21"), Ok(("", 17)));
-}
-fn octal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
-    let (input, negation) = opt(char('-'))(input)?;
-    let (input, _tag) = tag("0o")(input)?;
-    let (input, int) = map_res(take_while1(is_oct_digit), from_oct)(input)?;
-    if negation.is_some() {
-        Ok((input, -(int as i128)))
-    } else {
-        Ok((input, int as i128))
-    }
-}
-fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
-    u8::from_str_radix(input, 16)
-}
-fn is_hex_digit(c: char) -> bool {
-    c.is_digit(16)
-}
-fn from_oct(input: &str) -> Result<u8, std::num::ParseIntError> {
-    u8::from_str_radix(input, 8)
-}
-fn is_oct_digit(c: char) -> bool {
-    c.is_digit(8)
-}
-fn from_dec(input: &str) -> Result<u128, std::num::ParseIntError> {
-    u128::from_str_radix(input, 10)
-}
-fn is_dec_digit(c: char) -> bool {
-    c.is_digit(10)
-}
-#[test]
-fn test_float() {
-    use nom::error::VerboseError;
-    assert_eq!(
-        float_literal::<VerboseError<&str>>("023.21"),
-        Ok(("", 023.21))
-    );
-    assert_eq!(
-        float_literal::<VerboseError<&str>>("0023.21E-098"),
-        Ok(("", 0023.21E-098))
-    );
-    assert_eq!(
-        float_literal::<VerboseError<&str>>("0023.21e+098"),
-        Ok(("", 0023.21e+098))
-    );
-    assert_eq!(
-        float_literal::<VerboseError<&str>>("002e+098"),
-        Ok(("", 002e+098))
-    );
-    assert_eq!(float_literal::<VerboseError<&str>>("0.21"), Ok(("", 0.21)));
-    assert_eq!(float_literal::<VerboseError<&str>>("1.0,"), Ok((",", 1.0)));
-}
-fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
-    let (input, f) = double(input)?;
-    Ok((input, f))
-}
-#[derive(PartialEq, Clone, Debug)]
-pub enum SetLiteral {
-    IntRange(i128, i128),
-    FloatRange(f64, f64),
-    SetFloats(Vec<f64>),
-    SetInts(Vec<i128>), // possibly empty
-}
-fn set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
-    let (input, sl) = alt((
-        sl_int_range,
-        sl_float_range,
-        sl_set_of_floats,
-        sl_set_of_ints,
-    ))(input)?;
-    Ok((input, sl))
-}
-fn sl_int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
-    let (input, lb) = int_literal(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _tag) = tag("..")(input)?;
-    let (input, _) = space0(input)?;
-    let (input, ub) = int_literal(input)?;
-    Ok((input, SetLiteral::IntRange(lb, ub)))
-}
-fn sl_float_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
-    let (input, lb) = float_literal(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _tag) = tag("..")(input)?;
-    let (input, _) = space0(input)?;
-    let (input, ub) = float_literal(input)?;
-    Ok((input, SetLiteral::FloatRange(lb, ub)))
-}
-// "{" <int-literal> "," ... "}"
-fn sl_set_of_ints<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
-    let (input, _) = char('{')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, v) = separated_list(char(','), int_literal)(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char('}')(input)?;
-    Ok((input, SetLiteral::SetInts(v)))
-}
-// "{" <float-literal> "," ... "}"
-fn sl_set_of_floats<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
-    let (input, _) = char('{')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, v) = separated_list(char(','), float_literal)(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char('}')(input)?;
-    Ok((input, SetLiteral::SetFloats(v)))
-}
-type ArrayLiteral = Vec<BasicExpr>;
-fn array_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ArrayLiteral, E> {
-    let (input, _) = char('[')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, al) = separated_list(char(','), basic_expr)(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char(']')(input)?;
-    Ok((input, al))
-}
-type ParArrayLiteral = Vec<BasicLiteralExpr>;
-fn par_array_literal<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, ParArrayLiteral, E> {
-    let (input, _) = char('[')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, v) = separated_list(char(','), basic_literal_expr)(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char(']')(input)?;
-    Ok((input, v))
-}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum ParDeclItem {
-    BasicParType {
+    Basic {
         par_type: BasicParType,
         id: String,
         expr: ParExpr,
@@ -603,12 +433,14 @@ pub enum ParDeclItem {
 }
 fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParDeclItem, E> {
     let (input, ptype) = par_type(input)?;
+    dbg!(&ptype);
     let (input, _) = char(':')(input)?;
-    let (input, _) = space1(input)?;
+    let (input, _) = space0(input)?;
     let (input, id) = var_par_identifier(input)?;
-    let (input, _) = space1(input)?;
+    dbg!(&id);
+    let (input, _) = space0(input)?;
     let (input, _) = char('=')(input)?;
-    let (input, _) = space1(input)?;
+    let (input, _) = space0(input)?;
     let (input, expr) = par_expr(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
@@ -624,9 +456,7 @@ fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 expr,
             },
         )),
-        ParType::BasicParType(par_type) => {
-            Ok((input, ParDeclItem::BasicParType { par_type, id, expr }))
-        }
+        ParType::BasicParType(par_type) => Ok((input, ParDeclItem::Basic { par_type, id, expr })),
     }
 }
 #[derive(PartialEq, Clone, Debug)]
@@ -797,7 +627,7 @@ fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
 // better
 // <ann_expr> ::= <expr>
 //              | <string_literal>
-//              | "[" <annotation>, "]"
+//              | "[" <annotation> "," ... "]"
 #[derive(PartialEq, Clone, Debug)]
 pub enum AnnExpr {
     Annotations(Annotations),
@@ -838,4 +668,189 @@ fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
     let (input, string) = tag("TODO")(input)?;
     let (input, _) = char('"')(input)?;
     Ok((input, AnnExpr::String(string.to_string())))
+}
+#[derive(PartialEq, Clone, Debug)]
+pub enum SetLiteral {
+    IntRange(i128, i128),
+    FloatRange(f64, f64),
+    SetFloats(Vec<f64>),
+    SetInts(Vec<i128>), // possibly empty
+}
+fn set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
+    let (input, sl) = alt((
+        sl_int_range,
+        sl_float_range,
+        sl_set_of_floats,
+        sl_set_of_ints,
+    ))(input)?;
+    Ok((input, sl))
+}
+fn sl_int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
+    let (input, lb) = int_literal(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _tag) = tag("..")(input)?;
+    let (input, _) = space0(input)?;
+    let (input, ub) = int_literal(input)?;
+    Ok((input, SetLiteral::IntRange(lb, ub)))
+}
+fn sl_float_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
+    let (input, lb) = float_literal(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _tag) = tag("..")(input)?;
+    let (input, _) = space0(input)?;
+    let (input, ub) = float_literal(input)?;
+    Ok((input, SetLiteral::FloatRange(lb, ub)))
+}
+// "{" <int-literal> "," ... "}"
+fn sl_set_of_ints<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
+    let (input, _) = char('{')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, v) = separated_list(char(','), int_literal)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('}')(input)?;
+    Ok((input, SetLiteral::SetInts(v)))
+}
+// "{" <float-literal> "," ... "}"
+fn sl_set_of_floats<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
+    let (input, _) = char('{')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, v) = separated_list(char(','), float_literal)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('}')(input)?;
+    Ok((input, SetLiteral::SetFloats(v)))
+}
+type ArrayLiteral = Vec<BasicExpr>;
+fn array_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ArrayLiteral, E> {
+    let (input, _) = char('[')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, al) = separated_list(char(','), basic_expr)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char(']')(input)?;
+    Ok((input, al))
+}
+type ParArrayLiteral = Vec<BasicLiteralExpr>;
+fn par_array_literal<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, ParArrayLiteral, E> {
+    let (input, _) = char('[')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, v) = separated_list(char(','), basic_literal_expr)(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char(']')(input)?;
+    Ok((input, v))
+}
+fn identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
+    let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")(input)?;
+    let (input, rest) = take_while(is_identifier_rest)(input)?;
+    Ok((input, format!("{}{}", first, rest)))
+}
+fn var_par_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
+    let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")(input)?;
+    let (input, rest) = take_while(is_identifier_rest)(input)?;
+    Ok((input, format!("{}{}", first, rest)))
+}
+fn is_identifier_rest(c: char) -> bool {
+    match c {
+        'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o'
+        | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C'
+        | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q'
+        | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '_' | '0' | '1' | '2' | '3'
+        | '4' | '5' | '6' | '7' | '8' | '9' => true, //one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")(input.into()) {
+        _ => false,
+    }
+}
+fn bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, bool, E> {
+    let (input, string) = alt((tag("true"), tag("false")))(input)?;
+    match string {
+        "true" => Ok((input, true)),
+        "false" => Ok((input, false)),
+        x => panic!("unmatched bool literal {}", x),
+    }
+}
+fn int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
+    let (input, int) = alt((decimal, hexadecimal, octal))(input)?;
+    Ok((input, int as i128))
+}
+fn decimal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
+    let (input, negation) = opt(char('-'))(input)?;
+    let (input, int) = map_res(take_while1(is_dec_digit), from_dec)(input)?;
+    if negation.is_some() {
+        Ok((input, -(int as i128)))
+    } else {
+        Ok((input, int as i128))
+    }
+}
+#[test]
+fn test_hex() {
+    use nom::error::VerboseError;
+    assert_eq!(hexadecimal::<VerboseError<&str>>("-0x2f"), Ok(("", -47)));
+}
+fn hexadecimal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
+    let (input, negation) = opt(char('-'))(input)?;
+    let (input, _tag) = tag("0x")(input)?;
+    let (input, int) = map_res(take_while1(is_hex_digit), from_hex)(input)?;
+    if negation.is_some() {
+        Ok((input, -(int as i128)))
+    } else {
+        Ok((input, int as i128))
+    }
+}
+#[test]
+fn test_oct() {
+    use nom::error::VerboseError;
+    assert_eq!(octal::<VerboseError<&str>>("0o21"), Ok(("", 17)));
+}
+fn octal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
+    let (input, negation) = opt(char('-'))(input)?;
+    let (input, _tag) = tag("0o")(input)?;
+    let (input, int) = map_res(take_while1(is_oct_digit), from_oct)(input)?;
+    if negation.is_some() {
+        Ok((input, -(int as i128)))
+    } else {
+        Ok((input, int as i128))
+    }
+}
+fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
+    u8::from_str_radix(input, 16)
+}
+fn is_hex_digit(c: char) -> bool {
+    c.is_digit(16)
+}
+fn from_oct(input: &str) -> Result<u8, std::num::ParseIntError> {
+    u8::from_str_radix(input, 8)
+}
+fn is_oct_digit(c: char) -> bool {
+    c.is_digit(8)
+}
+fn from_dec(input: &str) -> Result<u128, std::num::ParseIntError> {
+    u128::from_str_radix(input, 10)
+}
+fn is_dec_digit(c: char) -> bool {
+    c.is_digit(10)
+}
+#[test]
+fn test_float() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        float_literal::<VerboseError<&str>>("023.21"),
+        Ok(("", 023.21))
+    );
+    assert_eq!(
+        float_literal::<VerboseError<&str>>("0023.21E-098"),
+        Ok(("", 0023.21E-098))
+    );
+    assert_eq!(
+        float_literal::<VerboseError<&str>>("0023.21e+098"),
+        Ok(("", 0023.21e+098))
+    );
+    assert_eq!(
+        float_literal::<VerboseError<&str>>("002e+098"),
+        Ok(("", 002e+098))
+    );
+    assert_eq!(float_literal::<VerboseError<&str>>("0.21"), Ok(("", 0.21)));
+    assert_eq!(float_literal::<VerboseError<&str>>("1.0,"), Ok((",", 1.0)));
+}
+fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
+    let (input, f) = double(input)?;
+    Ok((input, f))
 }
