@@ -753,12 +753,26 @@ fn ae_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnEx
     let (input, expr) = expr(input)?;
     Ok((input, AnnExpr::Expr(expr)))
 }
-// TODO: implement parsing string literals
+#[test]
+fn test_string_lit() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        string_lit::<VerboseError<&str>>("\"bla\""),
+        Ok(("", AnnExpr::String("bla".to_string())))
+    );
+}
+// TODO: implement support for escaped characters in string literals
 fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, _) = char('"')(input)?;
-    let (input, string) = tag("TODO")(input)?;
+    let (input, string) = take_while(is_valid)(input)?;
     let (input, _) = char('"')(input)?;
     Ok((input, AnnExpr::String(string.to_string())))
+}
+fn is_valid(c: char) -> bool {
+    match c {
+        '"' => false,
+        _ => true,
+    }
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum SetLiteral {
