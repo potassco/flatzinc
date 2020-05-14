@@ -15,7 +15,13 @@ struct Opt {
     file: PathBuf,
 }
 
-fn main() -> Result<()> {
+fn main() {
+    if let Err(err) = run() {
+        error!("Error: {:?}", err);
+        std::process::exit(1);
+    }
+}
+fn run() -> Result<()> {
     stderrlog::new()
         .module(module_path!())
         .verbosity(2)
