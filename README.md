@@ -18,7 +18,7 @@ In your Cargo.toml
 
 ```toml
 [dependencies]
-flatzinc = "0.1"
+flatzinc = "0.2"
 ```
 
 In your code:
