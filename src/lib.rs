@@ -464,7 +464,7 @@ pub enum ParDeclItem {
 fn test_par_decl_item() {
     use nom::error::VerboseError;
     assert_eq!(
-        par_decl_item::<VerboseError<&str>>("array [1..3] of float: X_139 = [1.0,1.0,1.0];\n"),
+        par_decl_item::<VerboseError<&str>>("array [1..3] of float: X_139 = [1.0,1.0,1.0];"),
         Ok((
             "",
             ParDeclItem::Array {
@@ -535,7 +535,7 @@ fn test_var_decl_item() {
     use nom::error::VerboseError;
     assert_eq!(
         var_decl_item::<VerboseError<&str>>(
-            "array [1..1] of var set of int: sets:: output_array([1..1]) = [X_0];\n"
+            "array [1..1] of var set of int: sets:: output_array([1..1]) = [X_0];"
         ),
         Ok((
             "",
