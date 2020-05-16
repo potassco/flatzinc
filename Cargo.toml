@@ -1,6 +1,6 @@
 [package]
 name = "flatzinc"
-version = "0.2.0"
+version = "0.2.1"
 publish = true
 authors = ["Sven Thiele <sthiele78@gmail.com>"]
 description = "A FlatZinc parser"

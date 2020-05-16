@@ -18,11 +18,11 @@ pub struct Model {
     pub solve_item: SolveItem,
 }
 pub fn model<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Model, E> {
-    let (input, predicate_items) = many0(predicate_item)(input)?;
-    let (input, par_decl_items) = many0(par_decl_item)(input)?;
-    let (input, var_decl_items) = many0(var_decl_item)(input)?;
-    let (input, constraint_items) = many0(constraint_item)(input)?;
-    let (input, solve_item) = solve_item(input)?;
+    let (input, predicate_items) = many0(predicate_item_ln)(input)?;
+    let (input, par_decl_items) = many0(par_decl_item_ln)(input)?;
+    let (input, var_decl_items) = many0(var_decl_item_ln)(input)?;
+    let (input, constraint_items) = many0(constraint_item_ln)(input)?;
+    let (input, solve_item) = solve_item_ln(input)?;
     Ok((
         input,
         Model {
@@ -39,7 +39,15 @@ pub struct PredicateItem {
     pub id: String,
     pub parameters: Vec<(PredParType, String)>,
 }
-fn predicate_item<'a, E: ParseError<&'a str>>(
+fn predicate_item_ln<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, PredicateItem, E> {
+    let (input, item) = predicate_item(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('\n')(input)?;
+    Ok((input, item))
+}
+pub fn predicate_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, PredicateItem, E> {
     let (input, _) = tag("predicate")(input)?;
@@ -50,7 +58,6 @@ fn predicate_item<'a, E: ParseError<&'a str>>(
     let (input, _) = char(')')(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = char('\n')(input)?; // CHECK
     Ok((input, PredicateItem { id, parameters }))
 }
 fn pred_par_type_ident_pair<'a, E: ParseError<&'a str>>(
@@ -473,7 +480,17 @@ fn test_par_decl_item() {
         ))
     );
 }
-fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParDeclItem, E> {
+fn par_decl_item_ln<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, ParDeclItem, E> {
+    let (input, item) = par_decl_item(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('\n')(input)?;
+    Ok((input, item))
+}
+pub fn par_decl_item<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, ParDeclItem, E> {
     let (input, ptype) = par_type(input)?;
     let (input, _) = char(':')(input)?;
     let (input, _) = space0(input)?;
@@ -484,8 +501,6 @@ fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
     let (input, expr) = par_expr(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char('\n')(input)?;
     match ptype {
         ParType::Array { ix, par_type } => Ok((
             input,
@@ -541,12 +556,20 @@ fn test_var_decl_item() {
         ))
     );
 }
-fn var_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
+fn var_decl_item_ln<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, VarDeclItem, E> {
+    let (input, item) = var_decl_item(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('\n')(input)?;
+    Ok((input, item))
+}
+pub fn var_decl_item<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, VarDeclItem, E> {
     let (input, vdi) = alt((vdi_basic_var, vdi_array))(input)?;
     let (input, _tag) = space0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _tag) = space0(input)?;
-    let (input, _) = char('\n')(input)?;
     Ok((input, vdi))
 }
 fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
@@ -613,7 +636,15 @@ pub struct ConstraintItem {
     pub exprs: Vec<Expr>,
     pub annos: Vec<Annotation>,
 }
-fn constraint_item<'a, E: ParseError<&'a str>>(
+fn constraint_item_ln<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, ConstraintItem, E> {
+    let (input, item) = constraint_item(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('\n')(input)?;
+    Ok((input, item))
+}
+pub fn constraint_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ConstraintItem, E> {
     let (input, _tag) = tag("constraint")(input)?;
@@ -628,8 +659,6 @@ fn constraint_item<'a, E: ParseError<&'a str>>(
     let (input, annos) = annotations(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char('\n')(input)?;
     Ok((input, ConstraintItem { id, exprs, annos }))
 }
 #[derive(PartialEq, Clone, Debug)]
@@ -637,7 +666,13 @@ pub struct SolveItem {
     pub annotations: Annotations,
     pub goal: Goal,
 }
-fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E> {
+fn solve_item_ln<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E> {
+    let (input, item) = solve_item(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('\n')(input)?;
+    Ok((input, item))
+}
+pub fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E> {
     let (input, _) = tag("solve")(input)?;
     let (input, _) = space1(input)?;
     let (input, annotations) = annotations(input)?;
@@ -645,8 +680,6 @@ fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, So
     let (input, goal) = alt((satisfy, maximize, minimize))(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char('\n')(input)?;
     Ok((input, SolveItem { annotations, goal }))
 }
 #[derive(PartialEq, Clone, Debug)]
