@@ -3,12 +3,51 @@ use nom::{
     bytes::complete::{tag, take_while, take_while1},
     character::complete::{char, one_of, space0, space1},
     combinator::{map_res, opt},
-    error::ParseError,
     multi::{many0, separated_list},
     number::complete::double,
-    IResult,
 };
-
+pub use nom::{
+    error::{convert_error, ParseError, VerboseError},
+    Err, IResult,
+};
+#[derive(PartialEq, Clone, Debug)]
+pub enum FzStmt {
+    Predicate(PredicateItem),
+    Parameter(ParDeclItem),
+    Variable(VarDeclItem),
+    Constraint(ConstraintItem),
+    SolveItem(SolveItem),
+}
+pub fn fz_statement<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
+    let (input, res) = alt((
+        fz_predicate,
+        fz_parameter,
+        fz_variable,
+        fz_constraint,
+        fz_solve_item,
+    ))(input)?;
+    Ok((input, res))
+}
+fn fz_predicate<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
+    let (input, item) = predicate_item(input)?;
+    Ok((input, FzStmt::Predicate(item)))
+}
+fn fz_parameter<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
+    let (input, item) = par_decl_item(input)?;
+    Ok((input, FzStmt::Parameter(item)))
+}
+fn fz_variable<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
+    let (input, item) = var_decl_item(input)?;
+    Ok((input, FzStmt::Variable(item)))
+}
+fn fz_constraint<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
+    let (input, item) = constraint_item(input)?;
+    Ok((input, FzStmt::Constraint(item)))
+}
+fn fz_solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
+    let (input, item) = solve_item(input)?;
+    Ok((input, FzStmt::SolveItem(item)))
+}
 #[derive(PartialEq, Clone, Debug)]
 pub struct Model {
     pub predicate_items: Vec<PredicateItem>,

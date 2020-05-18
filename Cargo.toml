@@ -1,13 +1,13 @@
 [package]
 name = "flatzinc"
-version = "0.2.1"
+version = "0.2.2"
 publish = true
 authors = ["Sven Thiele <sthiele78@gmail.com>"]
 description = "A FlatZinc parser"
 readme = "README.md"
 categories = ["parser-implementations"]
 documentation = "https://docs.rs/flatzinc"
-repository = "https://github.com/sthiele/flatzinc-parser"
+repository = "https://github.com/sthiele/flatzinc"
 license = "MIT"
 edition = "2018"
 exclude = ["/.github"]
