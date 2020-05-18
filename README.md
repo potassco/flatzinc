@@ -24,9 +24,7 @@ flatzinc = "0.2"
 In your code:
 
 ```rust
-use nom::error::{convert_error, VerboseError};
-use nom::Err;
-use flatzinc
+use flatzinc::*;
 
 match flatzinc::model::<VerboseError<&str>>(&buf) {
     Ok((_, result)) => println!("{:#?}", result),
