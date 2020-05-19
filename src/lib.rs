@@ -145,7 +145,10 @@ fn bpt_set_of_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum ParType {
-    Basic(BasicParType),
+    Bool,
+    Int,
+    Float,
+    SetOfInt,
     Array {
         ix: IndexSet,
         par_type: BasicParType,
@@ -166,12 +169,30 @@ fn test_par_type() {
     );
 }
 fn par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
-    let (input, par_type) = alt((pt_basic_par_type, array_par_type))(input)?;
+    let (input, par_type) = alt((pt_bool, pt_int, pt_float, pt_set_of_int, array_par_type))(input)?;
     Ok((input, par_type))
 }
-fn pt_basic_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
-    let (input, pt) = basic_par_type(input)?;
-    Ok((input, ParType::Basic(pt)))
+
+fn pt_bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
+    let (input, _tag) = tag("bool")(input)?;
+    Ok((input, ParType::Bool))
+}
+fn pt_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
+    let (input, _tag) = tag("int")(input)?;
+    Ok((input, ParType::Int))
+}
+fn pt_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
+    let (input, _tag) = tag("float")(input)?;
+    Ok((input, ParType::Float))
+}
+// "var" "set" "of" "int"
+fn pt_set_of_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
+    let (input, _tag) = tag("set")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, _tag) = tag("of")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, _tag) = tag("int")(input)?;
+    Ok((input, ParType::SetOfInt))
 }
 fn array_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
     let (input, _) = tag("array")(input)?;
@@ -571,32 +592,30 @@ pub fn par_decl_item<'a, E: ParseError<&'a str>>(
                 },
             ))
         }
-        ParType::Basic(par_type) => match par_type {
-            BasicParType::Bool => {
-                let (input, bool) = bool_literal(input)?;
-                let (input, _) = space0(input)?;
-                let (input, _) = char(';')(input)?;
-                Ok((input, ParDeclItem::Bool { id, bool }))
-            }
-            BasicParType::Int => {
-                let (input, int) = int_literal(input)?;
-                let (input, _) = space0(input)?;
-                let (input, _) = char(';')(input)?;
-                Ok((input, ParDeclItem::Int { id, int }))
-            }
-            BasicParType::Float => {
-                let (input, float) = float_literal(input)?;
-                let (input, _) = space0(input)?;
-                let (input, _) = char(';')(input)?;
-                Ok((input, ParDeclItem::Float { id, float }))
-            }
-            BasicParType::SetOfInt => {
-                let (input, set_literal) = set_literal(input)?;
-                let (input, _) = space0(input)?;
-                let (input, _) = char(';')(input)?;
-                Ok((input, ParDeclItem::SetOfInt { id, set_literal }))
-            }
-        },
+        ParType::Bool => {
+            let (input, bool) = bool_literal(input)?;
+            let (input, _) = space0(input)?;
+            let (input, _) = char(';')(input)?;
+            Ok((input, ParDeclItem::Bool { id, bool }))
+        }
+        ParType::Int => {
+            let (input, int) = int_literal(input)?;
+            let (input, _) = space0(input)?;
+            let (input, _) = char(';')(input)?;
+            Ok((input, ParDeclItem::Int { id, int }))
+        }
+        ParType::Float => {
+            let (input, float) = float_literal(input)?;
+            let (input, _) = space0(input)?;
+            let (input, _) = char(';')(input)?;
+            Ok((input, ParDeclItem::Float { id, float }))
+        }
+        ParType::SetOfInt => {
+            let (input, set_literal) = set_literal(input)?;
+            let (input, _) = space0(input)?;
+            let (input, _) = char(';')(input)?;
+            Ok((input, ParDeclItem::SetOfInt { id, set_literal }))
+        }
     }
 }
 #[derive(PartialEq, Clone, Debug)]
