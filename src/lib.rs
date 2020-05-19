@@ -465,7 +465,10 @@ fn e_array_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a st
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum ParExpr {
-    BasicLiteralExpr(BasicLiteralExpr),
+    Bool(bool),
+    Int(i128),
+    Float(f64),
+    Set(SetLiteral),
     ParArrayLiteral(ParArrayLiteral),
 }
 fn par_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParExpr, E> {
@@ -476,7 +479,12 @@ fn pe_basic_literal_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ParExpr, E> {
     let (input, expr) = basic_literal_expr(input)?;
-    Ok((input, ParExpr::BasicLiteralExpr(expr)))
+    match expr {
+        BasicLiteralExpr::Bool(b) => Ok((input, ParExpr::Bool(b))),
+        BasicLiteralExpr::Int(i) => Ok((input, ParExpr::Int(i))),
+        BasicLiteralExpr::Float(f) => Ok((input, ParExpr::Float(f))),
+        BasicLiteralExpr::Set(sl) => Ok((input, ParExpr::Set(sl))),
+    }
 }
 fn pe_par_array_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
@@ -487,10 +495,21 @@ fn pe_par_array_literal<'a, E: ParseError<&'a str>>(
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum ParDeclItem {
-    Basic {
-        par_type: BasicParType,
+    Bool {
         id: String,
-        expr: ParExpr,
+        bool: bool,
+    },
+    Int {
+        id: String,
+        int: i128,
+    },
+    Float {
+        id: String,
+        float: f64,
+    },
+    SetOfInt {
+        id: String,
+        set_literal: SetLiteral,
     },
     Array {
         ix: IndexSet,
@@ -537,29 +556,70 @@ pub fn par_decl_item<'a, E: ParseError<&'a str>>(
     let (input, _) = space0(input)?;
     let (input, _) = char('=')(input)?;
     let (input, _) = space0(input)?;
-    let (input, expr) = par_expr(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char(';')(input)?;
     match ptype {
-        ParType::Array { ix, par_type } => Ok((
-            input,
-            ParDeclItem::Array {
-                ix,
-                par_type,
-                id,
-                expr,
-            },
-        )),
-        ParType::Basic(par_type) => Ok((input, ParDeclItem::Basic { par_type, id, expr })),
+        ParType::Array { ix, par_type } => {
+            let (input, expr) = par_expr(input)?;
+            let (input, _) = space0(input)?;
+            let (input, _) = char(';')(input)?;
+            Ok((
+                input,
+                ParDeclItem::Array {
+                    ix,
+                    par_type,
+                    id,
+                    expr,
+                },
+            ))
+        }
+        ParType::Basic(par_type) => match par_type {
+            BasicParType::Bool => {
+                let (input, bool) = bool_literal(input)?;
+                let (input, _) = space0(input)?;
+                let (input, _) = char(';')(input)?;
+                Ok((input, ParDeclItem::Bool { id, bool }))
+            }
+            BasicParType::Int => {
+                let (input, int) = int_literal(input)?;
+                let (input, _) = space0(input)?;
+                let (input, _) = char(';')(input)?;
+                Ok((input, ParDeclItem::Int { id, int }))
+            }
+            BasicParType::Float => {
+                let (input, float) = float_literal(input)?;
+                let (input, _) = space0(input)?;
+                let (input, _) = char(';')(input)?;
+                Ok((input, ParDeclItem::Float { id, float }))
+            }
+            BasicParType::SetOfInt => {
+                let (input, set_literal) = set_literal(input)?;
+                let (input, _) = space0(input)?;
+                let (input, _) = char(';')(input)?;
+                Ok((input, ParDeclItem::SetOfInt { id, set_literal }))
+            }
+        },
     }
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarDeclItem {
-    Basic {
-        var_type: BasicVarType,
+    Bool {
         id: String,
         annos: Annotations,
-        expr: Option<BasicExpr>,
+        expr: Option<bool>,
+    },
+    Int {
+        id: String,
+        annos: Annotations,
+        expr: Option<i128>,
+    },
+    Float {
+        id: String,
+        annos: Annotations,
+        expr: Option<f64>,
+    },
+    SetOfInt {
+        id: String,
+        annos: Annotations,
+        expr: Option<SetLiteral>,
     },
     Array {
         ix: IndexSet,
@@ -636,26 +696,89 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
     let (input, assign) = opt(char('='))(input)?;
     if assign.is_some() {
         let (input, _) = space0(input)?;
-        let (input, expr) = opt(basic_expr)(input)?;
-        Ok((
-            input,
-            VarDeclItem::Basic {
-                var_type,
-                id,
-                annos,
-                expr,
-            },
-        ))
+        match var_type {
+            BasicVarType::Bool => {
+                let (input, bool) = bool_literal(input)?;
+                Ok((
+                    input,
+                    VarDeclItem::Bool {
+                        id,
+                        annos,
+                        expr: Some(bool),
+                    },
+                ))
+            }
+            BasicVarType::Int => {
+                let (input, int) = int_literal(input)?;
+                Ok((
+                    input,
+                    VarDeclItem::Int {
+                        id,
+                        annos,
+                        expr: Some(int),
+                    },
+                ))
+            }
+            BasicVarType::Float => {
+                let (input, float) = float_literal(input)?;
+                Ok((
+                    input,
+                    VarDeclItem::Float {
+                        id,
+                        annos,
+                        expr: Some(float),
+                    },
+                ))
+            }
+            BasicVarType::SetOfInt => {
+                let (input, sl) = set_literal(input)?;
+                Ok((
+                    input,
+                    VarDeclItem::SetOfInt {
+                        id,
+                        annos,
+                        expr: Some(sl),
+                    },
+                ))
+            }
+            BasicVarType::Domain(d) => panic!("TODO check Domain type!"),
+        }
     } else {
-        Ok((
-            input,
-            VarDeclItem::Basic {
-                var_type,
-                id,
-                annos,
-                expr: None,
-            },
-        ))
+        match var_type {
+            BasicVarType::Bool => Ok((
+                input,
+                VarDeclItem::Bool {
+                    id,
+                    annos,
+                    expr: None,
+                },
+            )),
+            BasicVarType::Int => Ok((
+                input,
+                VarDeclItem::Int {
+                    id,
+                    annos,
+                    expr: None,
+                },
+            )),
+            BasicVarType::Float => Ok((
+                input,
+                VarDeclItem::Float {
+                    id,
+                    annos,
+                    expr: None,
+                },
+            )),
+            BasicVarType::SetOfInt => Ok((
+                input,
+                VarDeclItem::SetOfInt {
+                    id,
+                    annos,
+                    expr: None,
+                },
+            )),
+            BasicVarType::Domain(d) => panic!("TODO check Domain type!"),
+        }
     }
 }
 fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
