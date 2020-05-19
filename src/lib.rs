@@ -594,6 +594,19 @@ fn test_var_decl_item() {
             }
         ))
     );
+    assert_eq!(
+        var_decl_item::<VerboseError<&str>>("array[1..5] of var 0..3: w;"),
+        Ok((
+            "",
+            VarDeclItem::Array {
+                ix: IndexSet(5),
+                var_type: BasicVarType::Domain(Domain::IntRange(0, 3)),
+                id: "w".to_string(),
+                annos: vec![],
+                array_literal: vec![]
+            }
+        ))
+    );
 }
 fn var_decl_item_ln<'a, E: ParseError<&'a str>>(
     input: &'a str,
@@ -606,10 +619,10 @@ fn var_decl_item_ln<'a, E: ParseError<&'a str>>(
 pub fn var_decl_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
-    let (input, vdi) = alt((vdi_basic_var, vdi_array))(input)?;
+    let (input, item) = alt((vdi_basic_var, vdi_array))(input)?;
     let (input, _tag) = space0(input)?;
     let (input, _) = char(';')(input)?;
-    Ok((input, vdi))
+    Ok((input, item))
 }
 fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
     let (input, var_type) = basic_var_type(input)?;
@@ -620,24 +633,36 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
     let (input, _) = space0(input)?;
     let (input, annos) = annotations(input)?;
     let (input, _) = space0(input)?;
-    let (input, _) = opt(char('='))(input)?;
-    let (input, _) = space0(input)?;
-    let (input, expr) = opt(basic_expr)(input)?;
-    Ok((
-        input,
-        VarDeclItem::Basic {
-            var_type,
-            id,
-            annos,
-            expr,
-        },
-    ))
+    let (input, assign) = opt(char('='))(input)?;
+    if assign.is_some() {
+        let (input, _) = space0(input)?;
+        let (input, expr) = opt(basic_expr)(input)?;
+        Ok((
+            input,
+            VarDeclItem::Basic {
+                var_type,
+                id,
+                annos,
+                expr,
+            },
+        ))
+    } else {
+        Ok((
+            input,
+            VarDeclItem::Basic {
+                var_type,
+                id,
+                annos,
+                expr: None,
+            },
+        ))
+    }
 }
 fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
     // let (input, avt) = array_var_type(input)?;
 
     let (input, _tag) = tag("array")(input)?;
-    let (input, _) = space1(input)?;
+    let (input, _) = space0(input)?;
     let (input, _) = char('[')(input)?;
     let (input, _) = space0(input)?;
     let (input, int) = index_set(input)?;
@@ -655,19 +680,32 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
     let (input, _) = space0(input)?;
     let (input, annos) = annotations(input)?;
     let (input, _) = space0(input)?;
-    let (input, _) = char('=')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, array_literal) = array_literal(input)?;
-    Ok((
-        input,
-        VarDeclItem::Array {
-            ix: IndexSet(int),
-            var_type,
-            id,
-            annos,
-            array_literal,
-        },
-    ))
+    let (input, assign) = opt(char('='))(input)?;
+    if assign.is_some() {
+        let (input, _) = space0(input)?;
+        let (input, array_literal) = array_literal(input)?;
+        Ok((
+            input,
+            VarDeclItem::Array {
+                ix: IndexSet(int),
+                var_type,
+                id,
+                annos,
+                array_literal,
+            },
+        ))
+    } else {
+        Ok((
+            input,
+            VarDeclItem::Array {
+                ix: IndexSet(int),
+                var_type,
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        ))
+    }
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct ConstraintItem {
