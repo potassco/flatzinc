@@ -863,12 +863,13 @@ fn test_var_decl_item() {
         var_decl_item::<VerboseError<&str>>("array[1..5] of var 0..3: w;"),
         Ok((
             "",
-            VarDeclItem::ArrayOfSet {
-                ix: IndexSet(5),
-                // var_type: BasicVarType::Domain(Domain::IntRange(0, 3)),
+            VarDeclItem::ArrayOfIntInRange {
                 id: "w".to_string(),
+                ix: IndexSet(5),
+                lb: 0,
+                ub: 3,
+                array_literal: vec![],
                 annos: vec![],
-                array_literal: vec![]
             }
         ))
     );
