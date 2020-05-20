@@ -222,8 +222,8 @@ pub enum BasicVarType {
     IntInRange(i128, i128),
     IntInSet(Vec<i128>), // possibly empty
     FloatInRange(f64, f64),
-    SubsetOfIntInSet(Vec<i128>),
-    SubsetOfIntInRange(i128, i128),
+    SetOfIntInSet(Vec<i128>),
+    SetOfIntInRange(i128, i128),
 
     SetOfInt, // added var_set_of_int from basic_pred_par_type TODO: move back
 }
@@ -272,13 +272,13 @@ fn bvt_subset_of_int_in_range<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicVarType, E> {
     let (input, (lb, ub)) = subset_of_int_in_range(input)?;
-    Ok((input, BasicVarType::SubsetOfIntInRange(lb, ub)))
+    Ok((input, BasicVarType::SetOfIntInRange(lb, ub)))
 }
 fn bvt_subset_of_int_in_set<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicVarType, E> {
     let (input, set) = subset_of_int_in_set(input)?;
-    Ok((input, BasicVarType::SubsetOfIntInSet(set)))
+    Ok((input, BasicVarType::SetOfIntInSet(set)))
 }
 fn int_in_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, (i128, i128), E> {
     let (input, lb) = int_literal(input)?;
@@ -346,8 +346,8 @@ pub enum BasicPredParType {
     IntInRange(i128, i128),
     IntInSet(Vec<i128>), // possibly empty
     FloatInRange(f64, f64),
-    SubsetOfIntInSet(Vec<i128>),
-    SubsetOfIntInRange(i128, i128),
+    SetOfIntInSet(Vec<i128>),
+    SetOfIntInRange(i128, i128),
 }
 fn basic_pred_par_type<'a, E: ParseError<&'a str>>(
     input: &'a str,
@@ -397,13 +397,13 @@ fn bppt_subset_of_int_in_range<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicPredParType, E> {
     let (input, (lb, ub)) = subset_of_int_in_range(input)?;
-    Ok((input, BasicPredParType::SubsetOfIntInRange(lb, ub)))
+    Ok((input, BasicPredParType::SetOfIntInRange(lb, ub)))
 }
 fn bppt_subset_of_int_in_set<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicPredParType, E> {
     let (input, set) = subset_of_int_in_set(input)?;
-    Ok((input, BasicPredParType::SubsetOfIntInSet(set)))
+    Ok((input, BasicPredParType::SetOfIntInSet(set)))
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum PredParType {
@@ -1101,7 +1101,7 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 annos,
             },
         )),
-        (BasicVarType::SubsetOfIntInRange(lb, ub), Some(_)) => {
+        (BasicVarType::SetOfIntInRange(lb, ub), Some(_)) => {
             let (input, sl) = set_literal(input)?;
             Ok((
                 input,
@@ -1114,7 +1114,7 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::SubsetOfIntInRange(lb, ub), None) => Ok((
+        (BasicVarType::SetOfIntInRange(lb, ub), None) => Ok((
             input,
             VarDeclItem::SetOfIntInRange {
                 id,
@@ -1124,7 +1124,7 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 annos,
             },
         )),
-        (BasicVarType::SubsetOfIntInSet(set), Some(_)) => {
+        (BasicVarType::SetOfIntInSet(set), Some(_)) => {
             let (input, sl) = set_literal(input)?;
             Ok((
                 input,
@@ -1136,7 +1136,7 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::SubsetOfIntInSet(set), None) => Ok((
+        (BasicVarType::SetOfIntInSet(set), None) => Ok((
             input,
             VarDeclItem::SetOfIntInSet {
                 id,
@@ -1330,7 +1330,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 array_literal: vec![],
             },
         )),
-        (BasicVarType::SubsetOfIntInRange(lb, ub), Some(_)) => {
+        (BasicVarType::SetOfIntInRange(lb, ub), Some(_)) => {
             let (input, array_literal) = array_of_set_expr(input)?;
             Ok((
                 input,
@@ -1344,7 +1344,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::SubsetOfIntInRange(lb, ub), None) => Ok((
+        (BasicVarType::SetOfIntInRange(lb, ub), None) => Ok((
             input,
             VarDeclItem::ArrayOfSetOfIntInRange {
                 lb,
@@ -1355,7 +1355,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 array_literal: vec![],
             },
         )),
-        (BasicVarType::SubsetOfIntInSet(set), Some(_)) => {
+        (BasicVarType::SetOfIntInSet(set), Some(_)) => {
             let (input, array_literal) = array_of_set_expr(input)?;
             Ok((
                 input,
@@ -1368,7 +1368,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::SubsetOfIntInSet(set), None) => Ok((
+        (BasicVarType::SetOfIntInSet(set), None) => Ok((
             input,
             VarDeclItem::ArrayOfSetOfIntInSet {
                 set,
