@@ -532,25 +532,41 @@ fn ble_set_literal<'a, E: ParseError<&'a str>>(
     Ok((input, BasicLiteralExpr::Set(sl)))
 }
 
-#[derive(PartialEq, Clone, Debug)]
-pub enum BasicExpr {
-    BasicLiteralExpr(BasicLiteralExpr),
-    VarParIdentifier(String),
-}
+// #[derive(PartialEq, Clone, Debug)]
+// pub enum BasicExpr {
+//     BasicLiteralExpr(BasicLiteralExpr),
+//     VarParIdentifier(String),
+// }
+// fn basic_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicExpr, E> {
+//     let (input, expr) = alt((be_basic_literal_expr, be_var_par_identifier))(input)?;
+//     Ok((input, expr))
+// }
+// fn be_basic_literal_expr<'a, E: ParseError<&'a str>>(
+//     input: &'a str,
+// ) -> IResult<&'a str, BasicExpr, E> {
+//     let (input, expr) = basic_literal_expr(input)?;
+//     Ok((input, BasicExpr::BasicLiteralExpr(expr)))
+// }
+// fn be_var_par_identifier<'a, E: ParseError<&'a str>>(
+//     input: &'a str,
+// ) -> IResult<&'a str, BasicExpr, E> {
+//     let (input, id) = var_par_identifier(input)?;
+//     Ok((input, BasicExpr::VarParIdentifier(id)))
+// }
 #[derive(PartialEq, Clone, Debug)]
 pub enum BoolExpr {
     Bool(bool),
     VarParIdentifier(String),
 }
 fn bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BoolExpr, E> {
-    let (input, expr) = alt((be2_bool_literal, be2_var_par_identifier))(input)?;
+    let (input, expr) = alt((be_bool_literal, be_var_par_identifier))(input)?;
     Ok((input, expr))
 }
-fn be2_bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BoolExpr, E> {
+fn be_bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BoolExpr, E> {
     let (input, expr) = bool_literal(input)?;
     Ok((input, BoolExpr::Bool(expr)))
 }
-fn be2_var_par_identifier<'a, E: ParseError<&'a str>>(
+fn be_var_par_identifier<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BoolExpr, E> {
     let (input, id) = var_par_identifier(input)?;
@@ -613,23 +629,6 @@ fn se_var_par_identifier<'a, E: ParseError<&'a str>>(
     let (input, id) = var_par_identifier(input)?;
     Ok((input, SetExpr::VarParIdentifier(id)))
 }
-fn basic_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicExpr, E> {
-    let (input, expr) = alt((be_basic_literal_expr, be_var_par_identifier))(input)?;
-    Ok((input, expr))
-}
-fn be_basic_literal_expr<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, BasicExpr, E> {
-    let (input, expr) = basic_literal_expr(input)?;
-    Ok((input, BasicExpr::BasicLiteralExpr(expr)))
-}
-fn be_var_par_identifier<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, BasicExpr, E> {
-    let (input, id) = var_par_identifier(input)?;
-    Ok((input, BasicExpr::VarParIdentifier(id)))
-}
-
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expr {
     // BasicExpr(BasicExpr),
@@ -1494,7 +1493,13 @@ pub fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
     let (input, _) = space1(input)?;
     let (input, annotations) = annotations(input)?;
     let (input, _) = space0(input)?;
-    let (input, goal) = alt((satisfy, maximize, minimize))(input)?;
+    let (input, goal) = alt((
+        satisfy,
+        optimize_bool,
+        optimize_int,
+        optimize_float,
+        optimize_set,
+    ))(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(';')(input)?;
     Ok((input, SolveItem { annotations, goal }))
@@ -1502,33 +1507,68 @@ pub fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 #[derive(PartialEq, Clone, Debug)]
 pub enum Goal {
     Satisfy,
-    Minimize(BasicExpr),
-    // MinimizeBool(BoolExpr),
-    // MinimizeInt(IntExpr),
-    // MinimizeFloat(FloatExpr),
-    // MinimizeSet(SetExpr),
-    Maximize(BasicExpr),
+    // Minimize(BasicExpr),
+    OptimizeBool(OptimizationType, BoolExpr),
+    OptimizeInt(OptimizationType, IntExpr),
+    OptimizeFloat(OptimizationType, FloatExpr),
+    OptimizeSet(OptimizationType, SetExpr),
+    // Maximize(BasicExpr),
     // MaximizeBool(BoolExpr),
     // MaximizeInt(IntExpr),
     // MaximizeFloat(FloatExpr),
     // MaximizeSet(SetExpr),
 }
+#[derive(PartialEq, Clone, Debug)]
+pub enum OptimizationType {
+    Minimize,
+    Maximize,
+}
 fn satisfy<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
     let (input, _) = tag("satisfy")(input)?;
     Ok((input, Goal::Satisfy))
 }
-fn minimize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+fn opt_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
+    alt((minimize, maximize))(input)
+}
+fn minimize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
     let (input, _) = tag("minimize")(input)?;
-    let (input, _) = space1(input)?;
-    let (input, be) = basic_expr(input)?;
-    Ok((input, Goal::Minimize(be)))
+    Ok((input, OptimizationType::Minimize))
 }
-fn maximize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+fn maximize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
     let (input, _) = tag("maximize")(input)?;
-    let (input, _) = space1(input)?;
-    let (input, be) = basic_expr(input)?;
-    Ok((input, Goal::Maximize(be)))
+    Ok((input, OptimizationType::Maximize))
 }
+fn optimize_bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+    let (input, opt_type) = opt_type(input)?;
+    let (input, _) = space1(input)?;
+    let (input, be) = bool_expr(input)?;
+    Ok((input, Goal::OptimizeBool(opt_type, be)))
+}
+fn optimize_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+    let (input, opt_type) = opt_type(input)?;
+    let (input, _) = space1(input)?;
+    let (input, be) = int_expr(input)?;
+    Ok((input, Goal::OptimizeInt(opt_type, be)))
+}
+fn optimize_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+    let (input, opt_type) = opt_type(input)?;
+    let (input, _) = space1(input)?;
+    let (input, be) = float_expr(input)?;
+    Ok((input, Goal::OptimizeFloat(opt_type, be)))
+}
+fn optimize_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+    let (input, opt_type) = opt_type(input)?;
+    let (input, _) = space1(input)?;
+    let (input, be) = set_expr(input)?;
+    Ok((input, Goal::OptimizeSet(opt_type, be)))
+}
+// fn maximize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
+//     let (input, _) = tag("maximize")(input)?;
+//     let (input, _) = space1(input)?;
+//     let (input, be) = basic_expr(input)?;
+//     Ok((input, Goal::Maximize(be)))
+// }
+
 type Annotations = Vec<Annotation>;
 fn annotations<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotations, E> {
     let (input, annos) = many0(annotation1)(input)?;
