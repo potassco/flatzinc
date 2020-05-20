@@ -651,10 +651,10 @@ fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E>
         e_float_expr,
         e_set_expr,
         // e_array_literal,
-        e_array_of_bool_literal,
-        e_array_of_int_literal,
-        e_array_of_float_literal,
-        e_array_of_set_literal,
+        e_array_of_bool_expr,
+        e_array_of_int_expr,
+        e_array_of_float_expr,
+        e_array_of_set_expr,
     ))(input)?;
     Ok((input, expr))
 }
@@ -682,24 +682,20 @@ fn e_set_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Ex
 //     let (input, array_literal) = array_literal(input)?;
 //     Ok((input, Expr::ArrayLiteral(array_literal)))
 // }
-fn e_array_of_bool_literal<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, Expr, E> {
-    let (input, array_literal) = array_of_bool_literal(input)?;
+fn e_array_of_bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, array_literal) = array_of_bool_expr(input)?;
     Ok((input, Expr::ArrayOfBool(array_literal)))
 }
-fn e_array_of_int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, array_literal) = array_of_int_literal(input)?;
+fn e_array_of_int_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, array_literal) = array_of_int_expr(input)?;
     Ok((input, Expr::ArrayOfInt(array_literal)))
 }
-fn e_array_of_float_literal<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, Expr, E> {
-    let (input, array_literal) = array_of_float_literal(input)?;
+fn e_array_of_float_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, array_literal) = array_of_float_expr(input)?;
     Ok((input, Expr::ArrayOfFloat(array_literal)))
 }
-fn e_array_of_set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, array_literal) = array_of_set_literal(input)?;
+fn e_array_of_set_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, array_literal) = array_of_set_expr(input)?;
     Ok((input, Expr::ArrayOfSet(array_literal)))
 }
 #[derive(PartialEq, Clone, Debug)]
@@ -1245,7 +1241,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
     let (input, _) = space0(input)?;
     match (var_type, assign) {
         (BasicVarType::Bool, Some(_)) => {
-            let (input, array_literal) = array_of_bool_literal(input)?;
+            let (input, array_literal) = array_of_bool_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfBool {
@@ -1266,7 +1262,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
         (BasicVarType::Int, Some(_)) => {
-            let (input, array_literal) = array_of_int_literal(input)?;
+            let (input, array_literal) = array_of_int_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfInt {
@@ -1287,7 +1283,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
         (BasicVarType::Float, Some(_)) => {
-            let (input, array_literal) = array_of_float_literal(input)?;
+            let (input, array_literal) = array_of_float_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfFloat {
@@ -1308,7 +1304,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
         (BasicVarType::SetOfInt, Some(_)) => {
-            let (input, array_literal) = array_of_set_literal(input)?;
+            let (input, array_literal) = array_of_set_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfSet {
@@ -1329,7 +1325,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
         (BasicVarType::IntInRange(lb, ub), Some(_)) => {
-            let (input, array_literal) = array_of_int_literal(input)?;
+            let (input, array_literal) = array_of_int_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfIntInRange {
@@ -1354,7 +1350,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
         (BasicVarType::IntInSet(set), Some(_)) => {
-            let (input, array_literal) = array_of_int_literal(input)?;
+            let (input, array_literal) = array_of_int_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfIntInSet {
@@ -1377,7 +1373,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
         (BasicVarType::FloatInRange(lb, ub), Some(_)) => {
-            let (input, array_literal) = array_of_float_literal(input)?;
+            let (input, array_literal) = array_of_float_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfFloatInRange {
@@ -1402,7 +1398,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
         (BasicVarType::SubsetOfIntInRange(lb, ub), Some(_)) => {
-            let (input, array_literal) = array_of_set_literal(input)?;
+            let (input, array_literal) = array_of_set_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfSetOfIntInRange {
@@ -1427,7 +1423,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
         (BasicVarType::SubsetOfIntInSet(set), Some(_)) => {
-            let (input, array_literal) = array_of_set_literal(input)?;
+            let (input, array_literal) = array_of_set_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::ArrayOfSetOfIntInSet {
@@ -1512,6 +1508,10 @@ pub enum Goal {
     // MinimizeFloat(FloatExpr),
     // MinimizeSet(SetExpr),
     Maximize(BasicExpr),
+    // MaximizeBool(BoolExpr),
+    // MaximizeInt(IntExpr),
+    // MaximizeFloat(FloatExpr),
+    // MaximizeSet(SetExpr),
 }
 fn satisfy<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
     let (input, _) = tag("satisfy")(input)?;
@@ -1691,7 +1691,7 @@ fn sl_set_of_floats<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a s
 //     let (input, _) = char(']')(input)?;
 //     Ok((input, al))
 // }
-fn array_of_bool_literal<'a, E: ParseError<&'a str>>(
+fn array_of_bool_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<BoolExpr>, E> {
     let (input, _) = char('[')(input)?;
@@ -1701,7 +1701,7 @@ fn array_of_bool_literal<'a, E: ParseError<&'a str>>(
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
-fn array_of_int_literal<'a, E: ParseError<&'a str>>(
+fn array_of_int_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<IntExpr>, E> {
     let (input, _) = char('[')(input)?;
@@ -1711,7 +1711,7 @@ fn array_of_int_literal<'a, E: ParseError<&'a str>>(
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
-fn array_of_float_literal<'a, E: ParseError<&'a str>>(
+fn array_of_float_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<FloatExpr>, E> {
     let (input, _) = char('[')(input)?;
@@ -1721,7 +1721,7 @@ fn array_of_float_literal<'a, E: ParseError<&'a str>>(
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
-fn array_of_set_literal<'a, E: ParseError<&'a str>>(
+fn array_of_set_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<SetExpr>, E> {
     let (input, _) = char('[')(input)?;
