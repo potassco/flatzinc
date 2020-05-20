@@ -219,7 +219,6 @@ pub enum BasicVarType {
     Bool,
     Int,
     Float,
-    // Domain(Domain),
     IntInRange(i128, i128),
     IntInSet(Vec<i128>), // possibly empty
     FloatInRange(f64, f64),
@@ -253,10 +252,6 @@ fn bvt_basic_par_type<'a, E: ParseError<&'a str>>(
         BasicParType::SetOfInt => Ok((input, BasicVarType::SetOfInt)),
     }
 }
-// fn bvt_domain<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
-//     let (input, domain) = domain(input)?;
-//     Ok((input, BasicVarType::Domain(domain)))
-// }
 fn bvt_int_in_range<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicVarType, E> {
@@ -285,25 +280,6 @@ fn bvt_subset_of_int_in_set<'a, E: ParseError<&'a str>>(
     let (input, set) = subset_of_int_in_set(input)?;
     Ok((input, BasicVarType::SubsetOfIntInSet(set)))
 }
-// introduced by me used in basic-var-type and basic-pred-param-type
-// #[derive(PartialEq, Clone, Debug)]
-// pub enum Domain {
-//     IntInRange(i128, i128),
-//     IntInSet(Vec<i128>), // possibly empty
-//     FloatInRange(f64, f64),
-//     SubsetOfIntInSet(Vec<i128>),
-//     SubsetOfIntInRange(i128, i128),
-// }
-// fn domain<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Domain, E> {
-//     let (input, domain) = alt((
-//         int_in_range,
-//         int_in_set,
-//         float_in_range,
-//         subset_of_int_in_int_range,
-//         subset_of_int_in_set_of_int,
-//     ))(input)?;
-//     Ok((input, domain))
-// }
 fn int_in_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, (i128, i128), E> {
     let (input, lb) = int_literal(input)?;
     let (input, _) = space0(input)?;
@@ -367,7 +343,6 @@ fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i12
 pub enum BasicPredParType {
     BasicParType(BasicParType),
     BasicVarType(BasicVarType),
-    // Domain(Domain),
     IntInRange(i128, i128),
     IntInSet(Vec<i128>), // possibly empty
     FloatInRange(f64, f64),
@@ -380,7 +355,6 @@ fn basic_pred_par_type<'a, E: ParseError<&'a str>>(
     let (input, bppt) = alt((
         bppt_basic_par_type,
         bppt_basic_var_type,
-        // bppt_domain,
         bppt_int_in_range,
         bppt_int_in_set,
         bppt_float_in_range,
@@ -401,12 +375,6 @@ fn bppt_basic_var_type<'a, E: ParseError<&'a str>>(
     let (input, bvt) = basic_var_type(input)?;
     Ok((input, BasicPredParType::BasicVarType(bvt)))
 }
-// fn bppt_domain<'a, E: ParseError<&'a str>>(
-//     input: &'a str,
-// ) -> IResult<&'a str, BasicPredParType, E> {
-//     let (input, domain) = domain(input)?;
-//     Ok((input, BasicPredParType::Domain(domain)))
-// }
 fn bppt_int_in_range<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BasicPredParType, E> {
@@ -531,28 +499,6 @@ fn ble_set_literal<'a, E: ParseError<&'a str>>(
     let (input, sl) = set_literal(input)?;
     Ok((input, BasicLiteralExpr::Set(sl)))
 }
-
-// #[derive(PartialEq, Clone, Debug)]
-// pub enum BasicExpr {
-//     BasicLiteralExpr(BasicLiteralExpr),
-//     VarParIdentifier(String),
-// }
-// fn basic_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicExpr, E> {
-//     let (input, expr) = alt((be_basic_literal_expr, be_var_par_identifier))(input)?;
-//     Ok((input, expr))
-// }
-// fn be_basic_literal_expr<'a, E: ParseError<&'a str>>(
-//     input: &'a str,
-// ) -> IResult<&'a str, BasicExpr, E> {
-//     let (input, expr) = basic_literal_expr(input)?;
-//     Ok((input, BasicExpr::BasicLiteralExpr(expr)))
-// }
-// fn be_var_par_identifier<'a, E: ParseError<&'a str>>(
-//     input: &'a str,
-// ) -> IResult<&'a str, BasicExpr, E> {
-//     let (input, id) = var_par_identifier(input)?;
-//     Ok((input, BasicExpr::VarParIdentifier(id)))
-// }
 #[derive(PartialEq, Clone, Debug)]
 pub enum BoolExpr {
     Bool(bool),
@@ -631,12 +577,10 @@ fn se_var_par_identifier<'a, E: ParseError<&'a str>>(
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expr {
-    // BasicExpr(BasicExpr),
     BoolExpr(BoolExpr),
     IntExpr(IntExpr),
     FloatExpr(FloatExpr),
     SetExpr(SetExpr),
-    // ArrayLiteral(ArrayLiteral),
     ArrayOfBool(Vec<BoolExpr>),
     ArrayOfInt(Vec<IntExpr>),
     ArrayOfFloat(Vec<FloatExpr>),
@@ -644,12 +588,10 @@ pub enum Expr {
 }
 fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
     let (input, expr) = alt((
-        // e_basic_expr,
         e_bool_expr,
         e_int_expr,
         e_float_expr,
         e_set_expr,
-        // e_array_literal,
         e_array_of_bool_expr,
         e_array_of_int_expr,
         e_array_of_float_expr,
@@ -657,10 +599,6 @@ fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E>
     ))(input)?;
     Ok((input, expr))
 }
-// fn e_basic_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-//     let (input, basic_expr) = basic_expr(input)?;
-//     Ok((input, Expr::BasicExpr(basic_expr)))
-// }
 fn e_bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
     let (input, basic_expr) = bool_expr(input)?;
     Ok((input, Expr::BoolExpr(basic_expr)))
@@ -677,10 +615,6 @@ fn e_set_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Ex
     let (input, basic_expr) = set_expr(input)?;
     Ok((input, Expr::SetExpr(basic_expr)))
 }
-// fn e_array_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-//     let (input, array_literal) = array_literal(input)?;
-//     Ok((input, Expr::ArrayLiteral(array_literal)))
-// }
 fn e_array_of_bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
     let (input, array_literal) = array_of_bool_expr(input)?;
     Ok((input, Expr::ArrayOfBool(array_literal)))
@@ -842,7 +776,6 @@ fn test_var_decl_item() {
             "",
             VarDeclItem::ArrayOfSet {
                 ix: IndexSet(1),
-                // var_type: BasicVarType::SetOfInt,
                 id: "sets".to_string(),
                 annos: vec![Annotation::Id {
                     id: "output_array".to_string(),
@@ -924,13 +857,6 @@ pub enum VarDeclItem {
         expr: Option<SetLiteral>,
         annos: Annotations,
     },
-    // Array {
-    //     ix: IndexSet,
-    //     var_type: BasicVarType,
-    //     id: String,
-    //     annos: Annotations,
-    //     array_literal: ArrayLiteral,
-    // },
     ArrayOfBool {
         ix: IndexSet,
         id: String,
@@ -1507,16 +1433,10 @@ pub fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 #[derive(PartialEq, Clone, Debug)]
 pub enum Goal {
     Satisfy,
-    // Minimize(BasicExpr),
     OptimizeBool(OptimizationType, BoolExpr),
     OptimizeInt(OptimizationType, IntExpr),
     OptimizeFloat(OptimizationType, FloatExpr),
     OptimizeSet(OptimizationType, SetExpr),
-    // Maximize(BasicExpr),
-    // MaximizeBool(BoolExpr),
-    // MaximizeInt(IntExpr),
-    // MaximizeFloat(FloatExpr),
-    // MaximizeSet(SetExpr),
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum OptimizationType {
@@ -1562,13 +1482,6 @@ fn optimize_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, 
     let (input, be) = set_expr(input)?;
     Ok((input, Goal::OptimizeSet(opt_type, be)))
 }
-// fn maximize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
-//     let (input, _) = tag("maximize")(input)?;
-//     let (input, _) = space1(input)?;
-//     let (input, be) = basic_expr(input)?;
-//     Ok((input, Goal::Maximize(be)))
-// }
-
 type Annotations = Vec<Annotation>;
 fn annotations<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotations, E> {
     let (input, annos) = many0(annotation1)(input)?;
@@ -1612,8 +1525,6 @@ fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
         ))
     }
 }
-// <ann_expr>  := <expr> | <annotation>
-// better
 // <ann_expr> ::= <expr>
 //              | <string_literal>
 //              | "[" <annotation> "," ... "]"
@@ -1722,15 +1633,6 @@ fn sl_set_of_floats<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a s
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetFloats(v)))
 }
-// type ArrayLiteral = Vec<BasicExpr>;
-// fn array_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ArrayLiteral, E> {
-//     let (input, _) = char('[')(input)?;
-//     let (input, _) = space0(input)?;
-//     let (input, al) = separated_list(char(','), basic_expr)(input)?;
-//     let (input, _) = space0(input)?;
-//     let (input, _) = char(']')(input)?;
-//     Ok((input, al))
-// }
 fn array_of_bool_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<BoolExpr>, E> {
