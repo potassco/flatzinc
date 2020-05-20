@@ -575,6 +575,14 @@ fn se_var_par_identifier<'a, E: ParseError<&'a str>>(
     let (input, id) = var_par_identifier(input)?;
     Ok((input, SetExpr::VarParIdentifier(id)))
 }
+#[test]
+fn test_expr() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        expr::<VerboseError<&str>>("1..2"),
+        Ok(("", Expr::SetExpr(SetExpr::Set(SetLiteral::IntRange(1, 2)))))
+    );
+}
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expr {
     BoolExpr(BoolExpr),
@@ -589,9 +597,9 @@ pub enum Expr {
 fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
     let (input, expr) = alt((
         e_bool_expr,
+        e_set_expr,
         e_int_expr,
         e_float_expr,
-        e_set_expr,
         e_array_of_bool_expr,
         e_array_of_int_expr,
         e_array_of_float_expr,
@@ -1371,6 +1379,32 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
             },
         )),
     }
+}
+#[test]
+fn test_constraint_item() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        constraint_item::<VerboseError<&str>>(
+            "constraint set_in_reif(X_26,1..2,X_52):: defines_var(X_52);"
+        ),
+        Ok((
+            "",
+            ConstraintItem {
+                id: "set_in_reif".to_string(),
+                exprs: vec![
+                    Expr::BoolExpr(BoolExpr::VarParIdentifier("X_26".to_string())),
+                    Expr::SetExpr(SetExpr::Set(SetLiteral::IntRange(1, 2))),
+                    Expr::BoolExpr(BoolExpr::VarParIdentifier("X_52".to_string()))
+                ],
+                annos: vec![Annotation::Id {
+                    id: "defines_var".to_string(),
+                    expressions: vec![AnnExpr::Expr(Expr::BoolExpr(BoolExpr::VarParIdentifier(
+                        "X_52".to_string()
+                    )))]
+                }]
+            }
+        ))
+    );
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct ConstraintItem {
