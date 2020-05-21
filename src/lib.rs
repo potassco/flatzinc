@@ -600,8 +600,8 @@ fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E>
     let (input, expr) = alt((
         e_bool_expr,
         e_set_expr,
-        e_int_expr,
         e_float_expr,
+        e_int_expr,
         e_array_of_bool_expr,
         e_array_of_int_expr,
         e_array_of_float_expr,
@@ -1450,7 +1450,7 @@ fn test_constraint_item() {
                 exprs: vec![
                     Expr::BoolExpr(BoolExpr::VarParIdentifier("INT01".to_string())),
                     Expr::BoolExpr(BoolExpr::VarParIdentifier("w".to_string())),
-                    Expr::IntExpr(IntExpr::Int(2))
+                    Expr::FloatExpr(FloatExpr::Float(2.0))
                 ],
                 annos: vec![]
             }
@@ -1472,7 +1472,32 @@ fn test_constraint_item_2() {
                         IntExpr::VarParIdentifier("INT01".to_string()),
                         IntExpr::VarParIdentifier("p".to_string())
                     ]),
-                    Expr::IntExpr(IntExpr::Int(-3))
+                    Expr::FloatExpr(FloatExpr::Float(-3.0))
+                ],
+                annos: vec![]
+            }
+        ))
+    );
+}
+#[test]
+fn test_constraint_item_3() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        constraint_item::<VerboseError<&str>>(
+            "constraint float_lin_eq(X_139,[X_27,X_28,X_29],1.0);"
+        ),
+        Ok((
+            "",
+            ConstraintItem {
+                id: "float_lin_eq".to_string(),
+                exprs: vec![
+                    Expr::BoolExpr(BoolExpr::VarParIdentifier("X_139".to_string())),
+                    Expr::ArrayOfBool(vec![
+                        BoolExpr::VarParIdentifier("X_27".to_string()),
+                        BoolExpr::VarParIdentifier("X_28".to_string()),
+                        BoolExpr::VarParIdentifier("X_29".to_string()),
+                    ]),
+                    Expr::FloatExpr(FloatExpr::Float(1.0))
                 ],
                 annos: vec![]
             }
