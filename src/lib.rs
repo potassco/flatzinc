@@ -809,60 +809,73 @@ fn test_var_decl_item() {
             }
         ))
     );
+    assert_eq!(
+        var_decl_item::<VerboseError<&str>>("var 1..101: objective = X_2586;"),
+        Ok((
+            "",
+            VarDeclItem::IntInRange {
+                id: "objective".to_string(),
+                lb: 1,
+                ub: 101,
+                int: Some(IntExpr::VarParIdentifier("X_2586".to_string())),
+                annos: vec![],
+            }
+        ))
+    );
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarDeclItem {
     Bool {
         id: String,
-        expr: Option<bool>,
+        expr: Option<BoolExpr>,
         annos: Annotations,
     },
     Int {
         id: String,
-        expr: Option<i128>,
+        expr: Option<IntExpr>,
         annos: Annotations,
     },
     Float {
         id: String,
-        expr: Option<f64>,
+        expr: Option<FloatExpr>,
         annos: Annotations,
     },
     IntInRange {
         id: String,
         lb: i128,
         ub: i128,
-        int: Option<i128>,
+        int: Option<IntExpr>,
         annos: Annotations,
     },
     IntInSet {
         id: String,
         set: Vec<i128>, // possibly empty
-        int: Option<i128>,
+        int: Option<IntExpr>,
         annos: Annotations,
     },
     FloatInRange {
         id: String,
         lb: f64,
         ub: f64,
-        float: Option<f64>,
+        float: Option<FloatExpr>,
         annos: Annotations,
     },
     SetOfInt {
         id: String,
-        expr: Option<SetLiteral>,
+        expr: Option<SetExpr>,
         annos: Annotations,
     },
     SetOfIntInSet {
         id: String,
         set: Vec<i128>,
-        expr: Option<SetLiteral>,
+        expr: Option<SetExpr>,
         annos: Annotations,
     },
     SetOfIntInRange {
         id: String,
         lb: i128,
         ub: i128,
-        expr: Option<SetLiteral>,
+        expr: Option<SetExpr>,
         annos: Annotations,
     },
     ArrayOfBool {
@@ -945,6 +958,15 @@ pub fn var_decl_item<'a, E: ParseError<&'a str>>(
     Ok((input, item))
 }
 fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
+    alt((
+        vdi_basic_var_with_assignment,
+        vdi_basic_var_without_assignment,
+    ))(input)
+}
+
+fn vdi_basic_var_with_assignment<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, VarDeclItem, E> {
     let (input, var_type) = basic_var_type(input)?;
     let (input, _) = space0(input)?;
     let (input, _) = char(':')(input)?;
@@ -953,12 +975,11 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
     let (input, _) = space0(input)?;
     let (input, annos) = annotations(input)?;
     let (input, _) = space0(input)?;
-    let (input, assign) = opt(char('='))(input)?;
-
+    let (input, _) = char('=')(input)?;
     let (input, _) = space0(input)?;
-    match (var_type, assign) {
-        (BasicVarType::Bool, Some(_)) => {
-            let (input, bool) = bool_literal(input)?;
+    match var_type {
+        BasicVarType::Bool => {
+            let (input, bool) = bool_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::Bool {
@@ -968,16 +989,8 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::Bool, None) => Ok((
-            input,
-            VarDeclItem::Bool {
-                id,
-                annos,
-                expr: None,
-            },
-        )),
-        (BasicVarType::Int, Some(_)) => {
-            let (input, int) = int_literal(input)?;
+        BasicVarType::Int => {
+            let (input, int) = int_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::Int {
@@ -987,16 +1000,8 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::Int, None) => Ok((
-            input,
-            VarDeclItem::Int {
-                id,
-                annos,
-                expr: None,
-            },
-        )),
-        (BasicVarType::Float, Some(_)) => {
-            let (input, float) = float_literal(input)?;
+        BasicVarType::Float => {
+            let (input, float) = float_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::Float {
@@ -1006,16 +1011,8 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::Float, None) => Ok((
-            input,
-            VarDeclItem::Float {
-                id,
-                annos,
-                expr: None,
-            },
-        )),
-        (BasicVarType::SetOfInt, Some(_)) => {
-            let (input, sl) = set_literal(input)?;
+        BasicVarType::SetOfInt => {
+            let (input, sl) = set_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::SetOfInt {
@@ -1025,17 +1022,8 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::SetOfInt, None) => Ok((
-            input,
-            VarDeclItem::SetOfInt {
-                id,
-                expr: None,
-                annos,
-            },
-        )),
-
-        (BasicVarType::IntInRange(lb, ub), Some(_)) => {
-            let (input, int) = int_literal(input)?;
+        BasicVarType::IntInRange(lb, ub) => {
+            let (input, int) = int_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::IntInRange {
@@ -1047,18 +1035,8 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::IntInRange(lb, ub), None) => Ok((
-            input,
-            VarDeclItem::IntInRange {
-                id,
-                lb,
-                ub,
-                int: None,
-                annos,
-            },
-        )),
-        (BasicVarType::IntInSet(set), Some(_)) => {
-            let (input, int) = int_literal(input)?;
+        BasicVarType::IntInSet(set) => {
+            let (input, int) = int_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::IntInSet {
@@ -1069,17 +1047,8 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::IntInSet(set), None) => Ok((
-            input,
-            VarDeclItem::IntInSet {
-                id,
-                set,
-                int: None,
-                annos,
-            },
-        )),
-        (BasicVarType::FloatInRange(lb, ub), Some(_)) => {
-            let (input, float) = float_literal(input)?;
+        BasicVarType::FloatInRange(lb, ub) => {
+            let (input, float) = float_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::FloatInRange {
@@ -1091,18 +1060,8 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::FloatInRange(lb, ub), None) => Ok((
-            input,
-            VarDeclItem::FloatInRange {
-                id,
-                lb,
-                ub,
-                float: None,
-                annos,
-            },
-        )),
-        (BasicVarType::SetOfIntInRange(lb, ub), Some(_)) => {
-            let (input, sl) = set_literal(input)?;
+        BasicVarType::SetOfIntInRange(lb, ub) => {
+            let (input, sl) = set_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::SetOfIntInRange {
@@ -1114,18 +1073,8 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::SetOfIntInRange(lb, ub), None) => Ok((
-            input,
-            VarDeclItem::SetOfIntInRange {
-                id,
-                lb,
-                ub,
-                expr: None,
-                annos,
-            },
-        )),
-        (BasicVarType::SetOfIntInSet(set), Some(_)) => {
-            let (input, sl) = set_literal(input)?;
+        BasicVarType::SetOfIntInSet(set) => {
+            let (input, sl) = set_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::SetOfIntInSet {
@@ -1136,7 +1085,92 @@ fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
                 },
             ))
         }
-        (BasicVarType::SetOfIntInSet(set), None) => Ok((
+    }
+}
+fn vdi_basic_var_without_assignment<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, VarDeclItem, E> {
+    let (input, var_type) = basic_var_type(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char(':')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, id) = var_par_identifier(input)?;
+    let (input, _) = space0(input)?;
+    let (input, annos) = annotations(input)?;
+    let (input, _) = space0(input)?;
+    match var_type {
+        BasicVarType::Bool => Ok((
+            input,
+            VarDeclItem::Bool {
+                id,
+                annos,
+                expr: None,
+            },
+        )),
+        BasicVarType::Int => Ok((
+            input,
+            VarDeclItem::Int {
+                id,
+                annos,
+                expr: None,
+            },
+        )),
+        BasicVarType::Float => Ok((
+            input,
+            VarDeclItem::Float {
+                id,
+                annos,
+                expr: None,
+            },
+        )),
+        BasicVarType::SetOfInt => Ok((
+            input,
+            VarDeclItem::SetOfInt {
+                id,
+                expr: None,
+                annos,
+            },
+        )),
+        BasicVarType::IntInRange(lb, ub) => Ok((
+            input,
+            VarDeclItem::IntInRange {
+                id,
+                lb,
+                ub,
+                int: None,
+                annos,
+            },
+        )),
+        BasicVarType::IntInSet(set) => Ok((
+            input,
+            VarDeclItem::IntInSet {
+                id,
+                set,
+                int: None,
+                annos,
+            },
+        )),
+        BasicVarType::FloatInRange(lb, ub) => Ok((
+            input,
+            VarDeclItem::FloatInRange {
+                id,
+                lb,
+                ub,
+                float: None,
+                annos,
+            },
+        )),
+        BasicVarType::SetOfIntInRange(lb, ub) => Ok((
+            input,
+            VarDeclItem::SetOfIntInRange {
+                id,
+                lb,
+                ub,
+                expr: None,
+                annos,
+            },
+        )),
+        BasicVarType::SetOfIntInSet(set) => Ok((
             input,
             VarDeclItem::SetOfIntInSet {
                 id,
