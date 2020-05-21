@@ -586,10 +586,11 @@ fn test_expr() {
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expr {
-    BoolExpr(BoolExpr),
-    IntExpr(IntExpr),
-    FloatExpr(FloatExpr),
-    SetExpr(SetExpr),
+    VarParIdentifier(String),
+    Bool(bool),
+    Int(i128),
+    Float(f64),
+    Set(SetLiteral),
     ArrayOfBool(Vec<BoolExpr>),
     ArrayOfInt(Vec<IntExpr>),
     ArrayOfFloat(Vec<FloatExpr>),
@@ -598,10 +599,11 @@ pub enum Expr {
 fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
     let (input, _) = space0(input)?;
     let (input, expr) = alt((
-        e_bool_expr,
-        e_set_expr,
-        e_float_expr,
-        e_int_expr,
+        e_var_par_identifier,
+        e_bool_literal,
+        e_set_literal,
+        e_float_literal,
+        e_int_literal,
         e_array_of_bool_expr,
         e_array_of_int_expr,
         e_array_of_float_expr,
@@ -609,21 +611,25 @@ fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E>
     ))(input)?;
     Ok((input, expr))
 }
-fn e_bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, expr) = bool_expr(input)?;
-    Ok((input, Expr::BoolExpr(expr)))
+fn e_var_par_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, id) = var_par_identifier(input)?;
+    Ok((input, Expr::VarParIdentifier(id)))
 }
-fn e_int_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, expr) = int_expr(input)?;
-    Ok((input, Expr::IntExpr(expr)))
+fn e_bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, b) = bool_literal(input)?;
+    Ok((input, Expr::Bool(b)))
 }
-fn e_float_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, expr) = float_expr(input)?;
-    Ok((input, Expr::FloatExpr(expr)))
+fn e_int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, int) = int_literal(input)?;
+    Ok((input, Expr::Int(int)))
 }
-fn e_set_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, expr) = set_expr(input)?;
-    Ok((input, Expr::SetExpr(expr)))
+fn e_float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, float) = float_literal(input)?;
+    Ok((input, Expr::Float(float)))
+}
+fn e_set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, sl) = set_literal(input)?;
+    Ok((input, Expr::Set(sl)))
 }
 fn e_array_of_bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
     let (input, array_literal) = array_of_bool_expr(input)?;
