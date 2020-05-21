@@ -524,6 +524,7 @@ pub enum IntExpr {
     VarParIdentifier(String),
 }
 fn int_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, IntExpr, E> {
+    let (input, _) = space0(input)?;
     let (input, expr) = alt((ie_int_literal, ie_var_par_identifier))(input)?;
     Ok((input, expr))
 }
@@ -595,6 +596,7 @@ pub enum Expr {
     ArrayOfSet(Vec<SetExpr>),
 }
 fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
+    let (input, _) = space0(input)?;
     let (input, expr) = alt((
         e_bool_expr,
         e_set_expr,
@@ -608,20 +610,20 @@ fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E>
     Ok((input, expr))
 }
 fn e_bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, basic_expr) = bool_expr(input)?;
-    Ok((input, Expr::BoolExpr(basic_expr)))
+    let (input, expr) = bool_expr(input)?;
+    Ok((input, Expr::BoolExpr(expr)))
 }
 fn e_int_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, basic_expr) = int_expr(input)?;
-    Ok((input, Expr::IntExpr(basic_expr)))
+    let (input, expr) = int_expr(input)?;
+    Ok((input, Expr::IntExpr(expr)))
 }
 fn e_float_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, basic_expr) = float_expr(input)?;
-    Ok((input, Expr::FloatExpr(basic_expr)))
+    let (input, expr) = float_expr(input)?;
+    Ok((input, Expr::FloatExpr(expr)))
 }
 fn e_set_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, basic_expr) = set_expr(input)?;
-    Ok((input, Expr::SetExpr(basic_expr)))
+    let (input, expr) = set_expr(input)?;
+    Ok((input, Expr::SetExpr(expr)))
 }
 fn e_array_of_bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
     let (input, array_literal) = array_of_bool_expr(input)?;
@@ -1436,6 +1438,43 @@ fn test_constraint_item() {
                         "X_52".to_string()
                     )))]
                 }]
+            }
+        ))
+    );
+    assert_eq!(
+        constraint_item::<VerboseError<&str>>("constraint array_var_int_element(INT01, w, 2);"),
+        Ok((
+            "",
+            ConstraintItem {
+                id: "array_var_int_element".to_string(),
+                exprs: vec![
+                    Expr::BoolExpr(BoolExpr::VarParIdentifier("INT01".to_string())),
+                    Expr::BoolExpr(BoolExpr::VarParIdentifier("w".to_string())),
+                    Expr::IntExpr(IntExpr::Int(2))
+                ],
+                annos: vec![]
+            }
+        ))
+    );
+}
+#[test]
+fn test_constraint_item_2() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        constraint_item::<VerboseError<&str>>("constraint int_lin_eq([-1, 1], [INT01, p], -3);"),
+        Ok((
+            "",
+            ConstraintItem {
+                id: "int_lin_eq".to_string(),
+                exprs: vec![
+                    Expr::ArrayOfInt(vec![IntExpr::Int(-1), IntExpr::Int(1)]),
+                    Expr::ArrayOfInt(vec![
+                        IntExpr::VarParIdentifier("INT01".to_string()),
+                        IntExpr::VarParIdentifier("p".to_string())
+                    ]),
+                    Expr::IntExpr(IntExpr::Int(-3))
+                ],
+                annos: vec![]
             }
         ))
     );
