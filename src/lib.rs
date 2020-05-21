@@ -653,10 +653,19 @@ pub enum ParExpr {
     Int(i128),
     Float(f64),
     Set(SetLiteral),
-    ParArrayLiteral(ParArrayLiteral),
+    ArrayOfBool(Vec<BoolExpr>),
+    ArrayOfInt(Vec<IntExpr>),
+    ArrayOfFloat(Vec<FloatExpr>),
+    ArrayOfSet(Vec<SetExpr>),
 }
 fn par_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParExpr, E> {
-    let (input, expr) = alt((pe_basic_literal_expr, pe_par_array_literal))(input)?;
+    let (input, expr) = alt((
+        pe_basic_literal_expr,
+        pe_array_of_bool_expr,
+        pe_array_of_int_expr,
+        pe_array_of_float_expr,
+        pe_array_of_set_expr,
+    ))(input)?;
     Ok((input, expr))
 }
 fn pe_basic_literal_expr<'a, E: ParseError<&'a str>>(
@@ -670,11 +679,29 @@ fn pe_basic_literal_expr<'a, E: ParseError<&'a str>>(
         BasicLiteralExpr::Set(sl) => Ok((input, ParExpr::Set(sl))),
     }
 }
-fn pe_par_array_literal<'a, E: ParseError<&'a str>>(
+fn pe_array_of_bool_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ParExpr, E> {
-    let (input, expr) = par_array_literal(input)?;
-    Ok((input, ParExpr::ParArrayLiteral(expr)))
+    let (input, array_literal) = array_of_bool_expr(input)?;
+    Ok((input, ParExpr::ArrayOfBool(array_literal)))
+}
+fn pe_array_of_int_expr<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, ParExpr, E> {
+    let (input, array_literal) = array_of_int_expr(input)?;
+    Ok((input, ParExpr::ArrayOfInt(array_literal)))
+}
+fn pe_array_of_float_expr<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, ParExpr, E> {
+    let (input, array_literal) = array_of_float_expr(input)?;
+    Ok((input, ParExpr::ArrayOfFloat(array_literal)))
+}
+fn pe_array_of_set_expr<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, ParExpr, E> {
+    let (input, array_literal) = array_of_set_expr(input)?;
+    Ok((input, ParExpr::ArrayOfSet(array_literal)))
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -713,10 +740,10 @@ fn test_par_decl_item() {
                 ix: IndexSet(3),
                 par_type: BasicParType::Float,
                 id: "X_139".to_string(),
-                expr: ParExpr::ParArrayLiteral(vec![
-                    BasicLiteralExpr::Float(1.0),
-                    BasicLiteralExpr::Float(1.0),
-                    BasicLiteralExpr::Float(1.0)
+                expr: ParExpr::ArrayOfFloat(vec![
+                    FloatExpr::Float(1.0),
+                    FloatExpr::Float(1.0),
+                    FloatExpr::Float(1.0)
                 ])
             }
         ))
@@ -1835,17 +1862,6 @@ fn array_of_set_expr<'a, E: ParseError<&'a str>>(
     let (input, _) = space0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
-}
-type ParArrayLiteral = Vec<BasicLiteralExpr>;
-fn par_array_literal<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, ParArrayLiteral, E> {
-    let (input, _) = char('[')(input)?;
-    let (input, _) = space0(input)?;
-    let (input, v) = separated_list(char(','), basic_literal_expr)(input)?;
-    let (input, _) = space0(input)?;
-    let (input, _) = char(']')(input)?;
-    Ok((input, v))
 }
 fn identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
     let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")(input)?;
