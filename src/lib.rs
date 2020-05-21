@@ -960,18 +960,16 @@ fn var_decl_item_ln<'a, E: ParseError<&'a str>>(
 pub fn var_decl_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
-    let (input, item) = alt((vdi_basic_var, vdi_array))(input)?;
+    let (input, item) = alt((
+        vdi_basic_var_with_assignment,
+        vdi_basic_var_without_assignment,
+        vdi_array_with_assignment,
+        vdi_array_without_assignment,
+    ))(input)?;
     let (input, _tag) = space0(input)?;
     let (input, _) = char(';')(input)?;
     Ok((input, item))
 }
-fn vdi_basic_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
-    alt((
-        vdi_basic_var_with_assignment,
-        vdi_basic_var_without_assignment,
-    ))(input)
-}
-
 fn vdi_basic_var_with_assignment<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
@@ -1190,7 +1188,9 @@ fn vdi_basic_var_without_assignment<'a, E: ParseError<&'a str>>(
     }
 }
 
-fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E> {
+fn vdi_array_with_assignment<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, VarDeclItem, E> {
     // let (input, avt) = array_var_type(input)?;
 
     let (input, _tag) = tag("array")(input)?;
@@ -1212,10 +1212,10 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
     let (input, _) = space0(input)?;
     let (input, annos) = annotations(input)?;
     let (input, _) = space0(input)?;
-    let (input, assign) = opt(char('='))(input)?;
+    let (input, _) = char('=')(input)?;
     let (input, _) = space0(input)?;
-    match (var_type, assign) {
-        (BasicVarType::Bool, Some(_)) => {
+    match var_type {
+        BasicVarType::Bool => {
             let (input, array_literal) = array_of_bool_expr(input)?;
             Ok((
                 input,
@@ -1227,16 +1227,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::Bool, None) => Ok((
-            input,
-            VarDeclItem::ArrayOfBool {
-                ix: IndexSet(int),
-                id,
-                annos,
-                array_literal: vec![],
-            },
-        )),
-        (BasicVarType::Int, Some(_)) => {
+        BasicVarType::Int => {
             let (input, array_literal) = array_of_int_expr(input)?;
             Ok((
                 input,
@@ -1248,16 +1239,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::Int, None) => Ok((
-            input,
-            VarDeclItem::ArrayOfInt {
-                ix: IndexSet(int),
-                id,
-                annos,
-                array_literal: vec![],
-            },
-        )),
-        (BasicVarType::Float, Some(_)) => {
+        BasicVarType::Float => {
             let (input, array_literal) = array_of_float_expr(input)?;
             Ok((
                 input,
@@ -1269,16 +1251,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::Float, None) => Ok((
-            input,
-            VarDeclItem::ArrayOfFloat {
-                ix: IndexSet(int),
-                id,
-                annos,
-                array_literal: vec![],
-            },
-        )),
-        (BasicVarType::SetOfInt, Some(_)) => {
+        BasicVarType::SetOfInt => {
             let (input, array_literal) = array_of_set_expr(input)?;
             Ok((
                 input,
@@ -1290,16 +1263,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::SetOfInt, None) => Ok((
-            input,
-            VarDeclItem::ArrayOfSet {
-                ix: IndexSet(int),
-                id,
-                annos,
-                array_literal: vec![],
-            },
-        )),
-        (BasicVarType::IntInRange(lb, ub), Some(_)) => {
+        BasicVarType::IntInRange(lb, ub) => {
             let (input, array_literal) = array_of_int_expr(input)?;
             Ok((
                 input,
@@ -1313,18 +1277,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::IntInRange(lb, ub), None) => Ok((
-            input,
-            VarDeclItem::ArrayOfIntInRange {
-                lb,
-                ub,
-                ix: IndexSet(int),
-                id,
-                annos,
-                array_literal: vec![],
-            },
-        )),
-        (BasicVarType::IntInSet(set), Some(_)) => {
+        BasicVarType::IntInSet(set) => {
             let (input, array_literal) = array_of_int_expr(input)?;
             Ok((
                 input,
@@ -1337,17 +1290,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::IntInSet(set), None) => Ok((
-            input,
-            VarDeclItem::ArrayOfIntInSet {
-                set,
-                ix: IndexSet(int),
-                id,
-                annos,
-                array_literal: vec![],
-            },
-        )),
-        (BasicVarType::FloatInRange(lb, ub), Some(_)) => {
+        BasicVarType::FloatInRange(lb, ub) => {
             let (input, array_literal) = array_of_float_expr(input)?;
             Ok((
                 input,
@@ -1361,18 +1304,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::FloatInRange(lb, ub), None) => Ok((
-            input,
-            VarDeclItem::ArrayOfFloatInRange {
-                lb,
-                ub,
-                ix: IndexSet(int),
-                id,
-                annos,
-                array_literal: vec![],
-            },
-        )),
-        (BasicVarType::SetOfIntInRange(lb, ub), Some(_)) => {
+        BasicVarType::SetOfIntInRange(lb, ub) => {
             let (input, array_literal) = array_of_set_expr(input)?;
             Ok((
                 input,
@@ -1386,18 +1318,7 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::SetOfIntInRange(lb, ub), None) => Ok((
-            input,
-            VarDeclItem::ArrayOfSetOfIntInRange {
-                lb,
-                ub,
-                ix: IndexSet(int),
-                id,
-                annos,
-                array_literal: vec![],
-            },
-        )),
-        (BasicVarType::SetOfIntInSet(set), Some(_)) => {
+        BasicVarType::SetOfIntInSet(set) => {
             let (input, array_literal) = array_of_set_expr(input)?;
             Ok((
                 input,
@@ -1410,7 +1331,113 @@ fn vdi_array<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Var
                 },
             ))
         }
-        (BasicVarType::SetOfIntInSet(set), None) => Ok((
+    }
+}
+fn vdi_array_without_assignment<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, VarDeclItem, E> {
+    // let (input, avt) = array_var_type(input)?;
+
+    let (input, _tag) = tag("array")(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('[')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, int) = index_set(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char(']')(input)?;
+    let (input, _) = space1(input)?;
+    let (input, _tag) = tag("of")(input)?;
+    let (input, _) = space1(input)?;
+    let (input, var_type) = basic_var_type(input)?;
+
+    let (input, _) = space0(input)?;
+    let (input, _) = char(':')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, id) = var_par_identifier(input)?;
+    let (input, _) = space0(input)?;
+    let (input, annos) = annotations(input)?;
+    let (input, _) = space0(input)?;
+    match var_type {
+        BasicVarType::Bool => Ok((
+            input,
+            VarDeclItem::ArrayOfBool {
+                ix: IndexSet(int),
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        )),
+        BasicVarType::Int => Ok((
+            input,
+            VarDeclItem::ArrayOfInt {
+                ix: IndexSet(int),
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        )),
+        BasicVarType::Float => Ok((
+            input,
+            VarDeclItem::ArrayOfFloat {
+                ix: IndexSet(int),
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        )),
+        BasicVarType::SetOfInt => Ok((
+            input,
+            VarDeclItem::ArrayOfSet {
+                ix: IndexSet(int),
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        )),
+        BasicVarType::IntInRange(lb, ub) => Ok((
+            input,
+            VarDeclItem::ArrayOfIntInRange {
+                lb,
+                ub,
+                ix: IndexSet(int),
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        )),
+        BasicVarType::IntInSet(set) => Ok((
+            input,
+            VarDeclItem::ArrayOfIntInSet {
+                set,
+                ix: IndexSet(int),
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        )),
+        BasicVarType::FloatInRange(lb, ub) => Ok((
+            input,
+            VarDeclItem::ArrayOfFloatInRange {
+                lb,
+                ub,
+                ix: IndexSet(int),
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        )),
+        BasicVarType::SetOfIntInRange(lb, ub) => Ok((
+            input,
+            VarDeclItem::ArrayOfSetOfIntInRange {
+                lb,
+                ub,
+                ix: IndexSet(int),
+                id,
+                annos,
+                array_literal: vec![],
+            },
+        )),
+        BasicVarType::SetOfIntInSet(set) => Ok((
             input,
             VarDeclItem::ArrayOfSetOfIntInSet {
                 set,
