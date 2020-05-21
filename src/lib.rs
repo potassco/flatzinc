@@ -581,7 +581,7 @@ fn test_expr() {
     use nom::error::VerboseError;
     assert_eq!(
         expr::<VerboseError<&str>>("1..2"),
-        Ok(("", Expr::SetExpr(SetExpr::Set(SetLiteral::IntRange(1, 2)))))
+        Ok(("", Expr::Set(SetLiteral::IntRange(1, 2))))
     );
 }
 #[derive(PartialEq, Clone, Debug)]
@@ -1434,15 +1434,13 @@ fn test_constraint_item() {
             ConstraintItem {
                 id: "set_in_reif".to_string(),
                 exprs: vec![
-                    Expr::BoolExpr(BoolExpr::VarParIdentifier("X_26".to_string())),
-                    Expr::SetExpr(SetExpr::Set(SetLiteral::IntRange(1, 2))),
-                    Expr::BoolExpr(BoolExpr::VarParIdentifier("X_52".to_string()))
+                    Expr::VarParIdentifier("X_26".to_string()),
+                    Expr::Set(SetLiteral::IntRange(1, 2)),
+                    Expr::VarParIdentifier("X_52".to_string())
                 ],
                 annos: vec![Annotation::Id {
                     id: "defines_var".to_string(),
-                    expressions: vec![AnnExpr::Expr(Expr::BoolExpr(BoolExpr::VarParIdentifier(
-                        "X_52".to_string()
-                    )))]
+                    expressions: vec![AnnExpr::Expr(Expr::VarParIdentifier("X_52".to_string()))]
                 }]
             }
         ))
@@ -1454,9 +1452,9 @@ fn test_constraint_item() {
             ConstraintItem {
                 id: "array_var_int_element".to_string(),
                 exprs: vec![
-                    Expr::BoolExpr(BoolExpr::VarParIdentifier("INT01".to_string())),
-                    Expr::BoolExpr(BoolExpr::VarParIdentifier("w".to_string())),
-                    Expr::FloatExpr(FloatExpr::Float(2.0))
+                    Expr::VarParIdentifier("INT01".to_string()),
+                    Expr::VarParIdentifier("w".to_string()),
+                    Expr::Float(2.0)
                 ],
                 annos: vec![]
             }
@@ -1478,7 +1476,7 @@ fn test_constraint_item_2() {
                         IntExpr::VarParIdentifier("INT01".to_string()),
                         IntExpr::VarParIdentifier("p".to_string())
                     ]),
-                    Expr::FloatExpr(FloatExpr::Float(-3.0))
+                    Expr::Float(-3.0)
                 ],
                 annos: vec![]
             }
@@ -1497,13 +1495,13 @@ fn test_constraint_item_3() {
             ConstraintItem {
                 id: "float_lin_eq".to_string(),
                 exprs: vec![
-                    Expr::BoolExpr(BoolExpr::VarParIdentifier("X_139".to_string())),
+                    Expr::VarParIdentifier("X_139".to_string()),
                     Expr::ArrayOfBool(vec![
                         BoolExpr::VarParIdentifier("X_27".to_string()),
                         BoolExpr::VarParIdentifier("X_28".to_string()),
                         BoolExpr::VarParIdentifier("X_29".to_string()),
                     ]),
-                    Expr::FloatExpr(FloatExpr::Float(1.0))
+                    Expr::Float(1.0)
                 ],
                 annos: vec![]
             }
