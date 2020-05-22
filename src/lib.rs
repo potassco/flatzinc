@@ -1743,7 +1743,6 @@ pub enum SetLiteral {
     SetInts(Vec<i128>), // possibly empty
 }
 fn set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
-    println!("in set_literal: {}", input);
     let (input, sl) = alt((
         sl_int_range,
         sl_float_range,
