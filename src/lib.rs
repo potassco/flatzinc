@@ -525,8 +525,8 @@ fn set_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetE
     Ok((input, expr))
 }
 fn se_set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetExpr, E> {
-    let (input, expr) = set_literal(input)?;
-    Ok((input, SetExpr::Set(expr)))
+    let (input, sl) = set_literal(input)?;
+    Ok((input, SetExpr::Set(sl)))
 }
 fn se_var_par_identifier<'a, E: ParseError<&'a str>>(
     input: &'a str,
@@ -780,6 +780,20 @@ fn test_var_decl_item() {
         ))
     );
 }
+#[test]
+fn test_var_decl_item_2() {
+    assert_eq!(
+        var_decl_item::<VerboseError<&str>>("var set of int: g = { 1, 2, 3};"),
+        Ok((
+            "",
+            VarDeclItem::SetOfInt {
+                id: "g".to_string(),
+                expr: Some(SetExpr::Set(SetLiteral::SetInts(vec![1, 2, 3]))),
+                annos: vec![],
+            }
+        ))
+    );
+}
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarDeclItem {
     Bool {
@@ -967,37 +981,37 @@ fn vdi_basic_var_with_assignment<'a, E: ParseError<&'a str>>(
             ))
         }
         BasicVarType::SetOfInt => {
-            let (input, sl) = set_expr(input)?;
+            let (input, expr) = set_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::SetOfInt {
                     id,
                     annos,
-                    expr: Some(sl),
+                    expr: Some(expr),
                 },
             ))
         }
         BasicVarType::IntInRange(lb, ub) => {
-            let (input, int) = int_expr(input)?;
+            let (input, expr) = int_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::IntInRange {
                     id,
                     lb,
                     ub,
-                    int: Some(int),
+                    int: Some(expr),
                     annos,
                 },
             ))
         }
         BasicVarType::IntInSet(set) => {
-            let (input, int) = int_expr(input)?;
+            let (input, expr) = int_expr(input)?;
             Ok((
                 input,
                 VarDeclItem::IntInSet {
                     id,
                     set,
-                    int: Some(int),
+                    int: Some(expr),
                     annos,
                 },
             ))
@@ -1136,7 +1150,6 @@ fn vdi_basic_var_without_assignment<'a, E: ParseError<&'a str>>(
         )),
     }
 }
-
 fn vdi_array_with_assignment<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
@@ -1730,11 +1743,12 @@ pub enum SetLiteral {
     SetInts(Vec<i128>), // possibly empty
 }
 fn set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
+    println!("in set_literal: {}", input);
     let (input, sl) = alt((
         sl_int_range,
         sl_float_range,
-        sl_set_of_floats,
         sl_set_of_ints,
+        sl_set_of_floats,
     ))(input)?;
     Ok((input, sl))
 }
@@ -1881,6 +1895,7 @@ fn bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, 
     }
 }
 fn int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
+    let (input, _) = space0(input)?;
     let (input, int) = alt((decimal, hexadecimal, octal))(input)?;
     Ok((input, int as i128))
 }
@@ -1964,6 +1979,7 @@ fn test_float() {
     assert_eq!(float_literal::<VerboseError<&str>>("1.0,"), Ok((",", 1.0)));
 }
 fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
+    let (input, _) = space0(input)?;
     let (input, f) = double(input)?;
     Ok((input, f))
 }
