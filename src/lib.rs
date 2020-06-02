@@ -4,7 +4,6 @@ use nom::{
     character::complete::{char, one_of, space0, space1},
     combinator::{map_res, opt},
     multi::{many0, separated_list},
-    number::complete::double,
 };
 pub use nom::{
     error::{convert_error, ParseError, VerboseError},
@@ -1443,6 +1442,21 @@ fn test_constraint_item() {
                 exprs: vec![
                     Expr::VarParIdentifier("INT01".to_string()),
                     Expr::VarParIdentifier("w".to_string()),
+                    Expr::Int(2)
+                ],
+                annos: vec![]
+            }
+        ))
+    );
+    assert_eq!(
+        constraint_item::<VerboseError<&str>>("constraint array_var_int_element(INT01, w, 2.0);"),
+        Ok((
+            "",
+            ConstraintItem {
+                id: "array_var_int_element".to_string(),
+                exprs: vec![
+                    Expr::VarParIdentifier("INT01".to_string()),
+                    Expr::VarParIdentifier("w".to_string()),
                     Expr::Float(2.0)
                 ],
                 annos: vec![]
@@ -1465,7 +1479,7 @@ fn test_constraint_item_2() {
                         IntExpr::VarParIdentifier("INT01".to_string()),
                         IntExpr::VarParIdentifier("p".to_string())
                     ]),
-                    Expr::Float(-3.0)
+                    Expr::Int(-3)
                 ],
                 annos: vec![]
             }
@@ -1958,6 +1972,8 @@ fn is_dec_digit(c: char) -> bool {
 #[test]
 fn test_float() {
     use nom::error::VerboseError;
+    //TODO should return error
+    // float_literal::<VerboseError<&str>>("5")
     assert_eq!(
         float_literal::<VerboseError<&str>>("023.21"),
         Ok(("", 023.21))
@@ -1979,6 +1995,53 @@ fn test_float() {
 }
 fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
     let (input, _) = space0(input)?;
-    let (input, f) = double(input)?;
+    let (input, f) = fz_float(input)?;
     Ok((input, f))
+}
+
+fn fz_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
+    let (input, f) = alt((fz_float1, fz_float2))(input)?;
+    let f2 = f.parse::<f64>().unwrap();
+    Ok((input, f2))
+}
+
+fn fz_float1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
+    let (input, sign) = opt(char('-'))(input)?;
+    let (input, a) = take_while1(is_dec_digit)(input)?;
+    let (input, _) = char('.')(input)?;
+    let (input, b) = take_while1(is_dec_digit)(input)?;
+    let (input, rest) = opt(bpart)(input)?;
+    if let Some(s) = sign {
+        if let Some(rest) = rest {
+            Ok((input, format!("{}{}.{}{}", s, a, b, rest)))
+        } else {
+            Ok((input, format!("{}{}.{}", s, a, b)))
+        }
+    } else {
+        if let Some(rest) = rest {
+            Ok((input, format!("{}.{}{}", a, b, rest)))
+        } else {
+            Ok((input, format!("{}.{}", a, b)))
+        }
+    }
+}
+fn fz_float2<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
+    let (input, sign) = opt(char('-'))(input)?;
+    let (input, digits) = take_while1(is_dec_digit)(input)?;
+    let (input, rest) = bpart(input)?;
+    if let Some(sign) = sign {
+        Ok((input, format!("{}{}{}", sign, digits, rest)))
+    } else {
+        Ok((input, format!("{}{}", digits, rest)))
+    }
+}
+fn bpart<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
+    let (input, e) = alt((tag("e"), tag("E")))(input)?;
+    let (input, sign) = opt(alt((tag("-"), tag("+"))))(input)?;
+    let (input, digits) = take_while1(is_dec_digit)(input)?;
+    if let Some(sign) = sign {
+        Ok((input, format!("{}{}{}", e, sign, digits)))
+    } else {
+        Ok((input, format!("{}{}", e, digits)))
+    }
 }
