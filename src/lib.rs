@@ -6,7 +6,7 @@ use nom::{
     multi::{many0, separated_list},
 };
 pub use nom::{
-    error::{convert_error, ParseError, VerboseError},
+    error::{convert_error, ErrorKind, ParseError, VerboseError},
     Err, IResult,
 };
 #[derive(PartialEq, Clone, Debug)]
@@ -1511,6 +1511,27 @@ fn test_constraint_item_3() {
         ))
     );
 }
+#[test]
+fn test_constraint_item_4() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        constraint_item::<VerboseError<&str>>("constraint array_bool_or([X_43,X_44],true);"),
+        Ok((
+            "",
+            ConstraintItem {
+                id: "array_bool_or".to_string(),
+                exprs: vec![
+                    Expr::ArrayOfBool(vec![
+                        BoolExpr::VarParIdentifier("X_43".to_string()),
+                        BoolExpr::VarParIdentifier("X_44".to_string()),
+                    ]),
+                    Expr::Bool(true)
+                ],
+                annos: vec![]
+            }
+        ))
+    );
+}
 #[derive(PartialEq, Clone, Debug)]
 pub struct ConstraintItem {
     pub id: String,
@@ -1882,12 +1903,29 @@ fn array_of_set_literal<'a, E: ParseError<&'a str>>(
 fn identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
     let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")(input)?;
     let (input, rest) = take_while(is_identifier_rest)(input)?;
-    Ok((input, format!("{}{}", first, rest)))
+    let combine = format!("{}{}", first, rest);
+    // check for reserved key words
+    match combine.as_str() {
+        "true" | "false" => Err(Err::Error(ParseError::from_error_kind(
+            input,
+            ErrorKind::Not,
+        ))),
+        _ => Ok((input, combine)),
+    }
 }
+
 fn var_par_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
     let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")(input)?;
     let (input, rest) = take_while(is_identifier_rest)(input)?;
-    Ok((input, format!("{}{}", first, rest)))
+    let combine = format!("{}{}", first, rest);
+    // check for reserved key words
+    match combine.as_str() {
+        "true" | "false" => Err(Err::Error(ParseError::from_error_kind(
+            input,
+            ErrorKind::Not,
+        ))),
+        _ => Ok((input, combine)),
+    }
 }
 fn is_identifier_rest(c: char) -> bool {
     match c {
