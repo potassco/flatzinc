@@ -1905,12 +1905,13 @@ fn identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, St
     let (input, rest) = take_while(is_identifier_rest)(input)?;
     let combine = format!("{}{}", first, rest);
     // check for reserved key words
-    match combine.as_str() {
-        "true" | "false" => Err(Err::Error(ParseError::from_error_kind(
+    if is_reserved_key_word(&combine) {
+        Err(Err::Error(ParseError::from_error_kind(
             input,
-            ErrorKind::Not,
-        ))),
-        _ => Ok((input, combine)),
+            ErrorKind::IsA,
+        )))
+    } else {
+        Ok((input, combine))
     }
 }
 
@@ -1919,12 +1920,24 @@ fn var_par_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a
     let (input, rest) = take_while(is_identifier_rest)(input)?;
     let combine = format!("{}{}", first, rest);
     // check for reserved key words
-    match combine.as_str() {
-        "true" | "false" => Err(Err::Error(ParseError::from_error_kind(
+    if is_reserved_key_word(&combine) {
+        Err(Err::Error(ParseError::from_error_kind(
             input,
-            ErrorKind::Not,
-        ))),
-        _ => Ok((input, combine)),
+            ErrorKind::IsA,
+        )))
+    } else {
+        Ok((input, combine))
+    }
+}
+fn is_reserved_key_word(string: &str) -> bool {
+    match string {
+        "annotation" | "any" | "array" | "bool" | "case" | "constraint" | "diff" | "div"
+        | "else" | "elseif" | "endif" | "enum" | "false" | "float" | "function" | "if" | "in"
+        | "include" | "int" | "intersect" | "let" | "list" | "maximize" | "minimize" | "mod"
+        | "not" | "of" | "satisfy" | "subset" | "superset" | "output" | "par" | "predicate"
+        | "record" | "set" | "solve" | "string" | "symdiff" | "test" | "then" | "true"
+        | "tuple" | "union" | "type" | "var" | "where" | "xor" => true,
+        _ => false,
     }
 }
 fn is_identifier_rest(c: char) -> bool {
