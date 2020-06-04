@@ -2068,12 +2068,10 @@ fn fz_float1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Str
         } else {
             Ok((input, format!("{}{}.{}", s, a, b)))
         }
+    } else if let Some(rest) = rest {
+        Ok((input, format!("{}.{}{}", a, b, rest)))
     } else {
-        if let Some(rest) = rest {
-            Ok((input, format!("{}.{}{}", a, b, rest)))
-        } else {
-            Ok((input, format!("{}.{}", a, b)))
-        }
+        Ok((input, format!("{}.{}", a, b)))
     }
 }
 fn fz_float2<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
