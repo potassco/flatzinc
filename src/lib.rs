@@ -2,7 +2,7 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, take_till, take_while, take_while1},
     character::complete::{char, multispace0, multispace1, one_of},
-    combinator::{map_res, opt},
+    combinator::{all_consuming, map_res, opt},
     multi::{many0, separated_list},
 };
 pub use nom::{
@@ -19,18 +19,18 @@ pub enum FzStmt {
     SolveItem(SolveItem),
 }
 pub fn fz_statement<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
-    let (input, res) = alt((
+    let (input, res) = all_consuming(alt((
         fz_predicate,
         fz_parameter,
         fz_variable,
         fz_constraint,
         fz_solve_item,
-        fz_myspc0,
-    ))(input)?;
+        fz_space_or_comment0,
+    )))(input)?;
     Ok((input, res))
 }
-fn fz_myspc0<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
-    let (input, s) = myspc0(input)?;
+fn fz_space_or_comment0<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
+    let (input, s) = space_or_comment0(input)?;
     Ok((input, FzStmt::Comment(s.into())))
 }
 fn fz_predicate<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
@@ -86,25 +86,25 @@ pub struct PredicateItem {
 pub fn predicate_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, PredicateItem, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = tag("predicate")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, id) = identifier(input)?;
     let (input, _) = char('(')(input)?;
     let (input, parameters) = separated_list(char(','), pred_par_type_ident_pair)(input)?;
     let (input, _) = char(')')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, PredicateItem { id, parameters }))
 }
 fn pred_par_type_ident_pair<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, (PredParType, String), E> {
     let (input, pred_par_type) = pred_par_type(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ident) = identifier(input)?;
     Ok((input, (pred_par_type, ident)))
 }
@@ -136,9 +136,9 @@ fn bpt_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Bas
 // Moved this be a basic-var-type basic-par-type
 fn bpt_set_of_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicParType, E> {
     let (input, _tag) = tag("set")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("int")(input)?;
     Ok((input, BasicParType::SetOfInt))
 }
@@ -187,23 +187,23 @@ fn pt_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParT
 // "var" "set" "of" "int"
 fn pt_set_of_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
     let (input, _tag) = tag("set")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("int")(input)?;
     Ok((input, ParType::SetOfInt))
 }
 fn array_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
     let (input, _) = tag("array")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, int) = index_set(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, par_type) = basic_par_type(input)?;
     Ok((
         input,
@@ -227,9 +227,9 @@ pub enum BasicVarType {
     SetOfInt, // added var_set_of_int from basic_pred_par_type TODO: move back
 }
 fn basic_var_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("var")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, bvt) = alt((
         bvt_basic_par_type,
         bvt_int_in_range,
@@ -281,17 +281,17 @@ fn bvt_subset_of_int_in_set<'a, E: ParseError<&'a str>>(
 }
 fn int_in_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, (i128, i128), E> {
     let (input, lb) = int_literal(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ub) = int_literal(input)?;
     Ok((input, (lb, ub)))
 }
 fn float_in_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, (f64, f64), E> {
     let (input, lb) = float_literal(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ub) = float_literal(input)?;
     Ok((input, (lb, ub)))
 }
@@ -300,13 +300,13 @@ fn subset_of_int_in_range<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, (i128, i128), E> {
     let (input, _tag) = tag("set")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, lb) = int_literal(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ub) = int_literal(input)?;
     Ok((input, (lb, ub)))
 }
@@ -315,18 +315,18 @@ fn subset_of_int_in_set<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<i128>, E> {
     let (input, _tag) = tag("set of {")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list(char(','), int_literal)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("}")(input)?;
     Ok((input, v))
 }
 // "{" <int-literal> "," ... "}"
 fn int_in_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Vec<i128>, E> {
     let (input, _) = char('{')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list(char(','), int_literal)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, v))
 }
@@ -425,17 +425,17 @@ fn ppt_basic_pred_par_type<'a, E: ParseError<&'a str>>(
 fn array_of_pred_index_set<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, PredParType, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("array")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ix) = pred_index_set(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, par_type) = basic_pred_par_type(input)?;
     Ok((input, PredParType::Array { ix, par_type }))
 }
@@ -481,7 +481,7 @@ pub enum IntExpr {
     VarParIdentifier(String),
 }
 fn int_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, IntExpr, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, expr) = alt((ie_int_literal, ie_var_par_identifier))(input)?;
     Ok((input, expr))
 }
@@ -554,7 +554,7 @@ pub enum Expr {
     ArrayOfSet(Vec<SetExpr>),
 }
 fn expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, expr) = alt((
         e_var_par_identifier,
         e_bool_literal,
@@ -661,71 +661,71 @@ fn test_par_decl_item() {
 pub fn par_decl_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ParDeclItem, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ptype) = par_type(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, id) = var_par_identifier(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('=')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     match ptype {
         ParType::Array { ix, par_type } => match par_type {
             BasicParType::Bool => {
                 let (input, expr) = array_of_bool_literal(input)?;
-                let (input, _) = myspc0(input)?;
+                let (input, _) = space_or_comment0(input)?;
                 let (input, _) = char(';')(input)?;
-                let (input, _) = myspc0(input)?;
+                let (input, _) = space_or_comment0(input)?;
                 Ok((input, ParDeclItem::ArrayOfBool { ix, id, expr }))
             }
             BasicParType::Int => {
                 let (input, expr) = array_of_int_literal(input)?;
-                let (input, _) = myspc0(input)?;
+                let (input, _) = space_or_comment0(input)?;
                 let (input, _) = char(';')(input)?;
-                let (input, _) = myspc0(input)?;
+                let (input, _) = space_or_comment0(input)?;
                 Ok((input, ParDeclItem::ArrayOfInt { ix, id, expr }))
             }
             BasicParType::Float => {
                 let (input, expr) = array_of_float_literal(input)?;
-                let (input, _) = myspc0(input)?;
+                let (input, _) = space_or_comment0(input)?;
                 let (input, _) = char(';')(input)?;
-                let (input, _) = myspc0(input)?;
+                let (input, _) = space_or_comment0(input)?;
                 Ok((input, ParDeclItem::ArrayOfFloat { ix, id, expr }))
             }
             BasicParType::SetOfInt => {
                 let (input, expr) = array_of_set_literal(input)?;
-                let (input, _) = myspc0(input)?;
+                let (input, _) = space_or_comment0(input)?;
                 let (input, _) = char(';')(input)?;
-                let (input, _) = myspc0(input)?;
+                let (input, _) = space_or_comment0(input)?;
                 Ok((input, ParDeclItem::ArrayOfSet { ix, id, expr }))
             }
         },
         ParType::Bool => {
             let (input, bool) = bool_literal(input)?;
-            let (input, _) = myspc0(input)?;
+            let (input, _) = space_or_comment0(input)?;
             let (input, _) = char(';')(input)?;
-            let (input, _) = myspc0(input)?;
+            let (input, _) = space_or_comment0(input)?;
             Ok((input, ParDeclItem::Bool { id, bool }))
         }
         ParType::Int => {
             let (input, int) = int_literal(input)?;
-            let (input, _) = myspc0(input)?;
+            let (input, _) = space_or_comment0(input)?;
             let (input, _) = char(';')(input)?;
-            let (input, _) = myspc0(input)?;
+            let (input, _) = space_or_comment0(input)?;
             Ok((input, ParDeclItem::Int { id, int }))
         }
         ParType::Float => {
             let (input, float) = float_literal(input)?;
-            let (input, _) = myspc0(input)?;
+            let (input, _) = space_or_comment0(input)?;
             let (input, _) = char(';')(input)?;
-            let (input, _) = myspc0(input)?;
+            let (input, _) = space_or_comment0(input)?;
             Ok((input, ParDeclItem::Float { id, float }))
         }
         ParType::SetOfInt => {
             let (input, set_literal) = set_literal(input)?;
-            let (input, _) = myspc0(input)?;
+            let (input, _) = space_or_comment0(input)?;
             let (input, _) = char(';')(input)?;
-            let (input, _) = myspc0(input)?;
+            let (input, _) = space_or_comment0(input)?;
             Ok((input, ParDeclItem::SetOfInt { id, set_literal }))
         }
     }
@@ -915,31 +915,31 @@ pub enum VarDeclItem {
 pub fn var_decl_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, item) = alt((
         vdi_basic_var_with_assignment,
         vdi_basic_var_without_assignment,
         vdi_array_with_assignment,
         vdi_array_without_assignment,
     ))(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, item))
 }
 fn vdi_basic_var_with_assignment<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
     let (input, var_type) = basic_var_type(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, id) = var_par_identifier(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, annos) = annotations(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('=')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     match var_type {
         BasicVarType::Bool => {
             let (input, bool) = bool_expr(input)?;
@@ -1054,13 +1054,13 @@ fn vdi_basic_var_without_assignment<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, VarDeclItem, E> {
     let (input, var_type) = basic_var_type(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, id) = var_par_identifier(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, annos) = annotations(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     match var_type {
         BasicVarType::Bool => Ok((
             input,
@@ -1150,26 +1150,26 @@ fn vdi_array_with_assignment<'a, E: ParseError<&'a str>>(
     // let (input, avt) = array_var_type(input)?;
 
     let (input, _tag) = tag("array")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, int) = index_set(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, var_type) = basic_var_type(input)?;
 
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, id) = var_par_identifier(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, annos) = annotations(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('=')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     match var_type {
         BasicVarType::Bool => {
             let (input, array_literal) = array_of_bool_expr(input)?;
@@ -1295,24 +1295,24 @@ fn vdi_array_without_assignment<'a, E: ParseError<&'a str>>(
     // let (input, avt) = array_var_type(input)?;
 
     let (input, _tag) = tag("array")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, int) = index_set(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, var_type) = basic_var_type(input)?;
 
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, id) = var_par_identifier(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, annos) = annotations(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     match var_type {
         BasicVarType::Bool => Ok((
             input,
@@ -1536,20 +1536,20 @@ pub struct ConstraintItem {
 pub fn constraint_item<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ConstraintItem, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("constraint")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, id) = identifier(input)?;
     let (input, _) = char('(')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, exprs) = separated_list(char(','), expr)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(')')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, annos) = annotations(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, ConstraintItem { id, exprs, annos }))
 }
 #[test]
@@ -1585,11 +1585,11 @@ pub struct SolveItem {
     pub annotations: Annotations,
 }
 pub fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = tag("solve")(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, annotations) = annotations(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, goal) = alt((
         satisfy,
         optimize_bool,
@@ -1597,9 +1597,9 @@ pub fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
         optimize_float,
         optimize_set,
     ))(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, SolveItem { annotations, goal }))
 }
 #[derive(PartialEq, Clone, Debug)]
@@ -1632,25 +1632,25 @@ fn maximize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Opti
 }
 fn optimize_bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
     let (input, opt_type) = opt_type(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, be) = bool_expr(input)?;
     Ok((input, Goal::OptimizeBool(opt_type, be)))
 }
 fn optimize_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
     let (input, opt_type) = opt_type(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, be) = int_expr(input)?;
     Ok((input, Goal::OptimizeInt(opt_type, be)))
 }
 fn optimize_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
     let (input, opt_type) = opt_type(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, be) = float_expr(input)?;
     Ok((input, Goal::OptimizeFloat(opt_type, be)))
 }
 fn optimize_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
     let (input, opt_type) = opt_type(input)?;
-    let (input, _) = myspc1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, be) = set_expr(input)?;
     Ok((input, Goal::OptimizeSet(opt_type, be)))
 }
@@ -1661,7 +1661,7 @@ fn annotations<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, A
 }
 fn annotation1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Annotation, E> {
     let (input, _) = tag("::")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     annotation(input)
 }
 #[derive(PartialEq, Clone, Debug)]
@@ -1687,7 +1687,7 @@ fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
             },
         ))
     } else {
-        let (input, _) = myspc0(input)?;
+        let (input, _) = space_or_comment0(input)?;
         Ok((
             input,
             Annotation::Id {
@@ -1712,9 +1712,9 @@ fn ann_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnE
 }
 fn ae_annotations<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, res) = separated_list(char(','), annotation)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, AnnExpr::Annotations(res)))
 }
@@ -1773,35 +1773,35 @@ fn set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, S
 }
 fn sl_int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
     let (input, lb) = int_literal(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ub) = int_literal(input)?;
     Ok((input, SetLiteral::IntRange(lb, ub)))
 }
 fn sl_float_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
     let (input, lb) = float_literal(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ub) = float_literal(input)?;
     Ok((input, SetLiteral::FloatRange(lb, ub)))
 }
 // "{" <int-literal> "," ... "}"
 fn sl_set_of_ints<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
     let (input, _) = char('{')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list(char(','), int_literal)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetInts(v)))
 }
 // "{" <float-literal> "," ... "}"
 fn sl_set_of_floats<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
     let (input, _) = char('{')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list(char(','), float_literal)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetFloats(v)))
 }
@@ -1809,9 +1809,9 @@ fn array_of_bool_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<BoolExpr>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list(char(','), bool_expr)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -1819,9 +1819,9 @@ fn array_of_bool_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<bool>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list(char(','), bool_literal)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -1829,9 +1829,9 @@ fn array_of_int_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<IntExpr>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list(char(','), int_expr)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -1839,9 +1839,9 @@ fn array_of_int_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<i128>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list(char(','), int_literal)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -1849,9 +1849,9 @@ fn array_of_float_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<FloatExpr>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list(char(','), float_expr)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -1859,9 +1859,9 @@ fn array_of_float_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<f64>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list(char(','), float_literal)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -1869,9 +1869,9 @@ fn array_of_set_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<SetExpr>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list(char(','), set_expr)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -1879,9 +1879,9 @@ fn array_of_set_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<SetLiteral>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list(char(','), set_literal)(input)?;
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -1944,7 +1944,7 @@ fn bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, 
     }
 }
 fn int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, int) = alt((decimal, hexadecimal, octal))(input)?;
     Ok((input, int as i128))
 }
@@ -2030,7 +2030,7 @@ fn test_float() {
     assert_eq!(float_literal::<VerboseError<&str>>("1.0,"), Ok((",", 1.0)));
 }
 fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
-    let (input, _) = myspc0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, f) = fz_float(input)?;
     Ok((input, f))
 }
@@ -2080,11 +2080,11 @@ fn bpart<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String,
     }
 }
 // white space or comments
-fn myspc0<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
+fn space_or_comment0<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
     let (input, s) = alt((comment, multispace0))(input)?;
     Ok((input, s))
 }
-fn myspc1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
+fn space_or_comment1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
     let (input, s) = alt((comment, multispace1))(input)?;
     Ok((input, s))
 }
