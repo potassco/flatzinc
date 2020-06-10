@@ -20,12 +20,12 @@ pub enum FzStmt {
 }
 pub fn fz_statement<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, FzStmt, E> {
     let (input, res) = alt((
-        fz_myspc0,
         fz_predicate,
         fz_parameter,
         fz_variable,
         fz_constraint,
         fz_solve_item,
+        fz_myspc0,
     ))(input)?;
     Ok((input, res))
 }
