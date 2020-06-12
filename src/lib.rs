@@ -101,6 +101,7 @@ pub fn predicate_item<'a, E: ParseError<&'a str>>(
 fn pred_par_type_ident_pair<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, (PredParType, String), E> {
+    let (input, _) = space_or_comment0(input)?;
     let (input, pred_par_type) = pred_par_type(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
