@@ -665,6 +665,7 @@ pub fn par_decl_item<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, ParDeclItem, E> {
     let (input, _) = space_or_comment0(input)?;
     let (input, ptype) = par_type(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, id) = var_par_identifier(input)?;
