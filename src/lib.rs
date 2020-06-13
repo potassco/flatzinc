@@ -107,6 +107,7 @@ fn pred_par_type_ident_pair<'a, E: ParseError<&'a str>>(
     let (input, _) = char(':')(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, ident) = identifier(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, (pred_par_type, ident)))
 }
 #[derive(PartialEq, Clone, Debug)]
