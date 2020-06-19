@@ -698,22 +698,22 @@ pub enum ParDeclItem {
     ArrayOfBool {
         ix: IndexSet,
         id: String,
-        expr: Vec<bool>,
+        v: Vec<bool>,
     },
     ArrayOfInt {
         ix: IndexSet,
         id: String,
-        expr: Vec<i128>,
+        v: Vec<i128>,
     },
     ArrayOfFloat {
         ix: IndexSet,
         id: String,
-        expr: Vec<f64>,
+        v: Vec<f64>,
     },
     ArrayOfSet {
         ix: IndexSet,
         id: String,
-        expr: Vec<SetLiteral>,
+        v: Vec<SetLiteral>,
     },
 }
 #[test]
@@ -726,7 +726,7 @@ fn test_par_decl_item_1() {
             ParDeclItem::ArrayOfFloat {
                 ix: IndexSet(3),
                 id: "X_139".to_string(),
-                expr: vec![1.0, 1.0, 1.0]
+                v: vec![1.0, 1.0, 1.0]
             }
         ))
     );
@@ -801,33 +801,33 @@ pub fn par_decl_item<'a, E: ParseError<&'a str>>(
         ParType::Array { ix, par_type } => match par_type {
             BasicParType::BasicType(bt) => match bt {
                 BasicType::Bool => {
-                    let (input, expr) = array_of_bool_literal(input)?;
+                    let (input, v) = array_of_bool_literal(input)?;
                     let (input, _) = space_or_comment0(input)?;
                     let (input, _) = char(';')(input)?;
                     let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::ArrayOfBool { ix, id, expr }))
+                    Ok((input, ParDeclItem::ArrayOfBool { ix, id, v }))
                 }
                 BasicType::Int => {
-                    let (input, expr) = array_of_int_literal(input)?;
+                    let (input, v) = array_of_int_literal(input)?;
                     let (input, _) = space_or_comment0(input)?;
                     let (input, _) = char(';')(input)?;
                     let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::ArrayOfInt { ix, id, expr }))
+                    Ok((input, ParDeclItem::ArrayOfInt { ix, id, v }))
                 }
                 BasicType::Float => {
-                    let (input, expr) = array_of_float_literal(input)?;
+                    let (input, v) = array_of_float_literal(input)?;
                     let (input, _) = space_or_comment0(input)?;
                     let (input, _) = char(';')(input)?;
                     let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::ArrayOfFloat { ix, id, expr }))
+                    Ok((input, ParDeclItem::ArrayOfFloat { ix, id, v }))
                 }
             },
             BasicParType::SetOfInt => {
-                let (input, expr) = array_of_set_literal(input)?;
+                let (input, v) = array_of_set_literal(input)?;
                 let (input, _) = space_or_comment0(input)?;
                 let (input, _) = char(';')(input)?;
                 let (input, _) = space_or_comment0(input)?;
-                Ok((input, ParDeclItem::ArrayOfSet { ix, id, expr }))
+                Ok((input, ParDeclItem::ArrayOfSet { ix, id, v }))
             }
         },
     }
@@ -1786,14 +1786,14 @@ fn sle_set_of_floats<'a, E: ParseError<&'a str>>(
 #[derive(PartialEq, Clone, Debug)]
 pub enum SetLiteral {
     IntRange(i128, i128),
-    FloatRange(f64, f64),
+    BoundedFloat(f64, f64),
     SetFloats(Vec<f64>),
     SetInts(Vec<i128>),
 }
 fn set_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
     let (input, sl) = alt((
         sl_int_range,
-        sl_float_range,
+        sl_bounded_float,
         sl_set_of_ints,
         sl_set_of_floats,
     ))(input)?;
@@ -1807,13 +1807,13 @@ fn sl_int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, 
     let (input, ub) = int_literal(input)?;
     Ok((input, SetLiteral::IntRange(lb, ub)))
 }
-fn sl_float_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
+fn sl_bounded_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
     let (input, lb) = float_literal(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, ub) = float_literal(input)?;
-    Ok((input, SetLiteral::FloatRange(lb, ub)))
+    Ok((input, SetLiteral::BoundedFloat(lb, ub)))
 }
 // "{" <int-literal> "," ... "}"
 fn sl_set_of_ints<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SetLiteral, E> {
