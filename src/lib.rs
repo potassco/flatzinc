@@ -1637,8 +1637,8 @@ fn annotation1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, A
 }
 #[derive(PartialEq, Clone, Debug)]
 pub struct Annotation {
-    id: String,
-    expressions: Vec<AnnExpr>,
+    pub id: String,
+    pub expressions: Vec<AnnExpr>,
 }
 // <annotation> ::= <identifier>
 //                | <identifier> "(" <ann-expr> "," ... ")"
