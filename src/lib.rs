@@ -866,7 +866,7 @@ fn test_var_decl_item_1() {
             VarDeclItem::ArrayOfSubSetOfIntRange {
                 ix: IndexSet(1),
                 id: "sets".to_string(),
-                annos: vec![Annotation::Id {
+                annos: vec![Annotation {
                     id: "output_array".to_string(),
                     expressions: vec![AnnExpr::Expr(Expr::ArrayOfSet(vec![SetExpr::Set(
                         SetLiteralExpr::IntInRange(IntExpr::Int(1), IntExpr::Int(1))
@@ -931,7 +931,7 @@ fn test_var_decl_item_4() {
         ))
     );
     assert_eq!(
-        var_decl_item::<VerboseError<&str>>("var 1..101: objective = X_2586;"),
+        var_decl_item::<VerboseError<&str>>("var 1..101: objective :: output_var = X_2586;"),
         Ok((
             "",
             VarDeclItem::IntInRange {
@@ -939,7 +939,10 @@ fn test_var_decl_item_4() {
                 lb: 1,
                 ub: 101,
                 expr: Some(IntExpr::VarParIdentifier("X_2586".to_string())),
-                annos: vec![],
+                annos: vec![Annotation {
+                    id: "output_var".to_string(),
+                    expressions: vec![]
+                }],
             }
         ))
     );
@@ -1389,7 +1392,7 @@ fn test_constraint_item() {
                     Expr::Set(SetLiteralExpr::IntInRange(IntExpr::Int(1), IntExpr::Int(2))),
                     Expr::VarParIdentifier("X_52".to_string())
                 ],
-                annos: vec![Annotation::Id {
+                annos: vec![Annotation {
                     id: "defines_var".to_string(),
                     expressions: vec![AnnExpr::Expr(Expr::VarParIdentifier("X_52".to_string()))]
                 }]
@@ -1534,7 +1537,7 @@ fn test_solve_item() {
                     OptimizationType::Minimize,
                     BoolExpr::VarParIdentifier("X_24".to_string())
                 ),
-                annotations: vec![Annotation::Id {
+                annotations: vec![Annotation {
                     id: "int_search".to_string(),
                     expressions: vec![
                         AnnExpr::Expr(Expr::VarParIdentifier("X_59".to_string())),
@@ -1633,11 +1636,9 @@ fn annotation1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, A
     annotation(input)
 }
 #[derive(PartialEq, Clone, Debug)]
-pub enum Annotation {
-    Id {
-        id: String,
-        expressions: Vec<AnnExpr>,
-    },
+pub struct Annotation {
+    id: String,
+    expressions: Vec<AnnExpr>,
 }
 // <annotation> ::= <identifier>
 //                | <identifier> "(" <ann-expr> "," ... ")"
@@ -1649,7 +1650,7 @@ fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
         let (input, _) = char(')')(input)?;
         Ok((
             input,
-            Annotation::Id {
+            Annotation {
                 id,
                 expressions: expressions_what,
             },
@@ -1658,7 +1659,7 @@ fn annotation<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
         let (input, _) = space_or_comment0(input)?;
         Ok((
             input,
-            Annotation::Id {
+            Annotation {
                 id,
                 expressions: vec![],
             },
