@@ -2094,6 +2094,9 @@ fn is_oct_digit(c: char) -> bool {
 fn from_dec(input: &str) -> Result<u128, std::num::ParseIntError> {
     u128::from_str_radix(input, 10)
 }
+fn from_float(input: &str) -> Result<f64, std::num::ParseFloatError> {
+    input.parse::<f64>()
+}
 fn is_dec_digit(c: char) -> bool {
     c.is_digit(10)
 }
@@ -2120,6 +2123,9 @@ fn test_float() {
     );
     assert_eq!(float_literal::<VerboseError<&str>>("0.21"), Ok(("", 0.21)));
     assert_eq!(float_literal::<VerboseError<&str>>("1.0,"), Ok((",", 1.0)));
+
+    assert_eq!(float_literal::<VerboseError<&str>>("0.000000000000000000000000000000007609999999000000000000000000000000760999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999900000000000000000000000764DD4DDDDDDDDD% 
+    "), Err(Err::Error(VerboseError { errors: vec![("0.000000000000000000000000000000007609999999000000000000000000000000760999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999900000000000000000000000764DD4DDDDDDDDD% \n    ", nom::error::VerboseErrorKind::Nom(nom::error::ErrorKind::MapRes))] })));
 }
 fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
     let (input, _) = space_or_comment0(input)?;
@@ -2128,37 +2134,42 @@ fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
 }
 
 fn fz_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E> {
-    let (input, f) = alt((fz_float1, fz_float2))(input)?;
-    let f2 = f.parse::<f64>().unwrap();
-    Ok((input, f2))
+    let (input2, fl) = map_res(alt((fz_float1, fz_float2)), from_float)(input)?;
+    Ok((input2, fl))
 }
 
-fn fz_float1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
-    let (input, sign) = opt(char('-'))(input)?;
-    let (input, a) = take_while1(is_dec_digit)(input)?;
-    let (input, _) = char('.')(input)?;
-    let (input, b) = take_while1(is_dec_digit)(input)?;
-    let (input, rest) = opt(bpart)(input)?;
-    if let Some(s) = sign {
+fn fz_float1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
+    let (input1, sign) = opt(char('-'))(input)?;
+    let (input2, a) = take_while1(is_dec_digit)(input1)?;
+    let (input3, _) = char('.')(input2)?;
+    let (input4, b) = take_while1(is_dec_digit)(input3)?;
+    let (input5, rest) = opt(bpart)(input4)?;
+    if sign.is_some() {
         if let Some(rest) = rest {
-            Ok((input, format!("{}{}.{}{}", s, a, b, rest)))
+            let len = 1 + a.len() + 1 + b.len() + rest.len();
+            Ok((input5, &input[..len]))
         } else {
-            Ok((input, format!("{}{}.{}", s, a, b)))
+            let len = 1 + a.len() + 1 + b.len();
+            Ok((input5, &input[..len]))
         }
     } else if let Some(rest) = rest {
-        Ok((input, format!("{}.{}{}", a, b, rest)))
+        let len = a.len() + 1 + b.len() + rest.len();
+        Ok((input5, &input[..len]))
     } else {
-        Ok((input, format!("{}.{}", a, b)))
+        let len = a.len() + 1 + b.len();
+        Ok((input5, &input[..len]))
     }
 }
-fn fz_float2<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
-    let (input, sign) = opt(char('-'))(input)?;
-    let (input, digits) = take_while1(is_dec_digit)(input)?;
-    let (input, rest) = bpart(input)?;
-    if let Some(sign) = sign {
-        Ok((input, format!("{}{}{}", sign, digits, rest)))
+fn fz_float2<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
+    let (input1, sign) = opt(char('-'))(input)?;
+    let (input2, digits) = take_while1(is_dec_digit)(input1)?;
+    let (input3, rest) = bpart(input2)?;
+    if sign.is_some() {
+        let len = 1 + digits.len() + rest.len();
+        Ok((input3, &input[..len]))
     } else {
-        Ok((input, format!("{}{}", digits, rest)))
+        let len = digits.len() + rest.len();
+        Ok((input3, &input[..len]))
     }
 }
 fn bpart<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
