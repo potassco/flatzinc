@@ -2144,33 +2144,29 @@ fn fz_float1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a
     let (input3, _) = char('.')(input2)?;
     let (input4, b) = take_while1(is_dec_digit)(input3)?;
     let (input5, rest) = opt(bpart)(input4)?;
-    if sign.is_some() {
+    let len = if sign.is_some() {
         if let Some(rest) = rest {
-            let len = 1 + a.len() + 1 + b.len() + rest.len();
-            Ok((input5, &input[..len]))
+            1 + a.len() + 1 + b.len() + rest.len()
         } else {
-            let len = 1 + a.len() + 1 + b.len();
-            Ok((input5, &input[..len]))
+            1 + a.len() + 1 + b.len()
         }
     } else if let Some(rest) = rest {
-        let len = a.len() + 1 + b.len() + rest.len();
-        Ok((input5, &input[..len]))
+        a.len() + 1 + b.len() + rest.len()
     } else {
-        let len = a.len() + 1 + b.len();
-        Ok((input5, &input[..len]))
-    }
+        a.len() + 1 + b.len()
+    };
+    Ok((input5, &input[..len]))
 }
 fn fz_float2<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
     let (input1, sign) = opt(char('-'))(input)?;
     let (input2, digits) = take_while1(is_dec_digit)(input1)?;
     let (input3, rest) = bpart(input2)?;
-    if sign.is_some() {
-        let len = 1 + digits.len() + rest.len();
-        Ok((input3, &input[..len]))
+    let len = if sign.is_some() {
+        1 + digits.len() + rest.len()
     } else {
-        let len = digits.len() + rest.len();
-        Ok((input3, &input[..len]))
-    }
+        digits.len() + rest.len()
+    };
+    Ok((input3, &input[..len]))
 }
 fn bpart<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
     let (input, e) = alt((tag("e"), tag("E")))(input)?;
