@@ -1,6 +1,6 @@
 [package]
 name = "flatzinc"
-version = "0.3.15"
+version = "0.3.16"
 publish = true
 authors = ["Sven Thiele <sthiele78@gmail.com>"]
 description = "A FlatZinc parser"
@@ -13,7 +13,7 @@ edition = "2018"
 exclude = ["/.github"]
 
 [dependencies]
-nom = "5.1"
+nom = "6.1"
 structopt = "0.3"
 anyhow = "1.0"
 log = "0.4"
