@@ -1749,7 +1749,7 @@ where
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(';')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    Ok((input, SolveItem { annotations, goal }))
+    Ok((input, SolveItem { goal, annotations }))
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum Goal {
@@ -1935,10 +1935,7 @@ fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, An
     Ok((input, AnnExpr::String(string.to_string())))
 }
 fn is_valid(c: char) -> bool {
-    match c {
-        '"' => false,
-        _ => true,
-    }
+    !matches!(c, '"')
 }
 #[derive(PartialEq, Clone, Debug)]
 pub enum SetLiteralExpr {
@@ -2383,7 +2380,7 @@ fn is_oct_digit(c: char) -> bool {
     c.is_digit(8)
 }
 fn from_dec(input: &str) -> Result<u128, std::num::ParseIntError> {
-    u128::from_str_radix(input, 10)
+    input.parse::<u128>()
 }
 fn from_float(input: &str) -> Result<f64, std::num::ParseFloatError> {
     input.parse::<f64>()
