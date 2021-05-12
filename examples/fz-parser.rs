@@ -30,12 +30,15 @@ fn run() -> Result<()> {
 
     let opt = Opt::from_args();
     let buf = std::fs::read_to_string(opt.file)?;
-    match flatzinc::model::<VerboseError<&str>>(&buf) {
-        Ok((_, result)) => println!("{:#?}", result),
-        Err(Err::Error(e)) | Err(Err::Failure(e)) => {
-            error!("Failed to parse flatzinc!\n{}", convert_error(&buf, e))
+    for line in buf.lines() {
+        match flatzinc::statement::<VerboseError<&str>>(&line) {
+            Ok((_, result)) => println!("{:#?}", result),
+            Err(Err::Error(e)) => {
+                let bla = convert_error(buf.as_str(), e);
+                error!("Failed to parse flatzinc!\n{}", bla)
+            }
+            Err(e) => error!("Failed to parse flatzinc: {:?}", e),
         }
-        Err(e) => error!("Failed to parse flatzinc: {:?}", e),
     }
     Ok(())
 }
