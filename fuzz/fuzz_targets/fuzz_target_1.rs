@@ -10,10 +10,11 @@ use std::str;
 fuzz_target!(|data: &[u8]| {
     // fuzzed code goes here
     if let Ok(utf8_str) = str::from_utf8(data) {
-        match flatzinc::model::<VerboseError<&str>>(utf8_str) {
+        match flatzinc::statement::<VerboseError<&str>>(utf8_str) {
             Ok((_, result)) => println!("{:#?}", result),
             Err(Err::Error(_e)) | Err(Err::Failure(_e)) => {
-                // print!("Failed to parse flatzinc!\n{}", convert_error(utf8_str, _e))
+                // let bla = convert_error(buf.as_str(), e);
+                // error!("Failed to parse flatzinc!\n{}", bla)
             }
             Err(e) => print!("Failed to parse flatzinc: {:?}", e),
         }
