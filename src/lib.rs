@@ -4,7 +4,7 @@ use nom::{
     bytes::complete::{tag, take_till, take_while, take_while1},
     character::complete::{char, multispace0, multispace1, one_of},
     combinator::{all_consuming, map_res, opt},
-    multi::{many0, separated_list1},
+    multi::{many0, separated_list0, separated_list1},
 };
 pub use nom::{
     error::{convert_error, ErrorKind, FromExternalError, ParseError, VerboseError},
@@ -398,7 +398,7 @@ where
 {
     let (input, _) = char('{')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), float_literal)(input)?;
+    let (input, v) = separated_list0(char(','), float_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, v))
@@ -428,7 +428,7 @@ where
 {
     let (input, _tag) = tag("set of {")(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), int_literal)(input)?;
+    let (input, v) = separated_list0(char(','), int_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("}")(input)?;
     Ok((input, v))
@@ -440,7 +440,7 @@ where
 {
     let (input, _) = char('{')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), int_literal)(input)?;
+    let (input, v) = separated_list0(char(','), int_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, v))
@@ -899,6 +899,25 @@ fn test_par_decl_item_2() {
     par_decl_item::<VerboseError<&str>>("bool : b2 = b1;").unwrap();
 }
 #[test]
+fn test_par_decl_item_3() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        par_decl_item::<VerboseError<&str>>("array [1..3] of set of int : h = [{42,17},1..5,{}];"),
+        Ok((
+            "",
+            ParDeclItem::ArrayOfSet {
+                ix: IndexSet(3),
+                id: "h".to_string(),
+                v: vec![
+                    SetLiteral::SetInts(vec![42, 17]),
+                    SetLiteral::IntRange(1, 5),
+                    SetLiteral::SetInts(vec![])
+                ]
+            }
+        ))
+    );
+}
+#[test]
 fn pred_par_type_2() {
     use nom::error::VerboseError;
     assert_eq!(
@@ -1111,6 +1130,37 @@ fn test_var_decl_item_4() {
         ))
     );
 }
+#[test]
+fn test_var_decl_item_5() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        var_decl_item::<VerboseError<&str>>(
+            "array [1..3] of var set of 17..42: h = [{42,17},23..X,{}];"
+        ),
+        Ok((
+            "",
+            VarDeclItem::ArrayOfSubSetOfIntRange {
+                lb: 17,
+                ub: 42,
+                annos: vec![],
+                ix: IndexSet(3),
+                id: "h".to_string(),
+                array_expr: Some(ArrayOfSetExpr::Array(vec![
+                    SetExpr::Set(SetLiteralExpr::SetInts(vec![
+                        IntExpr::Int(42),
+                        IntExpr::Int(17)
+                    ])),
+                    SetExpr::Set(SetLiteralExpr::IntInRange(
+                        IntExpr::Int(23),
+                        IntExpr::VarParIdentifier("X".to_string())
+                    )),
+                    SetExpr::Set(SetLiteralExpr::SetInts(vec![])),
+                ])),
+            }
+        ))
+    );
+}
+
 #[test]
 fn test_pred_par_type_3() {
     assert_eq!(
@@ -1994,7 +2044,7 @@ where
 {
     let (input, _) = char('{')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), int_expr)(input)?;
+    let (input, v) = separated_list0(char(','), int_expr)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteralExpr::SetInts(v)))
@@ -2008,7 +2058,7 @@ where
 {
     let (input, _) = char('{')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), float_expr)(input)?;
+    let (input, v) = separated_list0(char(','), float_expr)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteralExpr::SetFloats(v)))
@@ -2063,7 +2113,7 @@ where
 {
     let (input, _) = char('{')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), int_literal)(input)?;
+    let (input, v) = separated_list0(char(','), int_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetInts(v)))
@@ -2075,7 +2125,7 @@ where
 {
     let (input, _) = char('{')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), float_literal)(input)?;
+    let (input, v) = separated_list0(char(','), float_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetFloats(v)))
