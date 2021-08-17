@@ -210,6 +210,6 @@ fn pis_index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, int) = statements::index_set(input)?;
-    Ok((input, PredIndexSet::IndexSet(int)))
+    let (input, ix) = statements::index_set(input)?;
+    Ok((input, PredIndexSet::IndexSet(ix.0)))
 }

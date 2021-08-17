@@ -97,12 +97,12 @@ where
 #[derive(PartialEq, Clone, Debug)]
 pub struct IndexSet(pub i128);
 
-fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E>
+fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, IndexSet, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _) = char('1')(input)?;
     let (input, _tag) = tag("..")(input)?;
     let (input, int) = primitive_literals::int_literal(input)?;
-    Ok((input, int))
+    Ok((input, IndexSet(int)))
 }

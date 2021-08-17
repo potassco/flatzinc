@@ -83,20 +83,14 @@ where
     let (input, _) = comments::space_or_comment1(input)?;
     let (input, _) = char('[')(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
-    let (input, int) = statements::index_set(input)?;
+    let (input, ix) = statements::index_set(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     let (input, _) = comments::space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
     let (input, _) = comments::space_or_comment1(input)?;
     let (input, par_type) = basic_par_type(input)?;
-    Ok((
-        input,
-        ParType::Array {
-            ix: IndexSet(int),
-            par_type,
-        },
-    ))
+    Ok((input, ParType::Array { ix, par_type }))
 }
 
 #[test]
