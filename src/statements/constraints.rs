@@ -41,8 +41,8 @@ where
 #[test]
 fn test_constraint_item() {
     use crate::expressions::{AnnExpr, Annotation, Expr, IntExpr, SetLiteralExpr};
-    use alloc::str;
     use nom::error::VerboseError;
+    use std::str;
     assert_eq!(
         constraint_item::<VerboseError<&str>>(
             "constraint set_in_reif(X_26,1..2,X_52):: defines_var(X_52);"
@@ -98,8 +98,8 @@ fn test_constraint_item() {
 #[test]
 fn test_constraint_item_2() {
     use crate::expressions::{Expr, IntExpr};
-    use alloc::str;
     use nom::error::VerboseError;
+    use std::str;
     assert_eq!(
         constraint_item::<VerboseError<&str>>("constraint int_lin_eq([-1, 1], [INT01, p], -3);"),
         Ok((
@@ -123,8 +123,8 @@ fn test_constraint_item_2() {
 #[test]
 fn test_constraint_item_3() {
     use crate::expressions::{BoolExpr, Expr};
-    use alloc::str;
     use nom::error::VerboseError;
+    use std::str;
     assert_eq!(
         constraint_item::<VerboseError<&str>>(
             "constraint float_lin_eq(X_139,[X_27,X_28,X_29],1.0);"
@@ -151,8 +151,8 @@ fn test_constraint_item_3() {
 #[test]
 fn test_constraint_item_4() {
     use crate::expressions::{BoolExpr, Expr};
-    use alloc::str;
     use nom::error::VerboseError;
+    use std::str;
     assert_eq!(
         constraint_item::<VerboseError<&str>>("constraint array_bool_or([X_43,X_44],true);"),
         Ok((
