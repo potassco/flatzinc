@@ -1,12 +1,13 @@
 use std::str;
 
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while};
-use nom::character::complete::char;
-use nom::combinator::opt;
-use nom::multi::{many0, separated_list0, separated_list1};
+use nom::bytes::complete::{is_not, tag, take_while_m_n};
+use nom::character::complete::{char, multispace1};
+use nom::combinator::{map, map_opt, map_res, opt, value, verify};
+use nom::multi::{fold_many0, many0, separated_list0, separated_list1};
 
 use crate::{comments, primitive_literals, FromExternalError, IResult, ParseError};
+use nom::sequence::{delimited, preceded};
 
 pub type Annotations = Vec<Annotation>;
 
@@ -124,16 +125,104 @@ where
     Ok((input, AnnExpr::Expr(expr)))
 }
 
-// TODO: implement support for escaped characters in string literals
-pub fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, _) = char('"')(input)?;
-    let (input, string) = take_while(is_valid)(input)?;
-    let (input, _) = char('"')(input)?;
-    Ok((input, AnnExpr::String(string.to_string())))
+//
+// The code for parsing strings including strings with escape characters is from
+// the nom example at
+// https://github.com/Geal/nom/blob/ea483e5a81d04dda28ee0159902ede7fc0563f89/examples/string.rs
+// The original code is under the MIT license Copyright (c) 2014-2019 Geoffroy Couprie
+// https://github.com/Geal/nom/blob/ea483e5a81d04dda28ee0159902ede7fc0563f89/LICENSE
+//
+
+/// Parse a unicode sequence, of the form u{XXXX}, where XXXX is 1 to 6
+/// hexadecimal numerals. We will combine this later with parse_escaped_char
+/// to parse sequences like \u{00AC}.
+fn parse_unicode<'a, E>(input: &'a str) -> IResult<&'a str, char, E>
+where
+    E: ParseError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
+{
+    let parse_hex = take_while_m_n(1, 6, |c: char| c.is_ascii_hexdigit());
+
+    let parse_delimited_hex = preceded(char('u'), delimited(char('{'), parse_hex, char('}')));
+
+    let parse_u32 = map_res(parse_delimited_hex, move |hex| u32::from_str_radix(hex, 16));
+
+    map_opt(parse_u32, std::char::from_u32)(input)
 }
 
-fn is_valid(c: char) -> bool {
-    !matches!(c, '"')
+/// Parse an escaped character: \n, \t, \r, \u{00AC}, etc.
+fn parse_escaped_char<'a, E>(input: &'a str) -> IResult<&'a str, char, E>
+where
+    E: ParseError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
+{
+    preceded(
+        char('\\'),
+        alt((
+            parse_unicode,
+            value('\n', char('n')),
+            value('\r', char('r')),
+            value('\t', char('t')),
+            value('\u{08}', char('b')),
+            value('\u{0C}', char('f')),
+            value('\\', char('\\')),
+            value('/', char('/')),
+            value('"', char('"')),
+        )),
+    )(input)
+}
+
+/// Parse a backslash, followed by any amount of whitespace. This is used later
+/// to discard any escaped whitespace.
+fn parse_escaped_whitespace<'a, E: ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, &'a str, E> {
+    preceded(char('\\'), multispace1)(input)
+}
+
+/// Parse a non-empty block of text that doesn't include \ or "
+fn parse_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
+    let not_quote_slash = is_not("\"\\");
+
+    verify(not_quote_slash, |s: &str| !s.is_empty())(input)
+}
+
+/// A string fragment contains a fragment of a string being parsed: either
+/// a non-empty Literal (a series of non-escaped characters), a single
+/// parsed escaped character, or a block of escaped whitespace.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StringFragment<'a> {
+    Literal(&'a str),
+    EscapedChar(char),
+    EscapedWS,
+}
+
+/// Combine parse_literal, parse_escaped_whitespace, and parse_escaped_char
+/// into a StringFragment.
+fn parse_fragment<'a, E>(input: &'a str) -> IResult<&'a str, StringFragment<'a>, E>
+where
+    E: ParseError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
+{
+    alt((
+        map(parse_literal, StringFragment::Literal),
+        map(parse_escaped_char, StringFragment::EscapedChar),
+        value(StringFragment::EscapedWS, parse_escaped_whitespace),
+    ))(input)
+}
+
+/// Parse a string literal, including escaped characters such as \n and \".
+pub fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseIntError>,
+{
+    let build_string = fold_many0(parse_fragment, String::new, |mut string, fragment| {
+        match fragment {
+            StringFragment::Literal(s) => string.push_str(s),
+            StringFragment::EscapedChar(c) => string.push(c),
+            StringFragment::EscapedWS => {}
+        }
+        string
+    });
+    let (input, string) = delimited(char('"'), build_string, char('"'))(input)?;
+    Ok((input, AnnExpr::String(string)))
 }
 
 #[test]
@@ -142,6 +231,18 @@ fn test_string_lit() {
     assert_eq!(
         string_lit::<VerboseError<&str>>("\"bla\""),
         Ok(("", AnnExpr::String("bla".to_string())))
+    );
+}
+
+#[test]
+fn test_string_lit_escaped_characters() {
+    use nom::error::VerboseError;
+    assert_eq!(
+        string_lit::<VerboseError<&str>>(r#""escaped\"characters\ntest\u{0021}\u{01c3}""#),
+        Ok((
+            "",
+            AnnExpr::String("escaped\"characters\ntest!ǃ".to_string())
+        ))
     );
 }
 
