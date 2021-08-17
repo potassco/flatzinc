@@ -6,11 +6,19 @@ use nom::character::complete::char;
 use nom::combinator::{all_consuming, opt};
 use nom::multi::{separated_list0, separated_list1};
 
+use basic_types::BasicType;
+use constraints::ConstraintItem;
+use solve_items::SolveItem;
+
 use crate::expressions::{
-    Annotation, Annotations, ArrayOfBoolExpr, ArrayOfFloatExpr, ArrayOfIntExpr, ArrayOfSetExpr,
-    BoolExpr, Expr, FloatExpr, IntExpr, SetExpr, SetLiteral,
+    Annotations, ArrayOfBoolExpr, ArrayOfFloatExpr, ArrayOfIntExpr, ArrayOfSetExpr, BoolExpr,
+    FloatExpr, IntExpr, SetExpr, SetLiteral,
 };
 use crate::{comments, expressions, primitive_literals, FromExternalError, IResult, ParseError};
+
+mod basic_types;
+mod constraints;
+mod solve_items;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Stmt {
@@ -28,17 +36,17 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, res) = all_consuming(alt((
-        predicate,
-        parameter,
-        variable,
-        constraint,
-        solve_item,
+        stmt_predicate,
+        stmt_parameter,
+        stmt_variable,
+        stmt_constraint,
+        stmt_solve_item,
         comments::space_or_comment,
     )))(input)?;
     Ok((input, res))
 }
 
-fn predicate<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_predicate<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -47,7 +55,7 @@ where
     Ok((input, Stmt::Predicate(item)))
 }
 
-fn parameter<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_parameter<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -56,7 +64,7 @@ where
     Ok((input, Stmt::Parameter(item)))
 }
 
-fn variable<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_variable<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -65,21 +73,21 @@ where
     Ok((input, Stmt::Variable(item)))
 }
 
-fn constraint<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_constraint<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = constraint_item(input)?;
+    let (input, item) = constraints::constraint_item(input)?;
     Ok((input, Stmt::Constraint(item)))
 }
 
-fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = solve_item_2(input)?;
+    let (input, item) = solve_items::solve_item(input)?;
     Ok((input, Stmt::SolveItem(item)))
 }
 
@@ -163,7 +171,7 @@ fn basic_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 }
 
 fn bpt_basic_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicParType, E> {
-    let (input, bt) = basic_type(input)?;
+    let (input, bt) = basic_types::basic_type(input)?;
     Ok((input, BasicParType::BasicType(bt)))
 }
 
@@ -292,33 +300,6 @@ where
 }
 
 #[derive(PartialEq, Clone, Debug)]
-pub enum BasicType {
-    Bool,
-    Int,
-    Float,
-}
-
-fn basic_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicType, E> {
-    let (input, bt) = alt((bool, float, int))(input)?;
-    Ok((input, bt))
-}
-
-fn bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicType, E> {
-    let (input, _tag) = tag("bool")(input)?;
-    Ok((input, BasicType::Bool))
-}
-
-fn int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicType, E> {
-    let (input, _tag) = tag("int")(input)?;
-    Ok((input, BasicType::Int))
-}
-
-fn float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicType, E> {
-    let (input, _tag) = tag("float")(input)?;
-    Ok((input, BasicType::Float))
-}
-
-#[derive(PartialEq, Clone, Debug)]
 pub enum BasicVarType {
     BasicType(BasicType),
     IntInRange(i128, i128),
@@ -348,7 +329,7 @@ where
 }
 
 fn bvt_basic_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
-    let (input, bt) = basic_type(input)?;
+    let (input, bt) = basic_types::basic_type(input)?;
     Ok((input, BasicVarType::BasicType(bt)))
 }
 
@@ -939,6 +920,7 @@ fn test_var_decl_item_1() {
 
 #[test]
 fn test_var_decl_item_2() {
+    use nom::error::VerboseError;
     assert_eq!(
         var_decl_item::<VerboseError<&str>>("array [1..5] of var 0..3: w =X_32;"),
         Ok((
@@ -957,6 +939,7 @@ fn test_var_decl_item_2() {
 
 #[test]
 fn test_var_decl_item_3() {
+    use nom::error::VerboseError;
     assert_eq!(
         var_decl_item::<VerboseError<&str>>("array [1..5] of var {1,2,3}: w;"),
         Ok((
@@ -974,6 +957,7 @@ fn test_var_decl_item_3() {
 
 #[test]
 fn test_var_decl_item_4() {
+    use nom::error::VerboseError;
     assert_eq!(
         var_decl_item::<VerboseError<&str>>("array [1..5] of var 0..3: w;"),
         Ok((
@@ -1040,6 +1024,7 @@ fn test_var_decl_item_5() {
 
 #[test]
 fn test_pred_par_type_3() {
+    use nom::error::VerboseError;
     assert_eq!(
         pred_par_type::<VerboseError<&str>>("var set of int"),
         Ok(("", PredParType::Basic(BasicPredParType::VarSetOfInt)))
@@ -1048,6 +1033,7 @@ fn test_pred_par_type_3() {
 
 #[test]
 fn test_pred_par_type_ident_pair() {
+    use nom::error::VerboseError;
     assert_eq!(
         pred_par_type_ident_pair::<VerboseError<&str>>("var set of int: g"),
         Ok((
@@ -1476,295 +1462,4 @@ where
             }
         },
     }
-}
-
-#[test]
-fn test_constraint_item() {
-    use crate::expressions::{AnnExpr, Expr, SetLiteralExpr};
-    use nom::error::VerboseError;
-    assert_eq!(
-        constraint_item::<VerboseError<&str>>(
-            "constraint set_in_reif(X_26,1..2,X_52):: defines_var(X_52);"
-        ),
-        Ok((
-            "",
-            ConstraintItem {
-                id: "set_in_reif".to_string(),
-                exprs: vec![
-                    Expr::VarParIdentifier("X_26".to_string()),
-                    Expr::Set(SetLiteralExpr::IntInRange(IntExpr::Int(1), IntExpr::Int(2))),
-                    Expr::VarParIdentifier("X_52".to_string())
-                ],
-                annos: vec![Annotation {
-                    id: "defines_var".to_string(),
-                    expressions: vec![AnnExpr::Expr(Expr::VarParIdentifier("X_52".to_string()))]
-                }]
-            }
-        ))
-    );
-    assert_eq!(
-        constraint_item::<VerboseError<&str>>("constraint array_var_int_element(INT01, w, 2);"),
-        Ok((
-            "",
-            ConstraintItem {
-                id: "array_var_int_element".to_string(),
-                exprs: vec![
-                    Expr::VarParIdentifier("INT01".to_string()),
-                    Expr::VarParIdentifier("w".to_string()),
-                    Expr::Int(2)
-                ],
-                annos: vec![]
-            }
-        ))
-    );
-    assert_eq!(
-        constraint_item::<VerboseError<&str>>("constraint array_var_int_element(INT01, w, 2.0);"),
-        Ok((
-            "",
-            ConstraintItem {
-                id: "array_var_int_element".to_string(),
-                exprs: vec![
-                    Expr::VarParIdentifier("INT01".to_string()),
-                    Expr::VarParIdentifier("w".to_string()),
-                    Expr::Float(2.0)
-                ],
-                annos: vec![]
-            }
-        ))
-    );
-}
-
-#[test]
-fn test_constraint_item_2() {
-    use crate::expressions::Expr;
-    use nom::error::VerboseError;
-    assert_eq!(
-        constraint_item::<VerboseError<&str>>("constraint int_lin_eq([-1, 1], [INT01, p], -3);"),
-        Ok((
-            "",
-            ConstraintItem {
-                id: "int_lin_eq".to_string(),
-                exprs: vec![
-                    Expr::ArrayOfInt(vec![IntExpr::Int(-1), IntExpr::Int(1)]),
-                    Expr::ArrayOfInt(vec![
-                        IntExpr::VarParIdentifier("INT01".to_string()),
-                        IntExpr::VarParIdentifier("p".to_string())
-                    ]),
-                    Expr::Int(-3)
-                ],
-                annos: vec![]
-            }
-        ))
-    );
-}
-
-#[test]
-fn test_constraint_item_3() {
-    use crate::expressions::Expr;
-    use nom::error::VerboseError;
-    assert_eq!(
-        constraint_item::<VerboseError<&str>>(
-            "constraint float_lin_eq(X_139,[X_27,X_28,X_29],1.0);"
-        ),
-        Ok((
-            "",
-            ConstraintItem {
-                id: "float_lin_eq".to_string(),
-                exprs: vec![
-                    Expr::VarParIdentifier("X_139".to_string()),
-                    Expr::ArrayOfBool(vec![
-                        BoolExpr::VarParIdentifier("X_27".to_string()),
-                        BoolExpr::VarParIdentifier("X_28".to_string()),
-                        BoolExpr::VarParIdentifier("X_29".to_string()),
-                    ]),
-                    Expr::Float(1.0)
-                ],
-                annos: vec![]
-            }
-        ))
-    );
-}
-
-#[test]
-fn test_constraint_item_4() {
-    use crate::expressions::Expr;
-    use nom::error::VerboseError;
-    assert_eq!(
-        constraint_item::<VerboseError<&str>>("constraint array_bool_or([X_43,X_44],true);"),
-        Ok((
-            "",
-            ConstraintItem {
-                id: "array_bool_or".to_string(),
-                exprs: vec![
-                    Expr::ArrayOfBool(vec![
-                        BoolExpr::VarParIdentifier("X_43".to_string()),
-                        BoolExpr::VarParIdentifier("X_44".to_string()),
-                    ]),
-                    Expr::Bool(true)
-                ],
-                annos: vec![]
-            }
-        ))
-    );
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct ConstraintItem {
-    pub id: String,
-    pub exprs: Vec<Expr>,
-    pub annos: Vec<Annotation>,
-}
-
-pub fn constraint_item<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, ConstraintItem, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
-{
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, _tag) = tag("constraint")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, id) = primitive_literals::identifier(input)?;
-    let (input, _) = char('(')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, exprs) = separated_list1(char(','), expressions::expr)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, _) = char(')')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, annos) = expressions::annotations(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, _) = char(';')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    Ok((input, ConstraintItem { id, exprs, annos }))
-}
-
-#[test]
-fn test_solve_item() {
-    use crate::expressions::AnnExpr;
-    use nom::error::VerboseError;
-    assert_eq!(
-        solve_item_2::<VerboseError<&str>>(
-            "solve :: int_search(X_59,input_order,indomain_min,complete) minimize X_24;"
-        ),
-        Ok((
-            "",
-            SolveItem {
-                goal: Goal::OptimizeBool(
-                    OptimizationType::Minimize,
-                    BoolExpr::VarParIdentifier("X_24".to_string())
-                ),
-                annotations: vec![Annotation {
-                    id: "int_search".to_string(),
-                    expressions: vec![
-                        AnnExpr::Expr(Expr::VarParIdentifier("X_59".to_string())),
-                        AnnExpr::Expr(Expr::VarParIdentifier("input_order".to_string())),
-                        AnnExpr::Expr(Expr::VarParIdentifier("indomain_min".to_string())),
-                        AnnExpr::Expr(Expr::VarParIdentifier("complete".to_string()))
-                    ]
-                }]
-            }
-        ))
-    );
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct SolveItem {
-    pub goal: Goal,
-    pub annotations: Annotations,
-}
-
-pub fn solve_item_2<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
-{
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, _) = tag("solve")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, annotations) = expressions::annotations(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, goal) = alt((
-        satisfy,
-        optimize_bool,
-        optimize_int,
-        optimize_float,
-        optimize_set,
-    ))(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, _) = char(';')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    Ok((input, SolveItem { goal, annotations }))
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub enum Goal {
-    Satisfy,
-    OptimizeBool(OptimizationType, BoolExpr),
-    OptimizeInt(OptimizationType, IntExpr),
-    OptimizeFloat(OptimizationType, FloatExpr),
-    OptimizeSet(OptimizationType, SetExpr),
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub enum OptimizationType {
-    Minimize,
-    Maximize,
-}
-
-fn satisfy<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
-    let (input, _) = tag("satisfy")(input)?;
-    Ok((input, Goal::Satisfy))
-}
-
-fn opt_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
-    alt((minimize, maximize))(input)
-}
-
-fn minimize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
-    let (input, _) = tag("minimize")(input)?;
-    Ok((input, OptimizationType::Minimize))
-}
-
-fn maximize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
-    let (input, _) = tag("maximize")(input)?;
-    Ok((input, OptimizationType::Maximize))
-}
-
-fn optimize_bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
-    let (input, opt_type) = opt_type(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, be) = expressions::bool_expr(input)?;
-    Ok((input, Goal::OptimizeBool(opt_type, be)))
-}
-
-fn optimize_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
-{
-    let (input, opt_type) = opt_type(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, be) = expressions::int_expr(input)?;
-    Ok((input, Goal::OptimizeInt(opt_type, be)))
-}
-
-fn optimize_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
-{
-    let (input, opt_type) = opt_type(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, be) = expressions::float_expr(input)?;
-    Ok((input, Goal::OptimizeFloat(opt_type, be)))
-}
-
-fn optimize_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
-{
-    let (input, opt_type) = opt_type(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, be) = expressions::set_expr(input)?;
-    Ok((input, Goal::OptimizeSet(opt_type, be)))
 }
