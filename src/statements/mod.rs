@@ -13,15 +13,15 @@ use variable_declarations::VarDeclItem;
 
 use crate::{comments, primitive_literals, FromExternalError, IResult, ParseError};
 
-mod basic_types;
-mod constraints;
-mod parameter_types;
-mod parameter_declarations;
-mod predicate_declarations;
-mod predicate_types;
-mod solve_items;
-mod variable_declarations;
-mod variable_types;
+pub mod basic_types;
+pub mod constraints;
+pub mod parameter_declarations;
+pub mod parameter_types;
+pub mod predicate_declarations;
+pub mod predicate_types;
+pub mod solve_items;
+pub mod variable_declarations;
+pub mod variable_types;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Stmt {
