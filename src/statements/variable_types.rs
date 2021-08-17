@@ -45,20 +45,14 @@ where
     let (input, _) = comments::space_or_comment0(input)?;
     let (input, _) = char('[')(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
-    let (input, int) = statements::index_set(input)?;
+    let (input, ix) = statements::index_set(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     let (input, _) = comments::space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
     let (input, _) = comments::space_or_comment1(input)?;
     let (input, var_type) = basic_var_type(input)?;
-    Ok((
-        input,
-        VarType::Array {
-            ix: IndexSet(int),
-            var_type,
-        },
-    ))
+    Ok((input, VarType::Array { ix, var_type }))
 }
 
 #[derive(PartialEq, Clone, Debug)]
