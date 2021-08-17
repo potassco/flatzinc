@@ -2333,25 +2333,20 @@ fn var_par_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a
     }
 }
 fn is_reserved_key_word(string: &str) -> bool {
-    match string {
-        "annotation" | "any" | "array" | "bool" | "case" | "constraint" | "diff" | "div"
+    matches!(string, "annotation" | "any" | "array" | "bool" | "case" | "constraint" | "diff" | "div"
         | "else" | "elseif" | "endif" | "enum" | "false" | "float" | "function" | "if" | "in"
         | "include" | "int" | "intersect" | "let" | "list" | "maximize" | "minimize" | "mod"
         | "not" | "of" | "satisfy" | "subset" | "superset" | "output" | "par" | "predicate"
         | "record" | "set" | "solve" | "string" | "symdiff" | "test" | "then" | "true"
-        | "tuple" | "union" | "type" | "var" | "where" | "xor" => true,
-        _ => false,
-    }
+        | "tuple" | "union" | "type" | "var" | "where" | "xor")
 }
 fn is_identifier_rest(c: char) -> bool {
-    match c {
-        'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o'
+    //one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")(input.into()) {
+    matches!(c, 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o'
         | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C'
         | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q'
         | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '_' | '0' | '1' | '2' | '3'
-        | '4' | '5' | '6' | '7' | '8' | '9' => true, //one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")(input.into()) {
-        _ => false,
-    }
+        | '4' | '5' | '6' | '7' | '8' | '9')
 }
 fn bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, bool, E> {
     let (input, string) = alt((tag("true"), tag("false")))(input)?;
