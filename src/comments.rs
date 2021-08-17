@@ -5,7 +5,8 @@ use nom::bytes::complete::take_till;
 use nom::character::complete::{char, multispace0, multispace1};
 use nom::combinator::opt;
 
-use crate::{IResult, ParseError, Stmt};
+use crate::statements::Stmt;
+use crate::{IResult, ParseError};
 
 // white space or comments
 pub fn space_or_comment0<'a, E: ParseError<&'a str>>(

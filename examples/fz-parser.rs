@@ -31,7 +31,7 @@ fn run() -> Result<()> {
     let opt = Opt::from_args();
     let buf = std::fs::read_to_string(opt.file)?;
     for line in buf.lines() {
-        match flatzinc::statement::<VerboseError<&str>>(&line) {
+        match flatzinc::statements::statement::<VerboseError<&str>>(&line) {
             Ok((_, result)) => println!("{:#?}", result),
             Err(Err::Error(e)) => {
                 let bla = convert_error(buf.as_str(), e);
