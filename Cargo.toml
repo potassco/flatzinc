@@ -13,7 +13,7 @@ edition = "2018"
 exclude = ["/.github"]
 
 [dependencies]
-nom = "6.1"
+nom = "7.0.0"
 structopt = "0.3"
 anyhow = "1.0"
 log = "0.4"
