@@ -5,7 +5,7 @@ use nom::bytes::complete::{tag, take_while, take_while1};
 use nom::character::complete::{char, one_of};
 use nom::combinator::{map_res, opt};
 
-use crate::{AnnExpr, ErrorKind, FromExternalError, IResult, ParseError};
+use crate::{ErrorKind, FromExternalError, IResult, ParseError};
 
 pub fn identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
     let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")(input)?;
@@ -346,25 +346,4 @@ fn bpart<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String,
     } else {
         Ok((input, format!("{}{}", e, digits)))
     }
-}
-
-// TODO: implement support for escaped characters in string literals
-pub fn string_lit<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, AnnExpr, E> {
-    let (input, _) = char('"')(input)?;
-    let (input, string) = take_while(is_valid)(input)?;
-    let (input, _) = char('"')(input)?;
-    Ok((input, AnnExpr::String(string.to_string())))
-}
-
-fn is_valid(c: char) -> bool {
-    !matches!(c, '"')
-}
-
-#[test]
-fn test_string_lit() {
-    use nom::error::VerboseError;
-    assert_eq!(
-        string_lit::<VerboseError<&str>>("\"bla\""),
-        Ok(("", AnnExpr::String("bla".to_string())))
-    );
 }
