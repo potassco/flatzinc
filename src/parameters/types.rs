@@ -4,9 +4,9 @@ use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
 
-use crate::statements::basic_types::BasicType;
-use crate::statements::{basic_types, IndexSet};
-use crate::{comments, statements, FromExternalError, IResult, ParseError};
+use crate::basic_types::BasicType;
+use crate::primitive_literals::IndexSet;
+use crate::{basic_types, comments, primitive_literals, FromExternalError, IResult, ParseError};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicParType {
@@ -48,7 +48,7 @@ pub enum ParType {
 
 #[test]
 fn test_par_type() {
-    use crate::statements::IndexSet;
+    use crate::primitive_literals::IndexSet;
     use nom::error::VerboseError;
     assert_eq!(
         par_type::<VerboseError<&str>>("array [1..3] of float"),
@@ -83,7 +83,7 @@ where
     let (input, _) = comments::space_or_comment1(input)?;
     let (input, _) = char('[')(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ix) = statements::index_set(input)?;
+    let (input, ix) = primitive_literals::index_set(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     let (input, _) = comments::space_or_comment1(input)?;
@@ -95,41 +95,39 @@ where
 
 #[test]
 fn test_basic_pred_par_type() {
-    use crate::statements::predicate_types;
-    use crate::statements::predicate_types::BasicPredParType;
+    use crate::predicates::types;
+    use crate::predicates::types::BasicPredParType;
     use nom::error::VerboseError;
     assert_eq!(
-        predicate_types::basic_pred_par_type::<VerboseError<&str>>("var set of int"),
+        types::basic_pred_par_type::<VerboseError<&str>>("var set of int"),
         Ok(("", BasicPredParType::VarSetOfInt))
     );
 }
 
 #[test]
 fn test_pred_par_type_range() {
-    use crate::statements::predicate_types;
+    use crate::predicates::types;
     use nom::error::VerboseError;
     assert_eq!(
-        predicate_types::pred_par_type::<VerboseError<&str>>("1..3"),
+        types::pred_par_type::<VerboseError<&str>>("1..3"),
         Ok((
             "",
-            predicate_types::PredParType::Basic(predicate_types::BasicPredParType::IntInRange(
-                1, 3
-            ))
+            types::PredParType::Basic(types::BasicPredParType::IntInRange(1, 3))
         ))
     );
 }
 
 #[test]
 fn test_pred_par_type_2() {
-    use crate::statements::predicate_types;
+    use crate::predicates::types;
     use nom::error::VerboseError;
     assert_eq!(
-        predicate_types::pred_par_type::<VerboseError<&str>>("array [1..1] of var set of int"),
+        types::pred_par_type::<VerboseError<&str>>("array [1..1] of var set of int"),
         Ok((
             "",
-            predicate_types::PredParType::Array {
-                ix: predicate_types::PredIndexSet::IndexSet(1),
-                par_type: predicate_types::BasicPredParType::VarSetOfInt,
+            types::PredParType::Array {
+                ix: types::PredIndexSet::IndexSet(1),
+                par_type: types::BasicPredParType::VarSetOfInt,
             },
         ))
     );
@@ -137,28 +135,28 @@ fn test_pred_par_type_2() {
 
 #[test]
 fn test_pred_par_type_3() {
-    use crate::statements::predicate_types;
+    use crate::predicates::types;
     use nom::error::VerboseError;
     assert_eq!(
-        predicate_types::pred_par_type::<VerboseError<&str>>("var set of int"),
+        types::pred_par_type::<VerboseError<&str>>("var set of int"),
         Ok((
             "",
-            predicate_types::PredParType::Basic(predicate_types::BasicPredParType::VarSetOfInt)
+            types::PredParType::Basic(types::BasicPredParType::VarSetOfInt)
         ))
     );
 }
 
 #[test]
 fn test_pred_par_type_ident_pair() {
-    use crate::statements::predicate_declarations;
-    use crate::statements::predicate_types;
+    use crate::predicates::declarations;
+    use crate::predicates::types;
     use nom::error::VerboseError;
     assert_eq!(
-        predicate_declarations::pred_par_type_ident_pair::<VerboseError<&str>>("var set of int: g"),
+        declarations::pred_par_type_ident_pair::<VerboseError<&str>>("var set of int: g"),
         Ok((
             "",
             (
-                predicate_types::PredParType::Basic(predicate_types::BasicPredParType::VarSetOfInt),
+                types::PredParType::Basic(types::BasicPredParType::VarSetOfInt),
                 "g".to_string()
             )
         ))

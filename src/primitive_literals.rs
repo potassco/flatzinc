@@ -3,7 +3,7 @@ use std::str;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while, take_while1};
 use nom::character::complete::{char, one_of};
-use nom::combinator::{map_res, opt};
+use nom::combinator::{map_res, opt, value};
 
 use crate::{ErrorKind, FromExternalError, IResult, ParseError};
 
@@ -162,12 +162,7 @@ fn is_identifier_rest(c: char) -> bool {
 }
 
 pub fn bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, bool, E> {
-    let (input, string) = alt((tag("true"), tag("false")))(input)?;
-    match string {
-        "true" => Ok((input, true)),
-        "false" => Ok((input, false)),
-        x => panic!("unmatched bool literal {}", x),
-    }
+    alt((value(true, tag("true")), value(false, tag("false"))))(input)
 }
 
 pub fn int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E>
@@ -346,4 +341,17 @@ fn bpart<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String,
     } else {
         Ok((input, format!("{}{}", e, digits)))
     }
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct IndexSet(pub i128);
+
+pub fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, IndexSet, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseIntError>,
+{
+    let (input, _) = char('1')(input)?;
+    let (input, _tag) = tag("..")(input)?;
+    let (input, int) = int_literal(input)?;
+    Ok((input, IndexSet(int)))
 }

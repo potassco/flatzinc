@@ -5,9 +5,9 @@ use nom::bytes::complete::tag;
 use nom::character::complete::char;
 use nom::multi::separated_list0;
 
-use crate::statements::basic_types::BasicType;
-use crate::statements::{basic_types, IndexSet};
-use crate::{comments, primitive_literals, statements, FromExternalError, IResult, ParseError};
+use crate::basic_types::BasicType;
+use crate::primitive_literals::IndexSet;
+use crate::{basic_types, comments, primitive_literals, FromExternalError, IResult, ParseError};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarType {
@@ -45,7 +45,7 @@ where
     let (input, _) = comments::space_or_comment0(input)?;
     let (input, _) = char('[')(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ix) = statements::index_set(input)?;
+    let (input, ix) = primitive_literals::index_set(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     let (input, _) = comments::space_or_comment1(input)?;

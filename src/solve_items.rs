@@ -111,7 +111,7 @@ where
 #[test]
 fn test_solve_item() {
     use crate::expressions::{AnnExpr, Annotation, Expr};
-    use crate::statements::solve_items::{Goal, OptimizationType};
+    use crate::solve_items::{Goal, OptimizationType};
     use nom::error::VerboseError;
     assert_eq!(
         solve_item::<VerboseError<&str>>(
