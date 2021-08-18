@@ -1,27 +1,17 @@
 use std::str;
 
 use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::char;
+
+use crate::constraints::ConstraintItem;
+use crate::parameters::declarations as parameter_declarations;
+use crate::parameters::declarations::ParDeclItem;
+use crate::predicates::declarations as predicate_declarations;
+use crate::predicates::declarations::PredicateItem;
+use crate::solve_items::SolveItem;
+use crate::variables::declarations as variable_declarations;
+use crate::variables::declarations::VarDeclItem;
+use crate::{comments, constraints, solve_items, FromExternalError, IResult, ParseError};
 use nom::combinator::all_consuming;
-
-use constraints::ConstraintItem;
-use parameter_declarations::ParDeclItem;
-use predicate_declarations::PredicateItem;
-use solve_items::SolveItem;
-use variable_declarations::VarDeclItem;
-
-use crate::{comments, primitive_literals, FromExternalError, IResult, ParseError};
-
-pub mod basic_types;
-pub mod constraints;
-pub mod parameter_declarations;
-pub mod parameter_types;
-pub mod predicate_declarations;
-pub mod predicate_types;
-pub mod solve_items;
-pub mod variable_declarations;
-pub mod variable_types;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Stmt {
@@ -92,17 +82,4 @@ where
 {
     let (input, item) = solve_items::solve_item(input)?;
     Ok((input, Stmt::SolveItem(item)))
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct IndexSet(pub i128);
-
-fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, IndexSet, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
-{
-    let (input, _) = char('1')(input)?;
-    let (input, _tag) = tag("..")(input)?;
-    let (input, int) = primitive_literals::int_literal(input)?;
-    Ok((input, IndexSet(int)))
 }

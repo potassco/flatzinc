@@ -2,10 +2,11 @@ use std::str;
 
 use nom::character::complete::char;
 
+use crate::basic_types::BasicType;
 use crate::expressions::SetLiteral;
-use crate::statements::basic_types::BasicType;
-use crate::statements::parameter_types::{BasicParType, ParType};
-use crate::statements::{parameter_types, IndexSet};
+use crate::parameters::types;
+use crate::parameters::types::{BasicParType, ParType};
+use crate::primitive_literals::IndexSet;
 use crate::{comments, expressions, primitive_literals, FromExternalError, IResult, ParseError};
 
 #[derive(PartialEq, Clone, Debug)]
@@ -55,7 +56,7 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ptype) = parameter_types::par_type(input)?;
+    let (input, ptype) = types::par_type(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
     let (input, _) = comments::space_or_comment0(input)?;
@@ -133,7 +134,7 @@ where
 
 #[test]
 fn test_par_decl_item_1() {
-    use crate::statements::IndexSet;
+    use crate::primitive_literals::IndexSet;
     use nom::error::VerboseError;
     assert_eq!(
         par_decl_item::<VerboseError<&str>>("array [1..3] of float: X_139 = [1.0,1.0,1.0];"),
@@ -159,7 +160,7 @@ fn test_par_decl_item_2() {
 #[test]
 fn test_par_decl_item_3() {
     use crate::expressions::SetLiteral;
-    use crate::statements::IndexSet;
+    use crate::primitive_literals::IndexSet;
     use nom::error::VerboseError;
     assert_eq!(
         par_decl_item::<VerboseError<&str>>("array [1..3] of set of int : h = [{42,17},1..5,{}];"),

@@ -4,10 +4,11 @@ use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
 
-use crate::statements::parameter_types::BasicParType;
-use crate::statements::variable_types::BasicVarType;
-use crate::statements::{parameter_types, variable_types};
-use crate::{comments, statements, FromExternalError, IResult, ParseError};
+use crate::parameters::types as parameter_types;
+use crate::parameters::types::BasicParType;
+use crate::variables::types as variable_types;
+use crate::variables::types::BasicVarType;
+use crate::{comments, primitive_literals, FromExternalError, IResult, ParseError};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicPredParType {
@@ -210,6 +211,6 @@ fn pis_index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, ix) = statements::index_set(input)?;
+    let (input, ix) = primitive_literals::index_set(input)?;
     Ok((input, PredIndexSet::IndexSet(ix.0)))
 }
