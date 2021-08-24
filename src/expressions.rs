@@ -657,7 +657,7 @@ fn array_of_bool_expr_literal<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, Vec<BoolExpr>, E> {
     let (input, _) = char('[')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), bool_expr)(input)?;
+    let (input, v) = separated_list0(char(','), bool_expr)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
@@ -668,7 +668,7 @@ pub fn array_of_bool_literal<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, Vec<bool>, E> {
     let (input, _) = char('[')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, al) = separated_list1(char(','), bool_literal)(input)?;
+    let (input, al) = separated_list0(char(','), bool_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
@@ -703,7 +703,7 @@ where
 {
     let (input, _) = char('[')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), int_expr)(input)?;
+    let (input, v) = separated_list0(char(','), int_expr)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
@@ -717,7 +717,7 @@ where
 {
     let (input, _) = char('[')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, al) = separated_list1(char(','), int_literal)(input)?;
+    let (input, al) = separated_list0(char(','), int_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
@@ -752,7 +752,7 @@ where
 {
     let (input, _) = char('[')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), float_expr)(input)?;
+    let (input, v) = separated_list0(char(','), float_expr)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
@@ -766,7 +766,7 @@ where
 {
     let (input, _) = char('[')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, al) = separated_list1(char(','), float_literal)(input)?;
+    let (input, al) = separated_list0(char(','), float_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
@@ -803,7 +803,7 @@ where
 {
     let (input, _) = char('[')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, v) = separated_list1(char(','), set_expr)(input)?;
+    let (input, v) = separated_list0(char(','), set_expr)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
@@ -818,7 +818,7 @@ where
 {
     let (input, _) = char('[')(input)?;
     let (input, _) = space_or_comment0(input)?;
-    let (input, al) = separated_list1(char(','), set_literal)(input)?;
+    let (input, al) = separated_list0(char(','), set_literal)(input)?;
     let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
