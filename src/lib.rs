@@ -9,12 +9,15 @@ pub use expressions::{
     AnnExpr, Annotation, ArrayOfBoolExpr, ArrayOfFloatExpr, ArrayOfIntExpr, ArrayOfSetExpr,
     BoolExpr, Expr, FloatExpr, IntExpr, SetExpr, SetLiteral, SetLiteralExpr,
 };
-pub use parameters::declarations::ParDeclItem;
-pub use predicates::declarations::PredicateItem;
+pub use parameters::{declarations::ParDeclItem, types::BasicParType};
+pub use predicates::{
+    declarations::PredicateItem,
+    types::{BasicPredParType, PredIndexSet, PredParType},
+};
 pub use primitive_literals::IndexSet;
-pub use statements::statement;
-pub use statements::Stmt;
-pub use variables::declarations::VarDeclItem;
+pub use solve_items::{Goal, OptimizationType, SolveItem};
+pub use statements::{statement, Stmt};
+pub use variables::{declarations::VarDeclItem, types::BasicVarType};
 
 pub mod basic_types;
 pub mod comments;

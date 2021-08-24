@@ -1,13 +1,19 @@
 use std::str;
 
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::char;
-use nom::multi::separated_list0;
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::char,
+    error::{FromExternalError, ParseError},
+    multi::separated_list0,
+    IResult,
+};
 
-use crate::basic_types::BasicType;
-use crate::primitive_literals::IndexSet;
-use crate::{basic_types, comments, primitive_literals, FromExternalError, IResult, ParseError};
+use crate::{
+    basic_types::{basic_type, BasicType},
+    comments::{space_or_comment0, space_or_comment1},
+    primitive_literals::{float_literal, index_set, int_literal, IndexSet},
+};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarType {
@@ -42,15 +48,15 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = tag("array")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ix) = primitive_literals::index_set(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, ix) = index_set(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, var_type) = basic_var_type(input)?;
     Ok((input, VarType::Array { ix, var_type }))
 }
@@ -72,9 +78,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("var")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, vt) = alt((
         bvt_basic_type,
         bvt_int_in_range,
@@ -87,7 +93,7 @@ where
 }
 
 fn bvt_basic_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicVarType, E> {
-    let (input, bt) = basic_types::basic_type(input)?;
+    let (input, bt) = basic_type(input)?;
     Ok((input, BasicVarType::BasicType(bt)))
 }
 
@@ -141,11 +147,11 @@ pub fn int_in_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a s
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, lb) = primitive_literals::int_literal(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, lb) = int_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ub) = primitive_literals::int_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, ub) = int_literal(input)?;
     Ok((input, (lb, ub)))
 }
 
@@ -153,11 +159,11 @@ pub fn bounded_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a 
 where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, lb) = primitive_literals::float_literal(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, lb) = float_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ub) = primitive_literals::float_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, ub) = float_literal(input)?;
     Ok((input, (lb, ub)))
 }
 
@@ -167,9 +173,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = char('{')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, v) = separated_list0(char(','), primitive_literals::float_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, v) = separated_list0(char(','), float_literal)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, v))
 }
@@ -182,14 +188,14 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _tag) = tag("set")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, lb) = primitive_literals::int_literal(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment1(input)?;
+    let (input, lb) = int_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ub) = primitive_literals::int_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, ub) = int_literal(input)?;
     Ok((input, (lb, ub)))
 }
 
@@ -201,9 +207,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _tag) = tag("set of {")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, v) = separated_list0(char(','), primitive_literals::int_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, v) = separated_list0(char(','), int_literal)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("}")(input)?;
     Ok((input, v))
 }
@@ -214,9 +220,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _) = char('{')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, v) = separated_list0(char(','), primitive_literals::int_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, v) = separated_list0(char(','), int_literal)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, v))
 }

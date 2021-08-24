@@ -1,7 +1,9 @@
 use anyhow::Result;
 use log::error;
-use nom::error::{convert_error, VerboseError};
-use nom::Err;
+use nom::{
+    error::{convert_error, VerboseError},
+    Err,
+};
 use std::path::PathBuf;
 use stderrlog;
 use structopt::StructOpt;

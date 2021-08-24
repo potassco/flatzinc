@@ -1,13 +1,22 @@
 use std::str;
 
-use nom::branch::alt;
-use nom::bytes::complete::{is_not, tag, take_while_m_n};
-use nom::character::complete::{char, multispace1};
-use nom::combinator::{map, map_opt, map_res, opt, value, verify};
-use nom::multi::{fold_many0, many0, separated_list0, separated_list1};
+use nom::{
+    branch::alt,
+    bytes::complete::{is_not, tag, take_while_m_n},
+    character::complete::{char, multispace1},
+    combinator::{map, map_opt, map_res, opt, value, verify},
+    error::{FromExternalError, ParseError},
+    multi::{fold_many0, many0, separated_list0, separated_list1},
+    sequence::{delimited, preceded},
+    IResult,
+};
 
-use crate::{comments, primitive_literals, FromExternalError, IResult, ParseError};
-use nom::sequence::{delimited, preceded};
+use crate::{
+    comments::space_or_comment0,
+    primitive_literals::{
+        bool_literal, float_literal, identifier, int_literal, var_par_identifier,
+    },
+};
 
 pub type Annotations = Vec<Annotation>;
 
@@ -26,7 +35,7 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = tag("::")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     annotation(input)
 }
 
@@ -43,7 +52,7 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, id) = primitive_literals::identifier(input)?;
+    let (input, id) = identifier(input)?;
     let (input, we) = opt(char('('))(input)?;
     if we.is_some() {
         let (input, expressions_what) = separated_list1(char(','), ann_expr)(input)?;
@@ -56,7 +65,7 @@ where
             },
         ))
     } else {
-        let (input, _) = comments::space_or_comment0(input)?;
+        let (input, _) = space_or_comment0(input)?;
         Ok((
             input,
             Annotation {
@@ -92,9 +101,9 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, res) = separated_list1(char(','), annotation)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, AnnExpr::Annotations(res)))
 }
@@ -258,14 +267,14 @@ pub fn bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
 }
 
 fn be_bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BoolExpr, E> {
-    let (input, expr) = primitive_literals::bool_literal(input)?;
+    let (input, expr) = bool_literal(input)?;
     Ok((input, BoolExpr::Bool(expr)))
 }
 
 fn be_var_par_identifier<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, BoolExpr, E> {
-    let (input, id) = primitive_literals::var_par_identifier(input)?;
+    let (input, id) = var_par_identifier(input)?;
     Ok((input, BoolExpr::VarParIdentifier(id)))
 }
 
@@ -279,7 +288,7 @@ pub fn int_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, 
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, expr) = alt((ie_int_literal, ie_var_par_identifier))(input)?;
     Ok((input, expr))
 }
@@ -288,14 +297,14 @@ fn ie_int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, expr) = primitive_literals::int_literal(input)?;
+    let (input, expr) = int_literal(input)?;
     Ok((input, IntExpr::Int(expr)))
 }
 
 fn ie_var_par_identifier<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, IntExpr, E> {
-    let (input, id) = primitive_literals::var_par_identifier(input)?;
+    let (input, id) = var_par_identifier(input)?;
     Ok((input, IntExpr::VarParIdentifier(id)))
 }
 
@@ -317,14 +326,14 @@ fn fe_float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a s
 where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, expr) = primitive_literals::float_literal(input)?;
+    let (input, expr) = float_literal(input)?;
     Ok((input, FloatExpr::Float(expr)))
 }
 
 fn fe_var_par_identifier<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, FloatExpr, E> {
-    let (input, id) = primitive_literals::var_par_identifier(input)?;
+    let (input, id) = var_par_identifier(input)?;
     Ok((input, FloatExpr::VarParIdentifier(id)))
 }
 
@@ -355,7 +364,7 @@ where
 fn se_var_par_identifier<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, SetExpr, E> {
-    let (input, id) = primitive_literals::var_par_identifier(input)?;
+    let (input, id) = var_par_identifier(input)?;
     Ok((input, SetExpr::VarParIdentifier(id)))
 }
 
@@ -389,7 +398,7 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, expr) = alt((
         e_var_par_identifier,
         e_bool_expr,
@@ -405,12 +414,12 @@ where
 }
 
 fn e_var_par_identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, id) = primitive_literals::var_par_identifier(input)?;
+    let (input, id) = var_par_identifier(input)?;
     Ok((input, Expr::VarParIdentifier(id)))
 }
 
 fn e_bool_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Expr, E> {
-    let (input, b) = primitive_literals::bool_literal(input)?;
+    let (input, b) = bool_literal(input)?;
     Ok((input, Expr::Bool(b)))
 }
 
@@ -418,7 +427,7 @@ fn e_int_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Ex
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, int) = primitive_literals::int_literal(input)?;
+    let (input, int) = int_literal(input)?;
     Ok((input, Expr::Int(int)))
 }
 
@@ -426,7 +435,7 @@ fn e_float_expr<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, 
 where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, float) = primitive_literals::float_literal(input)?;
+    let (input, float) = float_literal(input)?;
     Ok((input, Expr::Float(float)))
 }
 
@@ -501,9 +510,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, lb) = int_expr(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ub) = int_expr(input)?;
     Ok((input, SetLiteralExpr::IntInRange(lb, ub)))
 }
@@ -515,9 +524,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, lb) = float_expr(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, ub) = float_expr(input)?;
     Ok((input, SetLiteralExpr::BoundedFloat(lb, ub)))
 }
@@ -530,9 +539,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _) = char('{')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list0(char(','), int_expr)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteralExpr::SetInts(v)))
 }
@@ -545,9 +554,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = char('{')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list0(char(','), float_expr)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteralExpr::SetFloats(v)))
 }
@@ -579,11 +588,11 @@ fn sl_int_range<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, 
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, lb) = primitive_literals::int_literal(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, lb) = int_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ub) = primitive_literals::int_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, ub) = int_literal(input)?;
     Ok((input, SetLiteral::IntRange(lb, ub)))
 }
 
@@ -591,11 +600,11 @@ fn sl_bounded_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a s
 where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, lb) = primitive_literals::float_literal(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, lb) = float_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("..")(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ub) = primitive_literals::float_literal(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, ub) = float_literal(input)?;
     Ok((input, SetLiteral::BoundedFloat(lb, ub)))
 }
 
@@ -605,9 +614,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _) = char('{')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, v) = separated_list0(char(','), primitive_literals::int_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, v) = separated_list0(char(','), int_literal)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetInts(v)))
 }
@@ -618,9 +627,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = char('{')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, v) = separated_list0(char(','), primitive_literals::float_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, v) = separated_list0(char(','), float_literal)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char('}')(input)?;
     Ok((input, SetLiteral::SetFloats(v)))
 }
@@ -634,7 +643,7 @@ pub enum ArrayOfBoolExpr {
 pub fn array_of_bool_expr<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, ArrayOfBoolExpr, E> {
-    let (input, id) = opt(primitive_literals::var_par_identifier)(input)?;
+    let (input, id) = opt(var_par_identifier)(input)?;
     if let Some(id) = id {
         Ok((input, ArrayOfBoolExpr::VarParIdentifier(id)))
     } else {
@@ -647,9 +656,9 @@ fn array_of_bool_expr_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<BoolExpr>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list1(char(','), bool_expr)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
 }
@@ -658,9 +667,9 @@ pub fn array_of_bool_literal<'a, E: ParseError<&'a str>>(
     input: &'a str,
 ) -> IResult<&'a str, Vec<bool>, E> {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, al) = separated_list1(char(','), primitive_literals::bool_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, al) = separated_list1(char(','), bool_literal)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -677,7 +686,7 @@ pub fn array_of_int_expr<'a, E: ParseError<&'a str>>(
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, id) = opt(primitive_literals::var_par_identifier)(input)?;
+    let (input, id) = opt(var_par_identifier)(input)?;
     if let Some(id) = id {
         Ok((input, ArrayOfIntExpr::VarParIdentifier(id)))
     } else {
@@ -693,9 +702,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list1(char(','), int_expr)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
 }
@@ -707,9 +716,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, al) = separated_list1(char(','), primitive_literals::int_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, al) = separated_list1(char(','), int_literal)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -726,7 +735,7 @@ pub fn array_of_float_expr<'a, E: ParseError<&'a str>>(
 where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, id) = opt(primitive_literals::var_par_identifier)(input)?;
+    let (input, id) = opt(var_par_identifier)(input)?;
     if let Some(id) = id {
         Ok((input, ArrayOfFloatExpr::VarParIdentifier(id)))
     } else {
@@ -742,9 +751,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list1(char(','), float_expr)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
 }
@@ -756,9 +765,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, al) = separated_list1(char(','), primitive_literals::float_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, al) = separated_list1(char(','), float_literal)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
@@ -776,7 +785,7 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, id) = opt(primitive_literals::var_par_identifier)(input)?;
+    let (input, id) = opt(var_par_identifier)(input)?;
     if let Some(id) = id {
         Ok((input, ArrayOfSetExpr::VarParIdentifier(id)))
     } else {
@@ -793,9 +802,9 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, v) = separated_list1(char(','), set_expr)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, v))
 }
@@ -808,9 +817,9 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, al) = separated_list1(char(','), set_literal)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
     Ok((input, al))
 }
