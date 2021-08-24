@@ -178,3 +178,26 @@ fn test_constraint_item_4() {
         ))
     );
 }
+#[test]
+fn test_constraint_item_5() {
+    use crate::{BoolExpr, Expr};
+    use nom::error::VerboseError;
+    use std::str;
+    assert_eq!(
+        constraint_item::<VerboseError<&str>>("constraint bool_clause([],[X_81,X_77]);"),
+        Ok((
+            "",
+            ConstraintItem {
+                id: "bool_clause".to_string(),
+                exprs: vec![
+                    Expr::ArrayOfBool(vec![]),
+                    Expr::ArrayOfBool(vec![
+                        BoolExpr::VarParIdentifier("X_81".to_string()),
+                        BoolExpr::VarParIdentifier("X_77".to_string())
+                    ])
+                ],
+                annos: vec![]
+            }
+        ))
+    );
+}
