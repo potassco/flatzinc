@@ -1,9 +1,6 @@
 use std::str;
 
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-
-use crate::{IResult, ParseError};
+use nom::{branch::alt, bytes::complete::tag, error::ParseError, IResult};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicType {

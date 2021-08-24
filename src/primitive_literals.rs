@@ -1,11 +1,13 @@
 use std::str;
 
-use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while, take_while1};
-use nom::character::complete::{char, one_of};
-use nom::combinator::{map_res, opt, value};
-
-use crate::{ErrorKind, FromExternalError, IResult, ParseError};
+use nom::{
+    branch::alt,
+    bytes::complete::{tag, take_while, take_while1},
+    character::complete::{char, one_of},
+    combinator::{map_res, opt, value},
+    error::{ErrorKind, FromExternalError, ParseError},
+    IResult,
+};
 
 pub fn identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
     let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")(input)?;

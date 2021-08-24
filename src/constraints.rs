@@ -1,11 +1,18 @@
 use std::str;
 
-use nom::bytes::complete::tag;
-use nom::character::complete::char;
-use nom::multi::separated_list1;
+use nom::{
+    bytes::complete::tag,
+    character::complete::char,
+    error::{FromExternalError, ParseError},
+    multi::separated_list1,
+    IResult,
+};
 
-use crate::expressions::{Annotation, Expr};
-use crate::{comments, expressions, primitive_literals, FromExternalError, IResult, ParseError};
+use crate::{
+    comments::{space_or_comment0, space_or_comment1},
+    expressions::{annotations, expr, Annotation, Expr},
+    primitive_literals::identifier,
+};
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct ConstraintItem {
@@ -21,26 +28,26 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _tag) = tag("constraint")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, id) = primitive_literals::identifier(input)?;
+    let (input, _) = space_or_comment1(input)?;
+    let (input, id) = identifier(input)?;
     let (input, _) = char('(')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, exprs) = separated_list1(char(','), expressions::expr)(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, exprs) = separated_list1(char(','), expr)(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(')')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, annos) = expressions::annotations(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, annos) = annotations(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, ConstraintItem { id, exprs, annos }))
 }
 
 #[test]
 fn test_constraint_item() {
-    use crate::expressions::{AnnExpr, Annotation, Expr, IntExpr, SetLiteralExpr};
+    use crate::{AnnExpr, Annotation, Expr, IntExpr, SetLiteralExpr};
     use nom::error::VerboseError;
     use std::str;
     assert_eq!(
@@ -97,7 +104,7 @@ fn test_constraint_item() {
 
 #[test]
 fn test_constraint_item_2() {
-    use crate::expressions::{Expr, IntExpr};
+    use crate::{Expr, IntExpr};
     use nom::error::VerboseError;
     use std::str;
     assert_eq!(
@@ -122,7 +129,7 @@ fn test_constraint_item_2() {
 
 #[test]
 fn test_constraint_item_3() {
-    use crate::expressions::{BoolExpr, Expr};
+    use crate::{BoolExpr, Expr};
     use nom::error::VerboseError;
     use std::str;
     assert_eq!(
@@ -150,7 +157,7 @@ fn test_constraint_item_3() {
 
 #[test]
 fn test_constraint_item_4() {
-    use crate::expressions::{BoolExpr, Expr};
+    use crate::{BoolExpr, Expr};
     use nom::error::VerboseError;
     use std::str;
     assert_eq!(

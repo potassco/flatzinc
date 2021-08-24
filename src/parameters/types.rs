@@ -1,12 +1,18 @@
 use std::str;
 
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::char;
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::char,
+    error::{FromExternalError, ParseError},
+    IResult,
+};
 
-use crate::basic_types::BasicType;
-use crate::primitive_literals::IndexSet;
-use crate::{basic_types, comments, primitive_literals, FromExternalError, IResult, ParseError};
+use crate::{
+    basic_types::{basic_type, BasicType},
+    comments::{space_or_comment0, space_or_comment1},
+    primitive_literals::{index_set, IndexSet},
+};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicParType {
@@ -22,7 +28,7 @@ pub fn basic_par_type<'a, E: ParseError<&'a str>>(
 }
 
 fn bpt_basic_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicParType, E> {
-    let (input, bt) = basic_types::basic_type(input)?;
+    let (input, bt) = basic_type(input)?;
     Ok((input, BasicParType::BasicType(bt)))
 }
 
@@ -30,9 +36,9 @@ fn bpt_basic_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str
 // Moved this be a basic-var-type basic-par-type
 fn bpt_set_of_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicParType, E> {
     let (input, _tag) = tag("set")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("int")(input)?;
     Ok((input, BasicParType::SetOfInt))
 }
@@ -48,7 +54,7 @@ pub enum ParType {
 
 #[test]
 fn test_par_type() {
-    use crate::primitive_literals::IndexSet;
+    use crate::IndexSet;
     use nom::error::VerboseError;
     assert_eq!(
         par_type::<VerboseError<&str>>("array [1..3] of float"),
@@ -80,15 +86,15 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (input, _) = tag("array")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _) = char('[')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ix) = primitive_literals::index_set(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, ix) = index_set(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(']')(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, _tag) = tag("of")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
+    let (input, _) = space_or_comment1(input)?;
     let (input, par_type) = basic_par_type(input)?;
     Ok((input, ParType::Array { ix, par_type }))
 }

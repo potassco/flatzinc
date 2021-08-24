@@ -1,17 +1,23 @@
 use std::str;
 
-use nom::character::complete::char;
-use nom::combinator::opt;
-
-use crate::basic_types::BasicType;
-use crate::expressions::{
-    Annotations, ArrayOfBoolExpr, ArrayOfFloatExpr, ArrayOfIntExpr, ArrayOfSetExpr, BoolExpr,
-    FloatExpr, IntExpr, SetExpr,
+use nom::{
+    character::complete::char,
+    combinator::opt,
+    error::{FromExternalError, ParseError},
+    IResult,
 };
-use crate::primitive_literals::IndexSet;
-use crate::variables::types;
-use crate::variables::types::{BasicVarType, VarType};
-use crate::{comments, expressions, primitive_literals, FromExternalError, IResult, ParseError};
+
+use crate::{
+    basic_types::BasicType,
+    comments::space_or_comment0,
+    expressions::{
+        annotations, array_of_bool_expr, array_of_float_expr, array_of_int_expr, array_of_set_expr,
+        bool_expr, float_expr, int_expr, set_expr, Annotations, ArrayOfBoolExpr, ArrayOfFloatExpr,
+        ArrayOfIntExpr, ArrayOfSetExpr, BoolExpr, FloatExpr, IntExpr, SetExpr,
+    },
+    primitive_literals::{var_par_identifier, IndexSet},
+    variables::types::{var_type, BasicVarType, VarType},
+};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarDeclItem {
@@ -139,11 +145,11 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, item) = vdi_var(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, item))
 }
 
@@ -152,33 +158,33 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, vt) = types::var_type(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, vt) = var_type(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, id) = primitive_literals::var_par_identifier(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, annos) = expressions::annotations(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, id) = var_par_identifier(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, annos) = annotations(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, assign) = opt(char('='))(input)?;
     let assign = assign.is_some();
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     match vt {
         VarType::BasicVarType(bvt) => match bvt {
             BasicVarType::BasicType(BasicType::Bool) => {
-                let (input, expr) = parse_rhs(assign, expressions::bool_expr, input)?;
+                let (input, expr) = parse_rhs(assign, bool_expr, input)?;
                 Ok((input, VarDeclItem::Bool { id, annos, expr }))
             }
             BasicVarType::BasicType(BasicType::Int) => {
-                let (input, expr) = parse_rhs(assign, expressions::int_expr, input)?;
+                let (input, expr) = parse_rhs(assign, int_expr, input)?;
                 Ok((input, VarDeclItem::Int { id, annos, expr }))
             }
             BasicVarType::BasicType(BasicType::Float) => {
-                let (input, expr) = parse_rhs(assign, expressions::float_expr, input)?;
+                let (input, expr) = parse_rhs(assign, float_expr, input)?;
                 Ok((input, VarDeclItem::Float { id, annos, expr }))
             }
             BasicVarType::IntInRange(lb, ub) => {
-                let (input, expr) = parse_rhs(assign, expressions::int_expr, input)?;
+                let (input, expr) = parse_rhs(assign, int_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::IntInRange {
@@ -191,7 +197,7 @@ where
                 ))
             }
             BasicVarType::IntInSet(set) => {
-                let (input, expr) = parse_rhs(assign, expressions::int_expr, input)?;
+                let (input, expr) = parse_rhs(assign, int_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::IntInSet {
@@ -203,7 +209,7 @@ where
                 ))
             }
             BasicVarType::BoundedFloat(lb, ub) => {
-                let (input, expr) = parse_rhs(assign, expressions::float_expr, input)?;
+                let (input, expr) = parse_rhs(assign, float_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::BoundedFloat {
@@ -216,7 +222,7 @@ where
                 ))
             }
             BasicVarType::SubSetOfIntRange(lb, ub) => {
-                let (input, expr) = parse_rhs(assign, expressions::set_expr, input)?;
+                let (input, expr) = parse_rhs(assign, set_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::SubSetOfIntRange {
@@ -229,7 +235,7 @@ where
                 ))
             }
             BasicVarType::SubSetOfIntSet(set) => {
-                let (input, expr) = parse_rhs(assign, expressions::set_expr, input)?;
+                let (input, expr) = parse_rhs(assign, set_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::SubSetOfIntSet {
@@ -244,8 +250,7 @@ where
         VarType::Array { ix, var_type } => match var_type {
             BasicVarType::BasicType(bt) => match bt {
                 BasicType::Bool => {
-                    let (input, array_expr) =
-                        parse_rhs(assign, expressions::array_of_bool_expr, input)?;
+                    let (input, array_expr) = parse_rhs(assign, array_of_bool_expr, input)?;
                     Ok((
                         input,
                         VarDeclItem::ArrayOfBool {
@@ -257,8 +262,7 @@ where
                     ))
                 }
                 BasicType::Int => {
-                    let (input, array_expr) =
-                        parse_rhs(assign, expressions::array_of_int_expr, input)?;
+                    let (input, array_expr) = parse_rhs(assign, array_of_int_expr, input)?;
                     Ok((
                         input,
                         VarDeclItem::ArrayOfInt {
@@ -270,8 +274,7 @@ where
                     ))
                 }
                 BasicType::Float => {
-                    let (input, array_expr) =
-                        parse_rhs(assign, expressions::array_of_float_expr, input)?;
+                    let (input, array_expr) = parse_rhs(assign, array_of_float_expr, input)?;
                     Ok((
                         input,
                         VarDeclItem::ArrayOfFloat {
@@ -284,7 +287,7 @@ where
                 }
             },
             BasicVarType::IntInRange(lb, ub) => {
-                let (input, array_expr) = parse_rhs(assign, expressions::array_of_int_expr, input)?;
+                let (input, array_expr) = parse_rhs(assign, array_of_int_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::ArrayOfIntInRange {
@@ -298,7 +301,7 @@ where
                 ))
             }
             BasicVarType::IntInSet(set) => {
-                let (input, array_expr) = parse_rhs(assign, expressions::array_of_int_expr, input)?;
+                let (input, array_expr) = parse_rhs(assign, array_of_int_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::ArrayOfIntInSet {
@@ -311,8 +314,7 @@ where
                 ))
             }
             BasicVarType::BoundedFloat(lb, ub) => {
-                let (input, array_expr) =
-                    parse_rhs(assign, expressions::array_of_float_expr, input)?;
+                let (input, array_expr) = parse_rhs(assign, array_of_float_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::ArrayOfBoundedFloat {
@@ -326,7 +328,7 @@ where
                 ))
             }
             BasicVarType::SubSetOfIntRange(lb, ub) => {
-                let (input, array_expr) = parse_rhs(assign, expressions::array_of_set_expr, input)?;
+                let (input, array_expr) = parse_rhs(assign, array_of_set_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::ArrayOfSubSetOfIntRange {
@@ -340,7 +342,7 @@ where
                 ))
             }
             BasicVarType::SubSetOfIntSet(set) => {
-                let (input, array_expr) = parse_rhs(assign, expressions::array_of_set_expr, input)?;
+                let (input, array_expr) = parse_rhs(assign, array_of_set_expr, input)?;
                 Ok((
                     input,
                     VarDeclItem::ArrayOfSubSetOfIntSet {
@@ -372,9 +374,7 @@ fn parse_rhs<'a, O, E>(
 
 #[test]
 fn test_var_decl_item_1() {
-    use crate::expressions::{
-        AnnExpr, Annotation, ArrayOfSetExpr, Expr, IntExpr, SetExpr, SetLiteralExpr,
-    };
+    use crate::{AnnExpr, Annotation, ArrayOfSetExpr, Expr, IntExpr, SetExpr, SetLiteralExpr};
     use nom::error::VerboseError;
     assert_eq!(
         var_decl_item::<VerboseError<&str>>(
@@ -440,7 +440,7 @@ fn test_var_decl_item_3() {
 
 #[test]
 fn test_var_decl_item_4() {
-    use crate::expressions::Annotation;
+    use crate::Annotation;
     use nom::error::VerboseError;
     assert_eq!(
         var_decl_item::<VerboseError<&str>>("array [1..5] of var 0..3: w;"),
@@ -476,7 +476,7 @@ fn test_var_decl_item_4() {
 
 #[test]
 fn test_var_decl_item_5() {
-    use crate::expressions::{ArrayOfSetExpr, SetExpr, SetLiteralExpr};
+    use crate::{ArrayOfSetExpr, SetExpr, SetLiteralExpr};
     use nom::error::VerboseError;
     assert_eq!(
         var_decl_item::<VerboseError<&str>>(

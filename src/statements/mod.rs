@@ -1,17 +1,23 @@
 use std::str;
 
-use nom::branch::alt;
+use nom::{
+    branch::alt,
+    combinator::all_consuming,
+    error::{FromExternalError, ParseError},
+    IResult,
+};
 
-use crate::constraints::ConstraintItem;
-use crate::parameters::declarations as parameter_declarations;
-use crate::parameters::declarations::ParDeclItem;
-use crate::predicates::declarations as predicate_declarations;
-use crate::predicates::declarations::PredicateItem;
-use crate::solve_items::SolveItem;
-use crate::variables::declarations as variable_declarations;
-use crate::variables::declarations::VarDeclItem;
-use crate::{comments, constraints, solve_items, FromExternalError, IResult, ParseError};
-use nom::combinator::all_consuming;
+use crate::{
+    comments::space_or_comment,
+    constraints::{constraint_item, ConstraintItem},
+    parameters::declarations as parameter_declarations,
+    parameters::declarations::ParDeclItem,
+    predicates::declarations as predicate_declarations,
+    predicates::declarations::PredicateItem,
+    solve_items::{solve_item, SolveItem},
+    variables::declarations as variable_declarations,
+    variables::declarations::VarDeclItem,
+};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Stmt {
@@ -34,7 +40,7 @@ where
         stmt_variable,
         stmt_constraint,
         stmt_solve_item,
-        comments::space_or_comment,
+        space_or_comment,
     )))(input)?;
     Ok((input, res))
 }
@@ -71,7 +77,7 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = constraints::constraint_item(input)?;
+    let (input, item) = constraint_item(input)?;
     Ok((input, Stmt::Constraint(item)))
 }
 
@@ -80,6 +86,6 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = solve_items::solve_item(input)?;
+    let (input, item) = solve_item(input)?;
     Ok((input, Stmt::SolveItem(item)))
 }

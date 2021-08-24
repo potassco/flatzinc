@@ -1,12 +1,18 @@
 use std::str;
 
-use nom::bytes::complete::tag;
-use nom::character::complete::char;
-use nom::multi::separated_list1;
+use nom::{
+    bytes::complete::tag,
+    character::complete::char,
+    error::{FromExternalError, ParseError},
+    multi::separated_list1,
+    IResult,
+};
 
-use crate::predicates::types;
-use crate::predicates::types::PredParType;
-use crate::{comments, primitive_literals, FromExternalError, IResult, ParseError};
+use crate::{
+    comments::{space_or_comment0, space_or_comment1},
+    predicates::types::{pred_par_type, PredParType},
+    primitive_literals::identifier,
+};
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct PredicateItem {
@@ -21,16 +27,16 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = tag("predicate")(input)?;
-    let (input, _) = comments::space_or_comment1(input)?;
-    let (input, id) = primitive_literals::identifier(input)?;
+    let (input, _) = space_or_comment1(input)?;
+    let (input, id) = identifier(input)?;
     let (input, _) = char('(')(input)?;
     let (input, parameters) = separated_list1(char(','), pred_par_type_ident_pair)(input)?;
     let (input, _) = char(')')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(';')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, PredicateItem { id, parameters }))
 }
 
@@ -41,13 +47,13 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, pred_par_type) = types::pred_par_type(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, pred_par_type) = pred_par_type(input)?;
+    let (input, _) = space_or_comment0(input)?;
     let (input, _) = char(':')(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
-    let (input, ident) = primitive_literals::identifier(input)?;
-    let (input, _) = comments::space_or_comment0(input)?;
+    let (input, _) = space_or_comment0(input)?;
+    let (input, ident) = identifier(input)?;
+    let (input, _) = space_or_comment0(input)?;
     Ok((input, (pred_par_type, ident)))
 }
 
