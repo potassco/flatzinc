@@ -76,10 +76,29 @@ fn test_predicate_item() {
         ))
     );
 }
+#[test]
+fn test_predicate_item2() {
+    use crate::predicates::types::BasicPredParType;
+    use nom::error::VerboseError;
+    use std::str;
+    assert_eq!(
+        predicate_item::<VerboseError<&str>>("predicate my_pred({1.0,3.3}:c);"),
+        Ok((
+            "",
+            PredicateItem {
+                id: "my_pred".to_string(),
+                parameters: vec![(
+                    PredParType::Basic(BasicPredParType::FloatInSet(vec![1.0, 3.3])),
+                    "c".to_string()
+                )]
+            }
+        ))
+    );
+}
 
 #[test]
 #[should_panic]
-fn test_predicate_item_2() {
+fn test_predicate_item_3() {
     use nom::error::VerboseError;
     use std::str;
     predicate_item::<VerboseError<&str>>("predicate float_01(set of float:c);").unwrap();
