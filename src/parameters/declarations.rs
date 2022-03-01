@@ -145,7 +145,7 @@ fn test_par_decl_item_1() {
     use crate::IndexSet;
     use nom::error::VerboseError;
     assert_eq!(
-        par_decl_item::<VerboseError<&str>>("array [1..3] of float: X_139 = [1.0,1.0,1.0];"),
+        par_decl_item::<VerboseError<&str>>("array [1..3] of  float: X_139 = [1.0,1.0,1.0];"),
         Ok((
             "",
             ParDeclItem::ArrayOfFloat {
