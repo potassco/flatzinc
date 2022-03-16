@@ -1,4 +1,5 @@
 use anyhow::Result;
+use clap::Parser;
 use log::error;
 use nom::{
     error::{convert_error, VerboseError},
@@ -6,14 +7,13 @@ use nom::{
 };
 use std::path::PathBuf;
 use stderrlog;
-use structopt::StructOpt;
 
 /// flatzinc parser
-#[derive(StructOpt, Debug)]
-#[structopt(name = "fz-parser")]
+#[derive(Parser, Debug)]
+#[clap(name = "fz-parser")]
 struct Opt {
     /// Input in flatzinc format
-    #[structopt(short = "i", long = "input", parse(from_os_str))]
+    #[clap(short = 'i', long = "input", parse(from_os_str))]
     file: PathBuf,
 }
 
@@ -30,7 +30,7 @@ fn run() -> Result<()> {
         .init()
         .unwrap();
 
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     let buf = std::fs::read_to_string(opt.file)?;
     for line in buf.lines() {
         match flatzinc::statement::<VerboseError<&str>>(&line) {
