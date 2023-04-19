@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        clingconversion: [5.1.0]
+        clingconversion: [5.2.1]
         minizincversion: [2.6.3]
         fzn2lpversion: [v0.1.4]
 
