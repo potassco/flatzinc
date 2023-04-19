@@ -13,7 +13,7 @@ use stderrlog;
 #[clap(name = "fz-parser")]
 struct Opt {
     /// Input in flatzinc format
-    #[clap(short = 'i', long = "input", parse(from_os_str))]
+    #[clap(short = 'i', long = "input")]
     file: PathBuf,
 }
 
