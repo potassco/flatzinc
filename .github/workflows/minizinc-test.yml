@@ -70,7 +70,7 @@ jobs:
         run: |
           sudo apt-get install -y python3-pip
           pip3 install pytest
-          pip3 install --extra-index-url https://test.pypi.org/simple/ clingcon==${{matrix.clingconversion}}.post5
+          pip3 install --extra-index-url https://test.pypi.org/simple/ clingcon==${{matrix.clingconversion}}.post3
 
       - name: Test flatzingo
         run: |
