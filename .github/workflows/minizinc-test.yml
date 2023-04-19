@@ -19,7 +19,7 @@ jobs:
         run: |
           sudo add-apt-repository ppa:potassco/wip
           sudo apt-get update
-          sudo apt-get install clingcon=${{matrix.clingconversion}}-focal6
+          sudo apt-get install clingcon=${{matrix.clingconversion}}-jammy4
 
       - name: Test clingcon
         run: clingcon --version
