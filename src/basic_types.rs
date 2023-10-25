@@ -1,6 +1,4 @@
-use std::str;
-
-use nom::{branch::alt, bytes::complete::tag, error::ParseError, IResult};
+use winnow::{combinator::alt, error::ParserError, token::tag, PResult, Parser};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicType {
@@ -9,22 +7,22 @@ pub enum BasicType {
     Float,
 }
 
-pub fn basic_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicType, E> {
-    let (input, bt) = alt((bool, float, int))(input)?;
-    Ok((input, bt))
+pub fn basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicType, E> {
+    let bt = alt((bool, float, int)).parse_next(input)?;
+    Ok(bt)
 }
 
-fn bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicType, E> {
-    let (input, _tag) = tag("bool")(input)?;
-    Ok((input, BasicType::Bool))
+fn bool<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicType, E> {
+    tag("bool").parse_next(input)?;
+    Ok(BasicType::Bool)
 }
 
-fn int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicType, E> {
-    let (input, _tag) = tag("int")(input)?;
-    Ok((input, BasicType::Int))
+fn int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicType, E> {
+    tag("int").parse_next(input)?;
+    Ok(BasicType::Int)
 }
 
-fn float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicType, E> {
-    let (input, _tag) = tag("float")(input)?;
-    Ok((input, BasicType::Float))
+fn float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicType, E> {
+    tag("float").parse_next(input)?;
+    Ok(BasicType::Float)
 }

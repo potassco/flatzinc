@@ -1,50 +1,42 @@
-use std::str;
-
-use nom::{
-    branch::alt,
-    bytes::complete::take_till,
-    character::complete::{char, multispace0, multispace1},
+use winnow::{
+    ascii::{multispace0, multispace1},
+    combinator::alt,
     combinator::opt,
-    error::ParseError,
-    IResult,
+    error::ParserError,
+    token::take_till0,
+    PResult, Parser,
 };
 
 use crate::statements::Stmt;
 
-// white space or comments
-pub fn space_or_comment0<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, &'a str, E> {
-    let (input, s) = alt((comment, multispace0))(input)?;
-    Ok((input, s))
+pub fn space_or_comment0<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+    alt((comment, multispace0)).parse_next(input)
 }
 
-pub fn space_or_comment1<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, &'a str, E> {
-    let (input, s) = alt((comment, multispace1))(input)?;
-    Ok((input, s))
+pub fn space_or_comment1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+    alt((comment, multispace1)).parse_next(input)
 }
 
 #[test]
 fn test_comment() {
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "% Comments can have anyth!ng in it really <3";
     assert_eq!(
-        comment::<VerboseError<&str>>("% Comments can have anyth!ng in it really <3"),
-        Ok(("", " Comments can have anyth!ng in it really <3".into()))
+        comment::<ContextError<&str>>(&mut input),
+        Ok(" Comments can have anyth!ng in it really <3".into())
     );
 }
 
-fn comment<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
-    let (input, _) = multispace0(input)?;
-    let (input, _) = char('%')(input)?;
-    let (input, string) = take_till(|c| c == '\n')(input)?;
-    let (input, _) = multispace0(input)?;
-    let (input, _) = opt(comment)(input)?;
-    Ok((input, string))
+fn comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+    multispace0.parse_next(input)?;
+    '%'.parse_next(input)?;
+    let string = take_till0(|c| c == '\n').parse_next(input)?;
+    multispace0.parse_next(input)?;
+    opt(comment).parse_next(input)?;
+    Ok(string)
 }
 
-pub fn space_or_comment<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E> {
-    let (input, s) = space_or_comment0(input)?;
-    Ok((input, Stmt::Comment(s.into())))
+pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E> {
+    let s = space_or_comment0(input)?;
+    Ok(Stmt::Comment(s.into()))
 }

@@ -1,9 +1,6 @@
-use std::str;
-
-use nom::{
-    character::complete::char,
-    error::{FromExternalError, ParseError},
-    IResult,
+use winnow::{
+    error::{FromExternalError, ParserError},
+    PResult, Parser,
 };
 
 use crate::{
@@ -57,84 +54,84 @@ pub enum ParDeclItem {
     },
 }
 
-pub fn par_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParDeclItem, E>
+pub fn par_decl_item<'a, E>(input: &mut &'a str) -> PResult<ParDeclItem, E>
 where
-    E: ParseError<&'a str>
+    E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = space_or_comment0(input)?;
-    let (input, ptype) = par_type(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, _) = char(':')(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, id) = var_par_identifier(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, _) = char('=')(input)?;
-    let (input, _) = space_or_comment0(input)?;
+    space_or_comment0(input)?;
+    let ptype = par_type(input)?;
+    space_or_comment0(input)?;
+    ':'.parse_next(input)?;
+    space_or_comment0(input)?;
+    let id = var_par_identifier(input)?;
+    space_or_comment0(input)?;
+    '='.parse_next(input)?;
+    space_or_comment0(input)?;
     match ptype {
         ParType::BasicParType(bpt) => match bpt {
             BasicParType::BasicType(bt) => match bt {
                 BasicType::Bool => {
-                    let (input, bool) = bool_literal(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    let (input, _) = char(';')(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::Bool { id, bool }))
+                    let bool = bool_literal(input)?;
+                    space_or_comment0(input)?;
+                    ';'.parse_next(input)?;
+                    space_or_comment0(input)?;
+                    Ok(ParDeclItem::Bool { id, bool })
                 }
                 BasicType::Int => {
-                    let (input, int) = int_literal(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    let (input, _) = char(';')(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::Int { id, int }))
+                    let int = int_literal(input)?;
+                    space_or_comment0(input)?;
+                    ';'.parse_next(input)?;
+                    space_or_comment0(input)?;
+                    Ok(ParDeclItem::Int { id, int })
                 }
                 BasicType::Float => {
-                    let (input, float) = float_literal(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    let (input, _) = char(';')(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::Float { id, float }))
+                    let float = float_literal(input)?;
+                    space_or_comment0(input)?;
+                    ';'.parse_next(input)?;
+                    space_or_comment0(input)?;
+                    Ok(ParDeclItem::Float { id, float })
                 }
             },
             BasicParType::SetOfInt => {
-                let (input, set_literal) = set_literal(input)?;
-                let (input, _) = space_or_comment0(input)?;
-                let (input, _) = char(';')(input)?;
-                let (input, _) = space_or_comment0(input)?;
-                Ok((input, ParDeclItem::SetOfInt { id, set_literal }))
+                let set_literal = set_literal(input)?;
+                space_or_comment0(input)?;
+                ';'.parse_next(input)?;
+                space_or_comment0(input)?;
+                Ok(ParDeclItem::SetOfInt { id, set_literal })
             }
         },
         ParType::Array { ix, par_type } => match par_type {
             BasicParType::BasicType(bt) => match bt {
                 BasicType::Bool => {
-                    let (input, v) = array_of_bool_literal(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    let (input, _) = char(';')(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::ArrayOfBool { ix, id, v }))
+                    let v = array_of_bool_literal(input)?;
+                    space_or_comment0(input)?;
+                    ';'.parse_next(input)?;
+                    space_or_comment0(input)?;
+                    Ok(ParDeclItem::ArrayOfBool { ix, id, v })
                 }
                 BasicType::Int => {
-                    let (input, v) = array_of_int_literal(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    let (input, _) = char(';')(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::ArrayOfInt { ix, id, v }))
+                    let v = array_of_int_literal(input)?;
+                    space_or_comment0(input)?;
+                    ';'.parse_next(input)?;
+                    space_or_comment0(input)?;
+                    Ok(ParDeclItem::ArrayOfInt { ix, id, v })
                 }
                 BasicType::Float => {
-                    let (input, v) = array_of_float_literal(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    let (input, _) = char(';')(input)?;
-                    let (input, _) = space_or_comment0(input)?;
-                    Ok((input, ParDeclItem::ArrayOfFloat { ix, id, v }))
+                    let v = array_of_float_literal(input)?;
+                    space_or_comment0(input)?;
+                    ';'.parse_next(input)?;
+                    space_or_comment0(input)?;
+                    Ok(ParDeclItem::ArrayOfFloat { ix, id, v })
                 }
             },
             BasicParType::SetOfInt => {
-                let (input, v) = array_of_set_literal(input)?;
-                let (input, _) = space_or_comment0(input)?;
-                let (input, _) = char(';')(input)?;
-                let (input, _) = space_or_comment0(input)?;
-                Ok((input, ParDeclItem::ArrayOfSet { ix, id, v }))
+                let v = array_of_set_literal(input)?;
+                space_or_comment0(input)?;
+                ';'.parse_next(input)?;
+                space_or_comment0(input)?;
+                Ok(ParDeclItem::ArrayOfSet { ix, id, v })
             }
         },
     }
@@ -143,46 +140,43 @@ where
 #[test]
 fn test_par_decl_item_1() {
     use crate::IndexSet;
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "array [1..3] of  float: X_139 = [1.0,1.0,1.0];";
     assert_eq!(
-        par_decl_item::<VerboseError<&str>>("array [1..3] of  float: X_139 = [1.0,1.0,1.0];"),
-        Ok((
-            "",
-            ParDeclItem::ArrayOfFloat {
-                ix: IndexSet(3),
-                id: "X_139".to_string(),
-                v: vec![1.0, 1.0, 1.0]
-            }
-        ))
+        par_decl_item::<ContextError<&str>>(&mut input),
+        Ok(ParDeclItem::ArrayOfFloat {
+            ix: IndexSet(3),
+            id: "X_139".to_string(),
+            v: vec![1.0, 1.0, 1.0]
+        })
     );
 }
 
 #[test]
 #[should_panic]
 fn test_par_decl_item_2() {
-    use nom::error::VerboseError;
     use std::str;
-    par_decl_item::<VerboseError<&str>>("bool : b2 = b1;").unwrap();
+    use winnow::error::ContextError;
+    let mut input = "bool : b2 = b1;";
+    par_decl_item::<ContextError<&str>>(&mut input).unwrap();
 }
 
 #[test]
 fn test_par_decl_item_3() {
     use crate::IndexSet;
     use crate::SetLiteral;
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "array [1..3] of set of int : h = [{42,17},1..5,{}];";
     assert_eq!(
-        par_decl_item::<VerboseError<&str>>("array [1..3] of set of int : h = [{42,17},1..5,{}];"),
-        Ok((
-            "",
-            ParDeclItem::ArrayOfSet {
-                ix: IndexSet(3),
-                id: "h".to_string(),
-                v: vec![
-                    SetLiteral::SetInts(vec![42, 17]),
-                    SetLiteral::IntRange(1, 5),
-                    SetLiteral::SetInts(vec![])
-                ]
-            }
-        ))
+        par_decl_item::<ContextError<&str>>(&mut input),
+        Ok(ParDeclItem::ArrayOfSet {
+            ix: IndexSet(3),
+            id: "h".to_string(),
+            v: vec![
+                SetLiteral::SetInts(vec![42, 17]),
+                SetLiteral::IntRange(1, 5),
+                SetLiteral::SetInts(vec![])
+            ]
+        })
     );
 }
