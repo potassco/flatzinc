@@ -13,7 +13,7 @@ edition = "2021"
 exclude = ["/.github"]
 
 [dependencies]
-nom = "7.0.0"
+winnow = { version = "=0.5.16", features = ["alloc"] }
 
 [dev-dependencies]
 clap = { version = "4.2", features = ["derive"] }

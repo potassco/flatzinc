@@ -1,7 +1,4 @@
-pub use nom::{
-    error::{convert_error, ErrorKind, FromExternalError, ParseError, VerboseError},
-    Err, IResult,
-};
+pub use winnow::error::{ContextError, ErrorKind, FromExternalError, ParseError};
 
 pub use basic_types::BasicType;
 pub use constraints::ConstraintItem;

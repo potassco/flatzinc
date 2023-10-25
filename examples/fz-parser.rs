@@ -1,12 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
 use log::error;
-use nom::{
-    error::{convert_error, VerboseError},
-    Err,
-};
 use std::path::PathBuf;
 use stderrlog;
+use winnow::error::ContextError;
 
 /// flatzinc parser
 #[derive(Parser, Debug)]
@@ -32,14 +29,12 @@ fn run() -> Result<()> {
 
     let opt = Opt::parse();
     let buf = std::fs::read_to_string(opt.file)?;
-    for line in buf.lines() {
-        match flatzinc::statement::<VerboseError<&str>>(&line) {
-            Ok((_, result)) => println!("{:#?}", result),
-            Err(Err::Error(e)) => {
-                let bla = convert_error(buf.as_str(), e);
-                error!("Failed to parse flatzinc!\n{}", bla)
+    for mut line in buf.lines() {
+        match flatzinc::statement::<ContextError<&str>>(&mut line) {
+            Ok(result) => println!("{:#?}", result),
+            Err(e) => {
+                error!("Failed to parse flatzinc!\n{}", e)
             }
-            Err(e) => error!("Failed to parse flatzinc: {:?}", e),
         }
     }
     Ok(())

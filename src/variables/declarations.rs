@@ -1,10 +1,7 @@
-use std::str;
-
-use nom::{
-    character::complete::char,
+use winnow::{
     combinator::opt,
-    error::{FromExternalError, ParseError},
-    IResult,
+    error::{FromExternalError, ParserError},
+    PResult, Parser,
 };
 
 use crate::{
@@ -140,219 +137,180 @@ pub enum VarDeclItem {
     },
 }
 
-pub fn var_decl_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E>
+pub fn var_decl_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<VarDeclItem, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = space_or_comment0(input)?;
-    let (input, item) = vdi_var(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, _) = char(';')(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    Ok((input, item))
+    space_or_comment0(input)?;
+    let item = vdi_var(input)?;
+    space_or_comment0(input)?;
+    ';'.parse_next(input)?;
+    space_or_comment0(input)?;
+    Ok(item)
 }
 
-fn vdi_var<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, VarDeclItem, E>
+fn vdi_var<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<VarDeclItem, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, vt) = var_type(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, _) = char(':')(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, id) = var_par_identifier(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, annos) = annotations(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, assign) = opt(char('='))(input)?;
+    let vt = var_type(input)?;
+    space_or_comment0(input)?;
+    ':'.parse_next(input)?;
+    space_or_comment0(input)?;
+    let id = var_par_identifier(input)?;
+    space_or_comment0(input)?;
+    let annos = annotations(input)?;
+    space_or_comment0(input)?;
+    let assign = opt('=').parse_next(input)?;
     let assign = assign.is_some();
-    let (input, _) = space_or_comment0(input)?;
+    space_or_comment0(input)?;
     match vt {
         VarType::BasicVarType(bvt) => match bvt {
             BasicVarType::BasicType(BasicType::Bool) => {
-                let (input, expr) = parse_rhs(assign, bool_expr, input)?;
-                Ok((input, VarDeclItem::Bool { id, annos, expr }))
+                let expr = parse_rhs(assign, bool_expr, input)?;
+                Ok(VarDeclItem::Bool { id, annos, expr })
             }
             BasicVarType::BasicType(BasicType::Int) => {
-                let (input, expr) = parse_rhs(assign, int_expr, input)?;
-                Ok((input, VarDeclItem::Int { id, annos, expr }))
+                let expr = parse_rhs(assign, int_expr, input)?;
+                Ok(VarDeclItem::Int { id, annos, expr })
             }
             BasicVarType::BasicType(BasicType::Float) => {
-                let (input, expr) = parse_rhs(assign, float_expr, input)?;
-                Ok((input, VarDeclItem::Float { id, annos, expr }))
+                let expr = parse_rhs(assign, float_expr, input)?;
+                Ok(VarDeclItem::Float { id, annos, expr })
             }
             BasicVarType::IntInRange(lb, ub) => {
-                let (input, expr) = parse_rhs(assign, int_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::IntInRange {
-                        id,
-                        lb,
-                        ub,
-                        expr,
-                        annos,
-                    },
-                ))
+                let expr = parse_rhs(assign, int_expr, input)?;
+                Ok(VarDeclItem::IntInRange {
+                    id,
+                    lb,
+                    ub,
+                    expr,
+                    annos,
+                })
             }
             BasicVarType::IntInSet(set) => {
-                let (input, expr) = parse_rhs(assign, int_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::IntInSet {
-                        id,
-                        set,
-                        expr,
-                        annos,
-                    },
-                ))
+                let expr = parse_rhs(assign, int_expr, input)?;
+                Ok(VarDeclItem::IntInSet {
+                    id,
+                    set,
+                    expr,
+                    annos,
+                })
             }
             BasicVarType::BoundedFloat(lb, ub) => {
-                let (input, expr) = parse_rhs(assign, float_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::BoundedFloat {
-                        id,
-                        lb,
-                        ub,
-                        expr,
-                        annos,
-                    },
-                ))
+                let expr = parse_rhs(assign, float_expr, input)?;
+                Ok(VarDeclItem::BoundedFloat {
+                    id,
+                    lb,
+                    ub,
+                    expr,
+                    annos,
+                })
             }
             BasicVarType::SubSetOfIntRange(lb, ub) => {
-                let (input, expr) = parse_rhs(assign, set_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::SubSetOfIntRange {
-                        id,
-                        lb,
-                        ub,
-                        expr,
-                        annos,
-                    },
-                ))
+                let expr = parse_rhs(assign, set_expr, input)?;
+                Ok(VarDeclItem::SubSetOfIntRange {
+                    id,
+                    lb,
+                    ub,
+                    expr,
+                    annos,
+                })
             }
             BasicVarType::SubSetOfIntSet(set) => {
-                let (input, expr) = parse_rhs(assign, set_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::SubSetOfIntSet {
-                        id,
-                        set,
-                        expr,
-                        annos,
-                    },
-                ))
+                let expr = parse_rhs(assign, set_expr, input)?;
+                Ok(VarDeclItem::SubSetOfIntSet {
+                    id,
+                    set,
+                    expr,
+                    annos,
+                })
             }
         },
         VarType::Array { ix, var_type } => match var_type {
             BasicVarType::BasicType(bt) => match bt {
                 BasicType::Bool => {
-                    let (input, array_expr) = parse_rhs(assign, array_of_bool_expr, input)?;
-                    Ok((
-                        input,
-                        VarDeclItem::ArrayOfBool {
-                            ix,
-                            id,
-                            annos,
-                            array_expr,
-                        },
-                    ))
+                    let array_expr = parse_rhs(assign, array_of_bool_expr, input)?;
+                    Ok(VarDeclItem::ArrayOfBool {
+                        ix,
+                        id,
+                        annos,
+                        array_expr,
+                    })
                 }
                 BasicType::Int => {
-                    let (input, array_expr) = parse_rhs(assign, array_of_int_expr, input)?;
-                    Ok((
-                        input,
-                        VarDeclItem::ArrayOfInt {
-                            ix,
-                            id,
-                            annos,
-                            array_expr,
-                        },
-                    ))
+                    let array_expr = parse_rhs(assign, array_of_int_expr, input)?;
+                    Ok(VarDeclItem::ArrayOfInt {
+                        ix,
+                        id,
+                        annos,
+                        array_expr,
+                    })
                 }
                 BasicType::Float => {
-                    let (input, array_expr) = parse_rhs(assign, array_of_float_expr, input)?;
-                    Ok((
-                        input,
-                        VarDeclItem::ArrayOfFloat {
-                            ix,
-                            id,
-                            annos,
-                            array_expr,
-                        },
-                    ))
+                    let array_expr = parse_rhs(assign, array_of_float_expr, input)?;
+                    Ok(VarDeclItem::ArrayOfFloat {
+                        ix,
+                        id,
+                        annos,
+                        array_expr,
+                    })
                 }
             },
             BasicVarType::IntInRange(lb, ub) => {
-                let (input, array_expr) = parse_rhs(assign, array_of_int_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::ArrayOfIntInRange {
-                        lb,
-                        ub,
-                        ix,
-                        id,
-                        annos,
-                        array_expr,
-                    },
-                ))
+                let array_expr = parse_rhs(assign, array_of_int_expr, input)?;
+                Ok(VarDeclItem::ArrayOfIntInRange {
+                    lb,
+                    ub,
+                    ix,
+                    id,
+                    annos,
+                    array_expr,
+                })
             }
             BasicVarType::IntInSet(set) => {
-                let (input, array_expr) = parse_rhs(assign, array_of_int_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::ArrayOfIntInSet {
-                        set,
-                        ix,
-                        id,
-                        annos,
-                        array_expr,
-                    },
-                ))
+                let array_expr = parse_rhs(assign, array_of_int_expr, input)?;
+                Ok(VarDeclItem::ArrayOfIntInSet {
+                    set,
+                    ix,
+                    id,
+                    annos,
+                    array_expr,
+                })
             }
             BasicVarType::BoundedFloat(lb, ub) => {
-                let (input, array_expr) = parse_rhs(assign, array_of_float_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::ArrayOfBoundedFloat {
-                        lb,
-                        ub,
-                        ix,
-                        id,
-                        annos,
-                        array_expr,
-                    },
-                ))
+                let array_expr = parse_rhs(assign, array_of_float_expr, input)?;
+                Ok(VarDeclItem::ArrayOfBoundedFloat {
+                    lb,
+                    ub,
+                    ix,
+                    id,
+                    annos,
+                    array_expr,
+                })
             }
             BasicVarType::SubSetOfIntRange(lb, ub) => {
-                let (input, array_expr) = parse_rhs(assign, array_of_set_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::ArrayOfSubSetOfIntRange {
-                        lb,
-                        ub,
-                        ix,
-                        id,
-                        annos,
-                        array_expr,
-                    },
-                ))
+                let array_expr = parse_rhs(assign, array_of_set_expr, input)?;
+                Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
+                    lb,
+                    ub,
+                    ix,
+                    id,
+                    annos,
+                    array_expr,
+                })
             }
             BasicVarType::SubSetOfIntSet(set) => {
-                let (input, array_expr) = parse_rhs(assign, array_of_set_expr, input)?;
-                Ok((
-                    input,
-                    VarDeclItem::ArrayOfSubSetOfIntSet {
-                        set,
-                        ix,
-                        id,
-                        annos,
-                        array_expr,
-                    },
-                ))
+                let array_expr = parse_rhs(assign, array_of_set_expr, input)?;
+                Ok(VarDeclItem::ArrayOfSubSetOfIntSet {
+                    set,
+                    ix,
+                    id,
+                    annos,
+                    array_expr,
+                })
             }
         },
     }
@@ -361,147 +319,127 @@ where
 /// Parse the right hand side of a variable declaration if there is an assignment
 fn parse_rhs<'a, O, E>(
     assign: bool,
-    parser: impl Fn(&'a str) -> IResult<&'a str, O, E>,
-    input: &'a str,
-) -> IResult<&'a str, Option<O>, E> {
+    parser: impl Fn(&mut &'a str) -> PResult<O, E>,
+    input: &mut &'a str,
+) -> PResult<Option<O>, E> {
     Ok(if assign {
-        let (input, expr) = parser(input)?;
-        (input, Some(expr))
+        let expr = parser(input)?;
+        Some(expr)
     } else {
-        (input, None)
+        None
     })
 }
 
 #[test]
 fn test_var_decl_item_1() {
     use crate::{AnnExpr, Annotation, ArrayOfSetExpr, Expr, IntExpr, SetExpr, SetLiteralExpr};
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "array [1..1] of var set of 1..10: sets:: output_array([1..1]) = [X_0];";
     assert_eq!(
-        var_decl_item::<VerboseError<&str>>(
-            "array [1..1] of var set of 1..10: sets:: output_array([1..1]) = [X_0];"
-        ),
-        Ok((
-            "",
-            VarDeclItem::ArrayOfSubSetOfIntRange {
-                ix: IndexSet(1),
-                id: "sets".to_string(),
-                annos: vec![Annotation {
-                    id: "output_array".to_string(),
-                    expressions: vec![AnnExpr::Expr(Expr::ArrayOfSet(vec![SetExpr::Set(
-                        SetLiteralExpr::IntInRange(IntExpr::Int(1), IntExpr::Int(1))
-                    )]))]
-                }],
-                lb: 1,
-                ub: 10,
-                array_expr: Some(ArrayOfSetExpr::Array(vec![SetExpr::VarParIdentifier(
-                    "X_0".to_owned()
-                )]))
-            }
-        ))
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
+            ix: IndexSet(1),
+            id: "sets".to_string(),
+            annos: vec![Annotation {
+                id: "output_array".to_string(),
+                expressions: vec![AnnExpr::Expr(Expr::ArrayOfSet(vec![SetExpr::Set(
+                    SetLiteralExpr::IntInRange(IntExpr::Int(1), IntExpr::Int(1))
+                )]))]
+            }],
+            lb: 1,
+            ub: 10,
+            array_expr: Some(ArrayOfSetExpr::Array(vec![SetExpr::VarParIdentifier(
+                "X_0".to_owned()
+            )]))
+        })
     );
 }
-
 #[test]
 fn test_var_decl_item_2() {
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "array [1..5] of var 0..3: w =X_32;";
     assert_eq!(
-        var_decl_item::<VerboseError<&str>>("array [1..5] of var 0..3: w =X_32;"),
-        Ok((
-            "",
-            VarDeclItem::ArrayOfIntInRange {
-                id: "w".to_string(),
-                ix: IndexSet(5),
-                lb: 0,
-                ub: 3,
-                array_expr: Some(ArrayOfIntExpr::VarParIdentifier("X_32".to_string())),
-                annos: vec![],
-            }
-        ))
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfIntInRange {
+            id: "w".to_string(),
+            ix: IndexSet(5),
+            lb: 0,
+            ub: 3,
+            array_expr: Some(ArrayOfIntExpr::VarParIdentifier("X_32".to_string())),
+            annos: vec![],
+        })
     );
 }
-
 #[test]
 fn test_var_decl_item_3() {
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "array [1..5] of var {1,2,3}: w;";
     assert_eq!(
-        var_decl_item::<VerboseError<&str>>("array [1..5] of var {1,2,3}: w;"),
-        Ok((
-            "",
-            VarDeclItem::ArrayOfIntInSet {
-                id: "w".to_string(),
-                ix: IndexSet(5),
-                set: vec![1, 2, 3],
-                array_expr: None,
-                annos: vec![],
-            }
-        ))
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfIntInSet {
+            id: "w".to_string(),
+            ix: IndexSet(5),
+            set: vec![1, 2, 3],
+            array_expr: None,
+            annos: vec![],
+        })
     );
 }
-
 #[test]
 fn test_var_decl_item_4() {
     use crate::Annotation;
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "array [1..5] of var 0..3: w;";
     assert_eq!(
-        var_decl_item::<VerboseError<&str>>("array [1..5] of var 0..3: w;"),
-        Ok((
-            "",
-            VarDeclItem::ArrayOfIntInRange {
-                id: "w".to_string(),
-                ix: IndexSet(5),
-                lb: 0,
-                ub: 3,
-                array_expr: None,
-                annos: vec![],
-            }
-        ))
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfIntInRange {
+            id: "w".to_string(),
+            ix: IndexSet(5),
+            lb: 0,
+            ub: 3,
+            array_expr: None,
+            annos: vec![],
+        })
     );
+    let mut input = "var 1..101: objective :: output_var = X_2586;";
     assert_eq!(
-        var_decl_item::<VerboseError<&str>>("var 1..101: objective :: output_var = X_2586;"),
-        Ok((
-            "",
-            VarDeclItem::IntInRange {
-                id: "objective".to_string(),
-                lb: 1,
-                ub: 101,
-                expr: Some(IntExpr::VarParIdentifier("X_2586".to_string())),
-                annos: vec![Annotation {
-                    id: "output_var".to_string(),
-                    expressions: vec![]
-                }],
-            }
-        ))
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::IntInRange {
+            id: "objective".to_string(),
+            lb: 1,
+            ub: 101,
+            expr: Some(IntExpr::VarParIdentifier("X_2586".to_string())),
+            annos: vec![Annotation {
+                id: "output_var".to_string(),
+                expressions: vec![]
+            }],
+        })
     );
 }
-
 #[test]
 fn test_var_decl_item_5() {
     use crate::{ArrayOfSetExpr, SetExpr, SetLiteralExpr};
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "array [1..3] of var set of 17..42: h = [{42,17},23..X,{}];";
     assert_eq!(
-        var_decl_item::<VerboseError<&str>>(
-            "array [1..3] of var set of 17..42: h = [{42,17},23..X,{}];"
-        ),
-        Ok((
-            "",
-            VarDeclItem::ArrayOfSubSetOfIntRange {
-                lb: 17,
-                ub: 42,
-                annos: vec![],
-                ix: IndexSet(3),
-                id: "h".to_string(),
-                array_expr: Some(ArrayOfSetExpr::Array(vec![
-                    SetExpr::Set(SetLiteralExpr::SetInts(vec![
-                        IntExpr::Int(42),
-                        IntExpr::Int(17)
-                    ])),
-                    SetExpr::Set(SetLiteralExpr::IntInRange(
-                        IntExpr::Int(23),
-                        IntExpr::VarParIdentifier("X".to_string())
-                    )),
-                    SetExpr::Set(SetLiteralExpr::SetInts(vec![])),
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
+            lb: 17,
+            ub: 42,
+            annos: vec![],
+            ix: IndexSet(3),
+            id: "h".to_string(),
+            array_expr: Some(ArrayOfSetExpr::Array(vec![
+                SetExpr::Set(SetLiteralExpr::SetInts(vec![
+                    IntExpr::Int(42),
+                    IntExpr::Int(17)
                 ])),
-            }
-        ))
+                SetExpr::Set(SetLiteralExpr::IntInRange(
+                    IntExpr::Int(23),
+                    IntExpr::VarParIdentifier("X".to_string())
+                )),
+                SetExpr::Set(SetLiteralExpr::SetInts(vec![])),
+            ])),
+        })
     );
 }
