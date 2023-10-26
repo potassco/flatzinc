@@ -14,15 +14,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
 
-      - name: Install clingcon
+      - name: Conda install clingcon
+        shell: bash -l {0}
         run: |
-          sudo add-apt-repository ppa:potassco/wip
-          sudo apt-get update
-          sudo apt-get install clingcon=${{matrix.clingconversion}}-jammy4
+          conda install -c "potassco/label/dev" clingcon=${{matrix.clingconversion}}
+      # - name: Install clingcon
+      #   run: |
+      #     sudo add-apt-repository ppa:potassco/wip
+      #     sudo apt-get update
+      #     sudo apt-get install clingcon=${{matrix.clingconversion}}-jammy4
 
       - name: Test clingcon
-        run: clingcon --version
+        shell: bash -l {0}
+        run: |
+          clingcon --version
 
       - name: Install MiniZinc
         run: |
@@ -37,8 +47,9 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: "potassco/fzn2lp"
-          ref: ${{ matrix.fzn2lpversion }}
+          # ref: ${{ matrix.fzn2lpversion }}
           path: "fzn2lp"
+          ref: "st/winnow"
 
       - name: Build fzn2lp with current flatzinc
         run: |
@@ -70,7 +81,7 @@ jobs:
         run: |
           sudo apt-get install -y python3-pip
           pip3 install pytest
-          pip3 install --extra-index-url https://test.pypi.org/simple/ clingcon==${{matrix.clingconversion}}.post3
+          pip3 install --extra-index-url https://test.pypi.org/simple/ clingcon==${{matrix.clingconversion}}.post4
 
       - name: Test flatzingo
         run: |
