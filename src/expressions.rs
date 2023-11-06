@@ -1,6 +1,6 @@
 use winnow::{
     ascii::multispace1,
-    combinator::{alt, delimited, fold_repeat, opt, preceded, repeat, separated0, separated1},
+    combinator::{alt, delimited, fold_repeat, opt, preceded, repeat, separated},
     error::{FromExternalError, ParserError},
     token::{tag, take_till1, take_while},
     PResult, Parser,
@@ -49,7 +49,7 @@ where
     let id = identifier(input)?;
     let we = opt('(').parse_next(input)?;
     if we.is_some() {
-        let expressions_what = separated1(ann_expr, ',').parse_next(input)?;
+        let expressions_what = separated(1.., ann_expr, ',').parse_next(input)?;
         ')'.parse_next(input)?;
         Ok(Annotation {
             id,
@@ -89,7 +89,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let res = separated1(annotation, ',').parse_next(input)?;
+    let res = separated(1.., annotation, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(AnnExpr::Annotations(res))
@@ -559,7 +559,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(int_expr, ',').parse_next(input)?;
+    let v = separated(0.., int_expr, ',').parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(SetLiteralExpr::SetInts(v))
@@ -572,7 +572,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(float_expr, ',').parse_next(input)?;
+    let v = separated(0.., float_expr, ',').parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(SetLiteralExpr::SetFloats(v))
@@ -632,7 +632,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(int_literal, ',').parse_next(input)?;
+    let v = separated(0.., int_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(SetLiteral::SetInts(v))
@@ -645,7 +645,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(float_literal, ',').parse_next(input)?;
+    let v = separated(0.., float_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(SetLiteral::SetFloats(v))
@@ -674,7 +674,7 @@ fn array_of_bool_expr_literal<'a, E: ParserError<&'a str>>(
 ) -> PResult<Vec<BoolExpr>, E> {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(bool_expr, ',').parse_next(input)?;
+    let v = separated(0.., bool_expr, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
@@ -685,7 +685,7 @@ pub fn array_of_bool_literal<'a, E: ParserError<&'a str>>(
 ) -> PResult<Vec<bool>, E> {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let al = separated0(bool_literal, ',').parse_next(input)?;
+    let al = separated(0.., bool_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
@@ -720,7 +720,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(int_expr, ',').parse_next(input)?;
+    let v = separated(0.., int_expr, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
@@ -734,7 +734,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let al = separated0(int_literal, ',').parse_next(input)?;
+    let al = separated(0.., int_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
@@ -769,7 +769,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(float_expr, ',').parse_next(input)?;
+    let v = separated(0.., float_expr, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
@@ -783,7 +783,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let al = separated0(float_literal, ',').parse_next(input)?;
+    let al = separated(0.., float_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
@@ -820,7 +820,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(set_expr, ',').parse_next(input)?;
+    let v = separated(0.., set_expr, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
@@ -835,7 +835,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let al = separated0(set_literal, ',').parse_next(input)?;
+    let al = separated(0.., set_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)

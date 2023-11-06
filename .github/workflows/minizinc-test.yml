@@ -23,11 +23,6 @@ jobs:
         shell: bash -l {0}
         run: |
           conda install -c "potassco/label/dev" clingcon=${{matrix.clingconversion}}
-      # - name: Install clingcon
-      #   run: |
-      #     sudo add-apt-repository ppa:potassco/wip
-      #     sudo apt-get update
-      #     sudo apt-get install clingcon=${{matrix.clingconversion}}-jammy4
 
       - name: Test clingcon
         shell: bash -l {0}

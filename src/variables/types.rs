@@ -1,6 +1,6 @@
 use winnow::{
     combinator::alt,
-    combinator::separated0,
+    combinator::separated,
     error::{FromExternalError, ParserError},
     token::tag,
     PResult, Parser,
@@ -167,7 +167,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(float_literal, ',').parse_next(input)?;
+    let v = separated(0.., float_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(v)
@@ -199,7 +199,7 @@ where
 {
     tag("set of {").parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(int_literal, ',').parse_next(input)?;
+    let v = separated(0.., int_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     tag("}").parse_next(input)?;
     Ok(v)
@@ -212,7 +212,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated0(int_literal, ',').parse_next(input)?;
+    let v = separated(0.., int_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(v)
