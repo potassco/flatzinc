@@ -1,5 +1,5 @@
 use winnow::{
-    combinator::separated1,
+    combinator::separated,
     error::{FromExternalError, ParserError},
     token::tag,
     PResult, Parser,
@@ -27,7 +27,7 @@ where
     space_or_comment1(input)?;
     let id = identifier(input)?;
     '('.parse_next(input)?;
-    let parameters = separated1(pred_par_type_ident_pair, ",").parse_next(input)?;
+    let parameters = separated(1.., pred_par_type_ident_pair, ",").parse_next(input)?;
     ')'.parse_next(input)?;
     space_or_comment0(input)?;
     ';'.parse_next(input)?;
