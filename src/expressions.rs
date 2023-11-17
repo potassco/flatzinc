@@ -128,9 +128,9 @@ where
 // https://github.com/Geal/nom/blob/ea483e5a81d04dda28ee0159902ede7fc0563f89/LICENSE
 //
 
-/// Parse a unicode sequence, of the form u{XXXX}, where XXXX is 1 to 6
-/// hexadecimal numerals. We will combine this later with parse_escaped_char
-/// to parse sequences like \u{00AC}.
+/// Parse a unicode sequence, of the form `u{XXXX}`, where XXXX is 1 to 6
+/// hexadecimal numerals. We will combine this later with [`parse_escaped_char`]
+/// to parse sequences like `\u{00AC}`.
 fn parse_unicode<'a, E>(input: &mut &'a str) -> PResult<char, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -163,7 +163,7 @@ where
     }
 }
 
-/// Parse an escaped character: \n, \t, \r, \u{00AC}, etc.
+/// Parse an escaped character: `\n`, `\t`, `\r`, `\u{00AC}`, etc.
 fn parse_escaped_char<'a, E>(input: &mut &'a str) -> PResult<StringFragment<'a>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -196,7 +196,7 @@ fn parse_escaped_whitespace<'a, E: ParserError<&'a str>>(
     Ok(StringFragment::EscapedWS)
 }
 
-/// Parse a non-empty block of text that doesn't include \ or "
+/// Parse a non-empty block of text that doesn't include `\` or `"`
 fn parse_literal<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> PResult<StringFragment<'a>, E> {
@@ -214,8 +214,8 @@ enum StringFragment<'a> {
     EscapedWS,
 }
 
-/// Combine parse_literal, parse_escaped_whitespace, and parse_escaped_char
-/// into a StringFragment.
+/// Combine [`parse_literal`], [`parse_escaped_whitespace`], and [`parse_escaped_char`]
+/// into a [`StringFragment`].
 fn parse_fragment<'a, E>(input: &mut &'a str) -> PResult<StringFragment<'a>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -228,7 +228,7 @@ where
     .parse_next(input)
 }
 
-/// Parse a string literal, including escaped characters such as \n and \".
+/// Parse a string literal, including escaped characters such as `\n` and `\"`.
 pub fn string_lit<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<AnnExpr, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
