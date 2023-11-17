@@ -10,7 +10,7 @@ A parser for the [FlatZinc](https://www.minizinc.org/doc-2.4.3/en/fzn-spec.html#
 
 ## Usage
 
-In your Cargo.toml
+In your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -32,7 +32,7 @@ match flatzinc::model::<ContextError<&str>>(&buf) {
 
 ## fz-parser
 
-An example parser can be found in the `examples/fz-parser.rs`
+An example parser can be found in the `examples/fz-parser.rs`.
 
 To run the parser call:
 
@@ -40,7 +40,7 @@ To run the parser call:
 ❯ cargo run --example fz-parser -- -i jobshop.fzn
 ```
 
-The binary can be found under `target/release/examples/fz-parser`
+The binary can be found under `target/release/examples/fz-parser`.
 
 ## FAQ
 
