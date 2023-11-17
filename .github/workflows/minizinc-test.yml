@@ -13,7 +13,7 @@ jobs:
         fzn2lpversion: [v0.1.4]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
@@ -39,7 +39,7 @@ jobs:
         run: minizinc --version
 
       - name: Checkout fzn2lp
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: "potassco/fzn2lp"
           # ref: ${{ matrix.fzn2lpversion }}
@@ -58,7 +58,7 @@ jobs:
         run: fzn2lp --version
 
       - name: Checkout flatzingo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: "potassco/flatzingo"
           ref: "master"
@@ -84,7 +84,7 @@ jobs:
           python3 -m pytest ./tests
 
       - name: Checkout libminizinc
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: "MiniZinc/libminizinc"
           ref: ${{ matrix.minizincversion }}
