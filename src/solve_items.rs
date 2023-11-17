@@ -42,6 +42,31 @@ where
     space_or_comment0(input)?;
     Ok(SolveItem { goal, annotations })
 }
+#[test]
+fn test_solve_item() {
+    use crate::solve_items::{Goal, OptimizationType};
+    use crate::{AnnExpr, Annotation, Expr};
+    use winnow::error::ContextError;
+    let mut input = "solve :: int_search(X_59,input_order,indomain_min,complete) minimize X_24;";
+    assert_eq!(
+        solve_item::<ContextError<&str>>(&mut input),
+        Ok(SolveItem {
+            goal: Goal::OptimizeBool(
+                OptimizationType::Minimize,
+                BoolExpr::VarParIdentifier("X_24".to_string())
+            ),
+            annotations: vec![Annotation {
+                id: "int_search".to_string(),
+                expressions: vec![
+                    AnnExpr::Expr(Expr::VarParIdentifier("X_59".to_string())),
+                    AnnExpr::Expr(Expr::VarParIdentifier("input_order".to_string())),
+                    AnnExpr::Expr(Expr::VarParIdentifier("indomain_min".to_string())),
+                    AnnExpr::Expr(Expr::VarParIdentifier("complete".to_string()))
+                ]
+            }]
+        })
+    );
+}
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Goal {
@@ -113,30 +138,4 @@ where
     space_or_comment1(input)?;
     let be = set_expr(input)?;
     Ok(Goal::OptimizeSet(opt_type, be))
-}
-
-#[test]
-fn test_solve_item() {
-    use crate::solve_items::{Goal, OptimizationType};
-    use crate::{AnnExpr, Annotation, Expr};
-    use winnow::error::ContextError;
-    let mut input = "solve :: int_search(X_59,input_order,indomain_min,complete) minimize X_24;";
-    assert_eq!(
-        solve_item::<ContextError<&str>>(&mut input),
-        Ok(SolveItem {
-            goal: Goal::OptimizeBool(
-                OptimizationType::Minimize,
-                BoolExpr::VarParIdentifier("X_24".to_string())
-            ),
-            annotations: vec![Annotation {
-                id: "int_search".to_string(),
-                expressions: vec![
-                    AnnExpr::Expr(Expr::VarParIdentifier("X_59".to_string())),
-                    AnnExpr::Expr(Expr::VarParIdentifier("input_order".to_string())),
-                    AnnExpr::Expr(Expr::VarParIdentifier("indomain_min".to_string())),
-                    AnnExpr::Expr(Expr::VarParIdentifier("complete".to_string()))
-                ]
-            }]
-        })
-    );
 }

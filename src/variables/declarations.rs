@@ -149,6 +149,119 @@ where
     space_or_comment0(input)?;
     Ok(item)
 }
+#[test]
+fn test_var_decl_item_1() {
+    use crate::{AnnExpr, Annotation, ArrayOfSetExpr, Expr, IntExpr, SetExpr, SetLiteralExpr};
+    use winnow::error::ContextError;
+    let mut input = "array [1..1] of var set of 1..10: sets:: output_array([1..1]) = [X_0];";
+    assert_eq!(
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
+            ix: IndexSet(1),
+            id: "sets".to_string(),
+            annos: vec![Annotation {
+                id: "output_array".to_string(),
+                expressions: vec![AnnExpr::Expr(Expr::ArrayOfSet(vec![SetExpr::Set(
+                    SetLiteralExpr::IntInRange(IntExpr::Int(1), IntExpr::Int(1))
+                )]))]
+            }],
+            lb: 1,
+            ub: 10,
+            array_expr: Some(ArrayOfSetExpr::Array(vec![SetExpr::VarParIdentifier(
+                "X_0".to_owned()
+            )]))
+        })
+    );
+}
+#[test]
+fn test_var_decl_item_2() {
+    use winnow::error::ContextError;
+    let mut input = "array [1..5] of var 0..3: w =X_32;";
+    assert_eq!(
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfIntInRange {
+            id: "w".to_string(),
+            ix: IndexSet(5),
+            lb: 0,
+            ub: 3,
+            array_expr: Some(ArrayOfIntExpr::VarParIdentifier("X_32".to_string())),
+            annos: vec![],
+        })
+    );
+}
+#[test]
+fn test_var_decl_item_3() {
+    use winnow::error::ContextError;
+    let mut input = "array [1..5] of var {1,2,3}: w;";
+    assert_eq!(
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfIntInSet {
+            id: "w".to_string(),
+            ix: IndexSet(5),
+            set: vec![1, 2, 3],
+            array_expr: None,
+            annos: vec![],
+        })
+    );
+}
+#[test]
+fn test_var_decl_item_4() {
+    use crate::Annotation;
+    use winnow::error::ContextError;
+    let mut input = "array [1..5] of var 0..3: w;";
+    assert_eq!(
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfIntInRange {
+            id: "w".to_string(),
+            ix: IndexSet(5),
+            lb: 0,
+            ub: 3,
+            array_expr: None,
+            annos: vec![],
+        })
+    );
+    let mut input = "var 1..101: objective :: output_var = X_2586;";
+    assert_eq!(
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::IntInRange {
+            id: "objective".to_string(),
+            lb: 1,
+            ub: 101,
+            expr: Some(IntExpr::VarParIdentifier("X_2586".to_string())),
+            annos: vec![Annotation {
+                id: "output_var".to_string(),
+                expressions: vec![]
+            }],
+        })
+    );
+}
+#[test]
+fn test_var_decl_item_5() {
+    use crate::{ArrayOfSetExpr, SetExpr, SetLiteralExpr};
+    use winnow::error::ContextError;
+    let mut input = "array [1..3] of var set of 17..42: h = [{42,17},23..X,{}];";
+    assert_eq!(
+        var_decl_item::<ContextError<&str>>(&mut input),
+        Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
+            lb: 17,
+            ub: 42,
+            annos: vec![],
+            ix: IndexSet(3),
+            id: "h".to_string(),
+            array_expr: Some(ArrayOfSetExpr::Array(vec![
+                SetExpr::Set(SetLiteralExpr::SetInts(vec![
+                    IntExpr::Int(42),
+                    IntExpr::Int(17)
+                ])),
+                SetExpr::Set(SetLiteralExpr::IntInRange(
+                    IntExpr::Int(23),
+                    IntExpr::VarParIdentifier("X".to_string())
+                )),
+                SetExpr::Set(SetLiteralExpr::SetInts(vec![])),
+            ])),
+        })
+    );
+}
 
 fn vdi_var<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<VarDeclItem, E>
 where
@@ -328,118 +441,4 @@ fn parse_rhs<'a, O, E>(
     } else {
         None
     })
-}
-
-#[test]
-fn test_var_decl_item_1() {
-    use crate::{AnnExpr, Annotation, ArrayOfSetExpr, Expr, IntExpr, SetExpr, SetLiteralExpr};
-    use winnow::error::ContextError;
-    let mut input = "array [1..1] of var set of 1..10: sets:: output_array([1..1]) = [X_0];";
-    assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
-        Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
-            ix: IndexSet(1),
-            id: "sets".to_string(),
-            annos: vec![Annotation {
-                id: "output_array".to_string(),
-                expressions: vec![AnnExpr::Expr(Expr::ArrayOfSet(vec![SetExpr::Set(
-                    SetLiteralExpr::IntInRange(IntExpr::Int(1), IntExpr::Int(1))
-                )]))]
-            }],
-            lb: 1,
-            ub: 10,
-            array_expr: Some(ArrayOfSetExpr::Array(vec![SetExpr::VarParIdentifier(
-                "X_0".to_owned()
-            )]))
-        })
-    );
-}
-#[test]
-fn test_var_decl_item_2() {
-    use winnow::error::ContextError;
-    let mut input = "array [1..5] of var 0..3: w =X_32;";
-    assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
-        Ok(VarDeclItem::ArrayOfIntInRange {
-            id: "w".to_string(),
-            ix: IndexSet(5),
-            lb: 0,
-            ub: 3,
-            array_expr: Some(ArrayOfIntExpr::VarParIdentifier("X_32".to_string())),
-            annos: vec![],
-        })
-    );
-}
-#[test]
-fn test_var_decl_item_3() {
-    use winnow::error::ContextError;
-    let mut input = "array [1..5] of var {1,2,3}: w;";
-    assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
-        Ok(VarDeclItem::ArrayOfIntInSet {
-            id: "w".to_string(),
-            ix: IndexSet(5),
-            set: vec![1, 2, 3],
-            array_expr: None,
-            annos: vec![],
-        })
-    );
-}
-#[test]
-fn test_var_decl_item_4() {
-    use crate::Annotation;
-    use winnow::error::ContextError;
-    let mut input = "array [1..5] of var 0..3: w;";
-    assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
-        Ok(VarDeclItem::ArrayOfIntInRange {
-            id: "w".to_string(),
-            ix: IndexSet(5),
-            lb: 0,
-            ub: 3,
-            array_expr: None,
-            annos: vec![],
-        })
-    );
-    let mut input = "var 1..101: objective :: output_var = X_2586;";
-    assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
-        Ok(VarDeclItem::IntInRange {
-            id: "objective".to_string(),
-            lb: 1,
-            ub: 101,
-            expr: Some(IntExpr::VarParIdentifier("X_2586".to_string())),
-            annos: vec![Annotation {
-                id: "output_var".to_string(),
-                expressions: vec![]
-            }],
-        })
-    );
-}
-#[test]
-fn test_var_decl_item_5() {
-    use crate::{ArrayOfSetExpr, SetExpr, SetLiteralExpr};
-    use winnow::error::ContextError;
-    let mut input = "array [1..3] of var set of 17..42: h = [{42,17},23..X,{}];";
-    assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
-        Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
-            lb: 17,
-            ub: 42,
-            annos: vec![],
-            ix: IndexSet(3),
-            id: "h".to_string(),
-            array_expr: Some(ArrayOfSetExpr::Array(vec![
-                SetExpr::Set(SetLiteralExpr::SetInts(vec![
-                    IntExpr::Int(42),
-                    IntExpr::Int(17)
-                ])),
-                SetExpr::Set(SetLiteralExpr::IntInRange(
-                    IntExpr::Int(23),
-                    IntExpr::VarParIdentifier("X".to_string())
-                )),
-                SetExpr::Set(SetLiteralExpr::SetInts(vec![])),
-            ])),
-        })
-    );
 }

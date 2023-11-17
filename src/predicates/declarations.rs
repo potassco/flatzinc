@@ -77,6 +77,7 @@ fn test_predicate_item_3() {
     let mut input = "predicate float_01(set of float:c);";
     predicate_item::<ContextError<&str>>(&mut input).unwrap();
 }
+
 pub fn pred_par_type_ident_pair<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> PResult<(PredParType, String), E>

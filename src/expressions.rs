@@ -244,7 +244,6 @@ where
     let string = delimited('"', build_string, '"').parse_next(input)?;
     Ok(AnnExpr::String(string))
 }
-
 #[test]
 fn test_string_lit() {
     use winnow::error::ContextError;
@@ -254,7 +253,6 @@ fn test_string_lit() {
         Ok(AnnExpr::String("bla".to_string()))
     );
 }
-
 #[test]
 fn test_string_lit_escaped_characters() {
     use winnow::error::ContextError;
@@ -283,6 +281,7 @@ fn test_bool_expr() {
         Ok(BoolExpr::Bool(true))
     );
 }
+
 fn be_bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BoolExpr, E> {
     let expr = bool_literal(input)?;
     Ok(BoolExpr::Bool(expr))
@@ -297,6 +296,7 @@ fn test_bool_literal() {
     );
     assert_eq!(input, ");");
 }
+
 fn be_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BoolExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(BoolExpr::VarParIdentifier(id))
@@ -386,26 +386,6 @@ fn se_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PR
     Ok(SetExpr::VarParIdentifier(id))
 }
 
-#[test]
-fn test_expr() {
-    use winnow::error::ContextError;
-    let mut input = "1..2";
-    assert_eq!(
-        expr::<ContextError<&str>>(&mut input),
-        Ok(Expr::Set(SetLiteralExpr::IntInRange(
-            IntExpr::Int(1),
-            IntExpr::Int(2)
-        )))
-    );
-}
-
-#[test]
-fn test_int_literal() {
-    use winnow::error::ContextError;
-    let mut input = "1";
-    assert_eq!(int_literal::<ContextError<&str>>(&mut input), Ok(1));
-}
-
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expr {
     VarParIdentifier(String),
@@ -438,6 +418,18 @@ where
     ))
     .parse_next(input)?;
     Ok(expr)
+}
+#[test]
+fn test_expr() {
+    use winnow::error::ContextError;
+    let mut input = "1..2";
+    assert_eq!(
+        expr::<ContextError<&str>>(&mut input),
+        Ok(Expr::Set(SetLiteralExpr::IntInRange(
+            IntExpr::Int(1),
+            IntExpr::Int(2)
+        )))
+    );
 }
 
 fn e_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E> {

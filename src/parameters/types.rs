@@ -48,6 +48,12 @@ pub enum ParType {
     },
 }
 
+pub fn par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseIntError>,
+{
+    alt((pt_basic_par_type, array_par_type)).parse_next(input)
+}
 #[test]
 fn test_par_type() {
     use crate::IndexSet;
@@ -60,13 +66,6 @@ fn test_par_type() {
             par_type: BasicParType::BasicType(BasicType::Float)
         })
     );
-}
-
-pub fn par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
-{
-    alt((pt_basic_par_type, array_par_type)).parse_next(input)
 }
 
 fn pt_basic_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E> {
