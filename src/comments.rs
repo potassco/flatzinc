@@ -9,24 +9,16 @@ use winnow::{
 
 use crate::statements::Stmt;
 
+pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E> {
+    let s = space_or_comment0(input)?;
+    Ok(Stmt::Comment(s.into()))
+}
 pub fn space_or_comment0<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
     alt((comment, multispace0)).parse_next(input)
 }
-
 pub fn space_or_comment1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
     alt((comment, multispace1)).parse_next(input)
 }
-
-#[test]
-fn test_comment() {
-    use winnow::error::ContextError;
-    let mut input = "% Comments can have anyth!ng in it really <3";
-    assert_eq!(
-        comment::<ContextError<&str>>(&mut input),
-        Ok(" Comments can have anyth!ng in it really <3".into())
-    );
-}
-
 fn comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
     multispace0.parse_next(input)?;
     '%'.parse_next(input)?;
@@ -35,8 +27,12 @@ fn comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str,
     opt(comment).parse_next(input)?;
     Ok(string)
 }
-
-pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E> {
-    let s = space_or_comment0(input)?;
-    Ok(Stmt::Comment(s.into()))
+#[test]
+fn test_comment() {
+    use winnow::error::ContextError;
+    let mut input = "% Comments can have anyth!ng in it really <3";
+    assert_eq!(
+        comment::<ContextError<&str>>(&mut input),
+        Ok(" Comments can have anyth!ng in it really <3".into())
+    );
 }

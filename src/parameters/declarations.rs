@@ -136,7 +136,6 @@ where
         },
     }
 }
-
 #[test]
 fn test_par_decl_item_1() {
     use crate::IndexSet;
@@ -151,7 +150,6 @@ fn test_par_decl_item_1() {
         })
     );
 }
-
 #[test]
 #[should_panic]
 fn test_par_decl_item_2() {
@@ -160,7 +158,6 @@ fn test_par_decl_item_2() {
     let mut input = "bool : b2 = b1;";
     par_decl_item::<ContextError<&str>>(&mut input).unwrap();
 }
-
 #[test]
 fn test_par_decl_item_3() {
     use crate::IndexSet;
