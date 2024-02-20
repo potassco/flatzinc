@@ -1,7 +1,7 @@
 use winnow::{
     combinator::{alt, opt},
     error::{ErrorKind, FromExternalError, ParserError},
-    token::{one_of, tag, take_while},
+    token::{literal, one_of, take_while},
     PResult, Parser,
 };
 
@@ -169,7 +169,7 @@ fn is_identifier_rest(c: char) -> bool {
 }
 
 pub fn bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<bool, E> {
-    alt((tag("true").value(true), tag("false").value(false))).parse_next(input)
+    alt((literal("true").value(true), literal("false").value(false))).parse_next(input)
 }
 
 pub fn int_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
