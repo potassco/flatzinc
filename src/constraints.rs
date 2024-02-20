@@ -1,14 +1,12 @@
-use winnow::{
-    combinator::separated,
-    error::{FromExternalError, ParserError},
-    token::tag,
-    PResult, Parser,
-};
-
 use crate::{
     comments::{space_or_comment0, space_or_comment1},
     expressions::{annotations, expr, Annotation, Expr},
     primitive_literals::identifier,
+};
+use winnow::{
+    combinator::{eof, separated},
+    error::{FromExternalError, ParserError},
+    PResult, Parser,
 };
 
 #[derive(PartialEq, Clone, Debug)]
@@ -26,7 +24,17 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;
-    tag("constraint").parse_next(input)?;
+    "constraint".parse_next(input)?;
+    let item = constraint_tail(input).map_err(|e| e.cut())?;
+    Ok(item)
+}
+pub fn constraint_tail<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> PResult<ConstraintItem, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseIntError>
+        + FromExternalError<&'a str, std::num::ParseFloatError>,
+{
     space_or_comment1(input)?;
     let id = identifier(input)?;
     '('.parse_next(input)?;
@@ -39,10 +47,11 @@ where
     space_or_comment0(input)?;
     ';'.parse_next(input)?;
     space_or_comment0(input)?;
+    eof.parse_next(input)?;
     Ok(ConstraintItem { id, exprs, annos })
 }
 #[test]
-fn test_constraint_item() {
+fn test_constraint_item_1() {
     use crate::{AnnExpr, Annotation, Expr, IntExpr, SetLiteralExpr};
     use winnow::error::ContextError;
     let mut input = "constraint set_in_reif(X_26,1..2,X_52):: defines_var(X_52);";
@@ -170,4 +179,12 @@ fn test_constraint_item_5() {
             annos: vec![]
         })
     );
+}
+#[test]
+fn test_constraint_item_6() {
+    use winnow::error::InputError;
+    let mut input = "constraintX int_lin_le_reif(X_INTRODUCED_22_,[X_INTRODUCED_7_,X_INTRODUCED_8_],,-2,X_INTRODUCED_58_):: defines_var(X_INTRODUCED_58_);";
+    let res = constraint_item::<InputError<&str>>(&mut input);
+    assert!(res.is_err());
+    assert_eq!("Err(Cut(InputError { input: \"X int_lin_le_reif(X_INTRODUCED_22_,[X_INTRODUCED_7_,X_INTRODUCED_8_],,-2,X_INTRODUCED_58_):: defines_var(X_INTRODUCED_58_);\", kind: Slice }))", format!("{:?}", res));
 }

@@ -1,4 +1,4 @@
-use winnow::{combinator::alt, error::ParserError, token::tag, PResult, Parser};
+use winnow::{combinator::alt, error::ParserError, PResult, Parser};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicType {
@@ -13,16 +13,16 @@ pub fn basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<B
 }
 
 fn bool<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicType, E> {
-    tag("bool").parse_next(input)?;
+    "bool".parse_next(input)?;
     Ok(BasicType::Bool)
 }
 
 fn int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicType, E> {
-    tag("int").parse_next(input)?;
+    "int".parse_next(input)?;
     Ok(BasicType::Int)
 }
 
 fn float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicType, E> {
-    tag("float").parse_next(input)?;
+    "float".parse_next(input)?;
     Ok(BasicType::Float)
 }

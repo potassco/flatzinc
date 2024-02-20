@@ -2,7 +2,6 @@ use winnow::{
     combinator::alt,
     combinator::separated,
     error::{FromExternalError, ParserError},
-    token::tag,
     PResult, Parser,
 };
 
@@ -43,7 +42,7 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    tag("array").parse_next(input)?;
+    "array".parse_next(input)?;
     space_or_comment0(input)?;
     '['.parse_next(input)?;
     space_or_comment0(input)?;
@@ -51,7 +50,7 @@ where
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     space_or_comment1(input)?;
-    tag("of").parse_next(input)?;
+    "of".parse_next(input)?;
     space_or_comment1(input)?;
     let var_type = basic_var_type(input)?;
     Ok(VarType::Array { ix, var_type })
@@ -73,7 +72,7 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;
-    tag("var").parse_next(input)?;
+    "var".parse_next(input)?;
     space_or_comment1(input)?;
     let vt = alt((
         bvt_basic_type,
@@ -142,7 +141,7 @@ where
 {
     let lb = int_literal(input)?;
     space_or_comment0(input)?;
-    tag("..").parse_next(input)?;
+    "..".parse_next(input)?;
     space_or_comment0(input)?;
     let ub = int_literal(input)?;
     Ok((lb, ub))
@@ -154,7 +153,7 @@ where
 {
     let lb = float_literal(input)?;
     space_or_comment0(input)?;
-    tag("..").parse_next(input)?;
+    "..".parse_next(input)?;
     space_or_comment0(input)?;
     let ub = float_literal(input)?;
     Ok((lb, ub))
@@ -180,13 +179,13 @@ pub fn subset_of_int_range<'a, E: ParserError<&'a str>>(
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    tag("set").parse_next(input)?;
+    "set".parse_next(input)?;
     space_or_comment1(input)?;
-    tag("of").parse_next(input)?;
+    "of".parse_next(input)?;
     space_or_comment1(input)?;
     let lb = int_literal(input)?;
     space_or_comment0(input)?;
-    tag("..").parse_next(input)?;
+    "..".parse_next(input)?;
     space_or_comment0(input)?;
     let ub = int_literal(input)?;
     Ok((lb, ub))
@@ -197,11 +196,15 @@ pub fn subset_of_int_set<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PR
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    tag("set of {").parse_next(input)?;
+    "set".parse_next(input)?;
+    space_or_comment1(input)?;
+    "of".parse_next(input)?;
+    space_or_comment1(input)?;
+    '{'.parse_next(input)?;
     space_or_comment0(input)?;
     let v = separated(0.., int_literal, ',').parse_next(input)?;
     space_or_comment0(input)?;
-    tag("}").parse_next(input)?;
+    '}'.parse_next(input)?;
     Ok(v)
 }
 

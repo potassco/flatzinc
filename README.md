@@ -22,7 +22,7 @@ In your code:
 ```rust
 use flatzinc::*;
 
-match flatzinc::model::<ContextError<&str>>(&buf) {
+match flatzinc::model::<InputError<&str>>(&buf) {
     Ok(result) => println!("{:#?}", result),
     Err(e) => {
         error!("Failed to parse flatzinc!\n{}", e)
