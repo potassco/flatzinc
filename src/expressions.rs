@@ -1,6 +1,6 @@
 use winnow::{
     ascii::multispace1,
-    combinator::{alt, delimited, fold_repeat, opt, preceded, repeat, separated},
+    combinator::{alt, delimited, opt, preceded, repeat, separated},
     error::{FromExternalError, ParserError},
     token::{take_till, take_while},
     PResult, Parser,
@@ -233,7 +233,7 @@ pub fn string_lit<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<A
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let build_string = fold_repeat(0.., parse_fragment, String::new, |mut string, fragment| {
+    let build_string = repeat(0.., parse_fragment).fold(String::new, |mut string, fragment| {
         match fragment {
             StringFragment::Literal(s) => string.push_str(s),
             StringFragment::EscapedChar(c) => string.push(c),
