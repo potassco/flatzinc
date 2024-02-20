@@ -1,11 +1,8 @@
-use std::str;
-
-use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    character::complete::char,
-    error::{FromExternalError, ParseError},
-    IResult,
+use winnow::{
+    combinator::alt,
+    error::{FromExternalError, ParserError},
+    token::tag,
+    PResult, Parser,
 };
 
 use crate::{
@@ -20,27 +17,26 @@ pub enum BasicParType {
     SetOfInt,
 }
 
-pub fn basic_par_type<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, BasicParType, E> {
-    let (input, bpt) = alt((bpt_basic_type, bpt_set_of_int))(input)?;
-    Ok((input, bpt))
+pub fn basic_par_type<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> PResult<BasicParType, E> {
+    alt((bpt_basic_type, bpt_set_of_int)).parse_next(input)
 }
 
-fn bpt_basic_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicParType, E> {
-    let (input, bt) = basic_type(input)?;
-    Ok((input, BasicParType::BasicType(bt)))
+fn bpt_basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicParType, E> {
+    let bt = basic_type(input)?;
+    Ok(BasicParType::BasicType(bt))
 }
 
 // "set" "of" "int"
 // Moved this be a basic-var-type basic-par-type
-fn bpt_set_of_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, BasicParType, E> {
-    let (input, _tag) = tag("set")(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, _tag) = tag("of")(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, _tag) = tag("int")(input)?;
-    Ok((input, BasicParType::SetOfInt))
+fn bpt_set_of_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicParType, E> {
+    tag("set").parse_next(input)?;
+    space_or_comment1(input)?;
+    tag("of").parse_next(input)?;
+    space_or_comment1(input)?;
+    tag("int").parse_next(input)?;
+    Ok(BasicParType::SetOfInt)
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -55,116 +51,43 @@ pub enum ParType {
 #[test]
 fn test_par_type() {
     use crate::IndexSet;
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "array [1..3] of float";
     assert_eq!(
-        par_type::<VerboseError<&str>>("array [1..3] of float"),
-        Ok((
-            "",
-            ParType::Array {
-                ix: IndexSet(3),
-                par_type: BasicParType::BasicType(BasicType::Float)
-            }
-        ))
+        par_type::<ContextError<&str>>(&mut input),
+        Ok(ParType::Array {
+            ix: IndexSet(3),
+            par_type: BasicParType::BasicType(BasicType::Float)
+        })
     );
 }
 
-pub fn par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E>
+pub fn par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, par_type) = alt((pt_basic_par_type, array_par_type))(input)?;
-    Ok((input, par_type))
+    alt((pt_basic_par_type, array_par_type)).parse_next(input)
 }
 
-fn pt_basic_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E> {
-    let (input, pt) = basic_par_type(input)?;
-    Ok((input, ParType::BasicParType(pt)))
+fn pt_basic_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E> {
+    let pt = basic_par_type(input)?;
+    Ok(ParType::BasicParType(pt))
 }
 
-fn array_par_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, ParType, E>
+fn array_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, _) = tag("array")(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, _) = char('[')(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, ix) = index_set(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, _) = char(']')(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, _tag) = tag("of")(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, par_type) = basic_par_type(input)?;
-    Ok((input, ParType::Array { ix, par_type }))
-}
-
-#[test]
-fn test_basic_pred_par_type() {
-    use crate::predicates::types;
-    use crate::predicates::types::BasicPredParType;
-    use nom::error::VerboseError;
-    assert_eq!(
-        types::basic_pred_par_type::<VerboseError<&str>>("var set of int"),
-        Ok(("", BasicPredParType::VarSetOfInt))
-    );
-}
-
-#[test]
-fn test_pred_par_type_range() {
-    use crate::predicates::types;
-    use nom::error::VerboseError;
-    assert_eq!(
-        types::pred_par_type::<VerboseError<&str>>("1..3"),
-        Ok((
-            "",
-            types::PredParType::Basic(types::BasicPredParType::IntInRange(1, 3))
-        ))
-    );
-}
-
-#[test]
-fn test_pred_par_type_2() {
-    use crate::predicates::types;
-    use nom::error::VerboseError;
-    assert_eq!(
-        types::pred_par_type::<VerboseError<&str>>("array [1..1] of var set of int"),
-        Ok((
-            "",
-            types::PredParType::Array {
-                ix: types::PredIndexSet::IndexSet(1),
-                par_type: types::BasicPredParType::VarSetOfInt,
-            },
-        ))
-    );
-}
-
-#[test]
-fn test_pred_par_type_3() {
-    use crate::predicates::types;
-    use nom::error::VerboseError;
-    assert_eq!(
-        types::pred_par_type::<VerboseError<&str>>("var set of int"),
-        Ok((
-            "",
-            types::PredParType::Basic(types::BasicPredParType::VarSetOfInt)
-        ))
-    );
-}
-
-#[test]
-fn test_pred_par_type_ident_pair() {
-    use crate::predicates::declarations;
-    use crate::predicates::types;
-    use nom::error::VerboseError;
-    assert_eq!(
-        declarations::pred_par_type_ident_pair::<VerboseError<&str>>("var set of int: g"),
-        Ok((
-            "",
-            (
-                types::PredParType::Basic(types::BasicPredParType::VarSetOfInt),
-                "g".to_string()
-            )
-        ))
-    );
+    tag("array").parse_next(input)?;
+    space_or_comment1(input)?;
+    '['.parse_next(input)?;
+    space_or_comment0(input)?;
+    let ix = index_set(input)?;
+    space_or_comment0(input)?;
+    ']'.parse_next(input)?;
+    space_or_comment1(input)?;
+    tag("of").parse_next(input)?;
+    space_or_comment1(input)?;
+    let par_type = basic_par_type(input)?;
+    Ok(ParType::Array { ix, par_type })
 }

@@ -1,10 +1,7 @@
-use std::str;
-
-use nom::{
-    branch::alt,
-    combinator::all_consuming,
-    error::{FromExternalError, ParseError},
-    IResult,
+use winnow::{
+    combinator::{alt, eof},
+    error::{FromExternalError, ParserError},
+    PResult, Parser,
 };
 
 use crate::{
@@ -29,63 +26,65 @@ pub enum Stmt {
     SolveItem(SolveItem),
 }
 
-pub fn statement<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+pub fn statement<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, res) = all_consuming(alt((
+    let res = alt((
         stmt_predicate,
         stmt_parameter,
         stmt_variable,
         stmt_constraint,
         stmt_solve_item,
         space_or_comment,
-    )))(input)?;
-    Ok((input, res))
+    ))
+    .parse_next(input)?;
+    eof.parse_next(input)?;
+    Ok(res)
 }
 
-fn stmt_predicate<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_predicate<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = predicate_declarations::predicate_item(input)?;
-    Ok((input, Stmt::Predicate(item)))
+    let item = predicate_declarations::predicate_item(input)?;
+    Ok(Stmt::Predicate(item))
 }
 
-fn stmt_parameter<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_parameter<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = parameter_declarations::par_decl_item(input)?;
-    Ok((input, Stmt::Parameter(item)))
+    let item = parameter_declarations::par_decl_item(input)?;
+    Ok(Stmt::Parameter(item))
 }
 
-fn stmt_variable<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_variable<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = variable_declarations::var_decl_item(input)?;
-    Ok((input, Stmt::Variable(item)))
+    let item = variable_declarations::var_decl_item(input)?;
+    Ok(Stmt::Variable(item))
 }
 
-fn stmt_constraint<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_constraint<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = constraint_item(input)?;
-    Ok((input, Stmt::Constraint(item)))
+    let item = constraint_item(input)?;
+    Ok(Stmt::Constraint(item))
 }
 
-fn stmt_solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Stmt, E>
+fn stmt_solve_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, item) = solve_item(input)?;
-    Ok((input, Stmt::SolveItem(item)))
+    let item = solve_item(input)?;
+    Ok(Stmt::SolveItem(item))
 }
