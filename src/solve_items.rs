@@ -1,6 +1,6 @@
 use winnow::{
-    combinator::{alt, eof},
-    error::{FromExternalError, ParserError},
+    combinator::{alt, cut_err},
+    error::{AddContext, FromExternalError, ParserError, StrContext},
     PResult, Parser,
 };
 
@@ -21,12 +21,13 @@ pub struct SolveItem {
 pub fn solve_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SolveItem, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
+        + FromExternalError<&'a str, std::num::ParseFloatError>
+        + AddContext<&'a str, StrContext>,
 {
     space_or_comment0(input)?;
     "solve".parse_next(input)?;
-    let item = solve_item_tail(input).map_err(|e| e.cut())?;
-    Ok(item)
+    cut_err(solve_item_tail.context(StrContext::Label("Error while parsing solve statement")))
+        .parse_next(input)
 }
 pub fn solve_item_tail<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SolveItem, E>
 where
@@ -47,7 +48,6 @@ where
     space_or_comment0(input)?;
     ';'.parse_next(input)?;
     space_or_comment0(input)?;
-    eof.parse_next(input)?;
     Ok(SolveItem { goal, annotations })
 }
 #[test]
@@ -57,7 +57,7 @@ fn test_solve_item() {
     use winnow::error::ContextError;
     let mut input = "solve :: int_search(X_59,input_order,indomain_min,complete) minimize X_24;";
     assert_eq!(
-        solve_item::<ContextError<&str>>(&mut input),
+        solve_item::<ContextError>(&mut input),
         Ok(SolveItem {
             goal: Goal::OptimizeBool(
                 OptimizationType::Minimize,

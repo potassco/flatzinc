@@ -1,6 +1,6 @@
 use winnow::{
-    combinator::{eof, separated},
-    error::{FromExternalError, ParserError},
+    combinator::{cut_err, separated},
+    error::{AddContext, FromExternalError, ParserError, StrContext},
     PResult, Parser,
 };
 
@@ -19,12 +19,13 @@ pub struct PredicateItem {
 pub fn predicate_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<PredicateItem, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
+        + FromExternalError<&'a str, std::num::ParseFloatError>
+        + AddContext<&'a str, StrContext>,
 {
     space_or_comment0(input)?;
     "predicate".parse_next(input)?;
-    let item = predicate_item_tail(input).map_err(|e| e.cut())?;
-    Ok(item)
+    cut_err(predicate_item_tail.context(StrContext::Label("Error while parsing solve statement")))
+        .parse_next(input)
 }
 pub fn predicate_item_tail<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
@@ -41,17 +42,15 @@ where
     space_or_comment0(input)?;
     ';'.parse_next(input)?;
     space_or_comment0(input)?;
-    eof.parse_next(input)?;
     Ok(PredicateItem { id, parameters })
 }
 #[test]
 fn test_predicate_item() {
     use crate::predicates::types::BasicPredParType;
-    use std::str;
     use winnow::error::ContextError;
     let mut input = "predicate float_03({1.0,3.3}:c);";
     assert_eq!(
-        predicate_item::<ContextError<&str>>(&mut input),
+        predicate_item::<ContextError>(&mut input),
         Ok(PredicateItem {
             id: "float_03".to_string(),
             parameters: vec![(
@@ -64,11 +63,10 @@ fn test_predicate_item() {
 #[test]
 fn test_predicate_item2() {
     use crate::predicates::types::BasicPredParType;
-    use std::str;
     use winnow::error::ContextError;
     let mut input = "predicate my_pred({1.0,3.3}:c);";
     assert_eq!(
-        predicate_item::<ContextError<&str>>(&mut input),
+        predicate_item::<ContextError>(&mut input),
         Ok(PredicateItem {
             id: "my_pred".to_string(),
             parameters: vec![(
@@ -81,10 +79,9 @@ fn test_predicate_item2() {
 #[test]
 #[should_panic]
 fn test_predicate_item_3() {
-    use std::str;
     use winnow::error::ContextError;
     let mut input = "predicate float_01(set of float:c);";
-    predicate_item::<ContextError<&str>>(&mut input).unwrap();
+    predicate_item::<ContextError>(&mut input).unwrap();
 }
 
 pub fn pred_par_type_ident_pair<'a, E: ParserError<&'a str>>(

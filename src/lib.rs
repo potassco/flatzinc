@@ -1,5 +1,3 @@
-pub use winnow::error::{ContextError, ErrorKind, FromExternalError, ParseError};
-
 pub use basic_types::BasicType;
 pub use constraints::ConstraintItem;
 pub use expressions::{
@@ -13,7 +11,7 @@ pub use predicates::{
 };
 pub use primitive_literals::IndexSet;
 pub use solve_items::{Goal, OptimizationType, SolveItem};
-pub use statements::{parse_statement, Stmt};
+pub use statements::Stmt;
 pub use variables::{declarations::VarDeclItem, types::BasicVarType};
 
 pub mod basic_types;

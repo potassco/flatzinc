@@ -1,10 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
-use flatzinc::statements::parse_statement;
+use flatzinc::Stmt;
 use log::error;
 use std::path::PathBuf;
 use stderrlog;
-use winnow::error::InputError;
 
 /// flatzinc parser
 #[derive(Parser, Debug)]
@@ -31,11 +30,10 @@ fn run() -> Result<()> {
     let opt = Opt::parse();
     let buf = std::fs::read_to_string(opt.file)?;
     for mut line in buf.lines() {
-        match parse_statement(&mut line) {
+        match <Stmt as std::str::FromStr>::from_str(&mut line) {
             Ok(result) => println!("{:#?}", result),
             Err(e) => {
-                let y: InputError<&str> = e.into_inner().unwrap();
-                error!("Failed to parse flatzinc!\n{:?}", y);
+                error!("Failed to parse flatzinc statement:\n{}", e);
             }
         }
     }

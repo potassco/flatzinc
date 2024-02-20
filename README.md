@@ -20,12 +20,12 @@ flatzinc = "0.3.20-dev"
 In your code:
 
 ```rust
-use flatzinc::*;
+use flatzinc::Stmt;
 
-match flatzinc::model::<InputError<&str>>(&buf) {
+match <Stmt as std::str::FromStr>::from_str(&mut line) {
     Ok(result) => println!("{:#?}", result),
     Err(e) => {
-        error!("Failed to parse flatzinc!\n{}", e)
+        error!("Failed to parse flatzinc statement:\n{}", e);
     }
 }
 ```
