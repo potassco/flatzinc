@@ -142,7 +142,7 @@ fn test_par_decl_item_1() {
     use winnow::error::ContextError;
     let mut input = "array [1..3] of  float: X_139 = [1.0,1.0,1.0];";
     assert_eq!(
-        par_decl_item::<ContextError<&str>>(&mut input),
+        par_decl_item::<ContextError>(&mut input),
         Ok(ParDeclItem::ArrayOfFloat {
             ix: IndexSet(3),
             id: "X_139".to_string(),
@@ -153,10 +153,9 @@ fn test_par_decl_item_1() {
 #[test]
 #[should_panic]
 fn test_par_decl_item_2() {
-    use std::str;
     use winnow::error::ContextError;
     let mut input = "bool : b2 = b1;";
-    par_decl_item::<ContextError<&str>>(&mut input).unwrap();
+    par_decl_item::<ContextError>(&mut input).unwrap();
 }
 #[test]
 fn test_par_decl_item_3() {
@@ -165,7 +164,7 @@ fn test_par_decl_item_3() {
     use winnow::error::ContextError;
     let mut input = "array [1..3] of set of int : h = [{42,17},1..5,{}];";
     assert_eq!(
-        par_decl_item::<ContextError<&str>>(&mut input),
+        par_decl_item::<ContextError>(&mut input),
         Ok(ParDeclItem::ArrayOfSet {
             ix: IndexSet(3),
             id: "h".to_string(),

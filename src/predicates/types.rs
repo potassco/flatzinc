@@ -54,7 +54,7 @@ fn test_basic_pred_par_type() {
     use winnow::error::ContextError;
     let mut input = "var set of int";
     assert_eq!(
-        types::basic_pred_par_type::<ContextError<&str>>(&mut input),
+        types::basic_pred_par_type::<ContextError>(&mut input),
         Ok(BasicPredParType::VarSetOfInt)
     );
 }
@@ -172,7 +172,7 @@ fn test_pred_par_type_range() {
     use winnow::error::ContextError;
     let mut input = "1..3";
     assert_eq!(
-        types::pred_par_type::<ContextError<&str>>(&mut input),
+        types::pred_par_type::<ContextError>(&mut input),
         Ok(types::PredParType::Basic(
             types::BasicPredParType::IntInRange(1, 3)
         ))
@@ -184,7 +184,7 @@ fn test_pred_par_type_2() {
     use winnow::error::ContextError;
     let mut input = "array [1..1] of var set of int";
     assert_eq!(
-        pred_par_type::<ContextError<&str>>(&mut input),
+        pred_par_type::<ContextError>(&mut input),
         Ok(PredParType::Array {
             ix: types::PredIndexSet::IndexSet(1),
             par_type: types::BasicPredParType::VarSetOfInt,
@@ -197,7 +197,7 @@ fn test_pred_par_type_3() {
     use winnow::error::ContextError;
     let mut input = "var set of int";
     assert_eq!(
-        types::pred_par_type::<ContextError<&str>>(&mut input),
+        types::pred_par_type::<ContextError>(&mut input),
         Ok(types::PredParType::Basic(
             types::BasicPredParType::VarSetOfInt
         ))
