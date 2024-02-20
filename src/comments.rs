@@ -31,7 +31,7 @@ fn test_comment() {
     use winnow::error::ContextError;
     let mut input = "% Comments can have anyth!ng in it really <3";
     assert_eq!(
-        comment::<ContextError<&str>>(&mut input),
+        comment::<ContextError>(&mut input),
         Ok(" Comments can have anyth!ng in it really <3".into())
     );
 }
@@ -39,6 +39,6 @@ fn test_comment() {
 fn test_comment2() {
     use winnow::error::ContextError;
     let mut input = "5 % Comments can have anyth!ng in it really <3";
-    let res = comment::<ContextError<&str>>(&mut input);
+    let res = comment::<ContextError>(&mut input);
     assert!(res.is_err());
 }

@@ -249,7 +249,7 @@ fn test_string_lit() {
     use winnow::error::ContextError;
     let mut input = "\"bla\"";
     assert_eq!(
-        string_lit::<ContextError<&str>>(&mut input),
+        string_lit::<ContextError>(&mut input),
         Ok(AnnExpr::String("bla".to_string()))
     );
 }
@@ -258,7 +258,7 @@ fn test_string_lit_escaped_characters() {
     use winnow::error::ContextError;
     let mut input = r#""escaped\"characters\ntest\u{0021}\u{01c3}""#;
     assert_eq!(
-        string_lit::<ContextError<&str>>(&mut input),
+        string_lit::<ContextError>(&mut input),
         Ok(AnnExpr::String("escaped\"characters\ntest!ǃ".to_string()))
     );
 }
@@ -277,7 +277,7 @@ fn test_bool_expr() {
     use winnow::error::ContextError;
     let mut input = "true);";
     assert_eq!(
-        bool_expr::<ContextError<&str>>(&mut input),
+        bool_expr::<ContextError>(&mut input),
         Ok(BoolExpr::Bool(true))
     );
 }
@@ -291,7 +291,7 @@ fn test_bool_literal() {
     use winnow::error::ContextError;
     let mut input = "true);";
     assert_eq!(
-        be_bool_literal::<ContextError<&str>>(&mut input),
+        be_bool_literal::<ContextError>(&mut input),
         Ok(BoolExpr::Bool(true))
     );
     assert_eq!(input, ");");
@@ -424,7 +424,7 @@ fn test_expr() {
     use winnow::error::ContextError;
     let mut input = "1..2";
     assert_eq!(
-        expr::<ContextError<&str>>(&mut input),
+        expr::<ContextError>(&mut input),
         Ok(Expr::Set(SetLiteralExpr::IntInRange(
             IntExpr::Int(1),
             IntExpr::Int(2)

@@ -182,9 +182,9 @@ fn test_constraint_item_5() {
 }
 #[test]
 fn test_constraint_item_6() {
-    use winnow::error::InputError;
-    let mut input = "constraintX int_lin_le_reif(X_INTRODUCED_22_,[X_INTRODUCED_7_,X_INTRODUCED_8_],,-2,X_INTRODUCED_58_):: defines_var(X_INTRODUCED_58_);";
-    let res = constraint_item::<InputError<&str>>(&mut input);
+    use winnow::error::ContextError;
+    let mut input = "constraintX int_lin_le_reif(X_INTRODUCED_22_,,-2,X_INTRODUCED_58_):: defines_var(X_INTRODUCED_58_);";
+    let res = constraint_item::<ContextError>(&mut input);
     assert!(res.is_err());
-    assert_eq!("Err(Cut(InputError { input: \"X int_lin_le_reif(X_INTRODUCED_22_,[X_INTRODUCED_7_,X_INTRODUCED_8_],,-2,X_INTRODUCED_58_):: defines_var(X_INTRODUCED_58_);\", kind: Slice }))", format!("{:?}", res));
+    assert_eq!("Parsing Failure: ContextError { context: [Label(\"Error while parsing constraint\")], cause: None }", res.unwrap_err().to_string());
 }

@@ -155,7 +155,7 @@ fn test_var_decl_item_1() {
     use winnow::error::ContextError;
     let mut input = "array [1..1] of var set of 1..10: sets:: output_array([1..1]) = [X_0];";
     assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
+        var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
             ix: IndexSet(1),
             id: "sets".to_string(),
@@ -178,7 +178,7 @@ fn test_var_decl_item_2() {
     use winnow::error::ContextError;
     let mut input = "array [1..5] of var 0..3: w =X_32;";
     assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
+        var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem::ArrayOfIntInRange {
             id: "w".to_string(),
             ix: IndexSet(5),
@@ -194,7 +194,7 @@ fn test_var_decl_item_3() {
     use winnow::error::ContextError;
     let mut input = "array [1..5] of var {1,2,3}: w;";
     assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
+        var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem::ArrayOfIntInSet {
             id: "w".to_string(),
             ix: IndexSet(5),
@@ -210,7 +210,7 @@ fn test_var_decl_item_4() {
     use winnow::error::ContextError;
     let mut input = "array [1..5] of var 0..3: w;";
     assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
+        var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem::ArrayOfIntInRange {
             id: "w".to_string(),
             ix: IndexSet(5),
@@ -222,7 +222,7 @@ fn test_var_decl_item_4() {
     );
     let mut input = "var 1..101: objective :: output_var = X_2586;";
     assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
+        var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem::IntInRange {
             id: "objective".to_string(),
             lb: 1,
@@ -241,7 +241,7 @@ fn test_var_decl_item_5() {
     use winnow::error::ContextError;
     let mut input = "array [1..3] of var set of 17..42: h = [{42,17},23..X,{}];";
     assert_eq!(
-        var_decl_item::<ContextError<&str>>(&mut input),
+        var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem::ArrayOfSubSetOfIntRange {
             lb: 17,
             ub: 42,

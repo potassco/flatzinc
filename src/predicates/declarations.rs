@@ -107,7 +107,7 @@ fn test_pred_par_type_ident_pair() {
     use winnow::error::ContextError;
     let mut input = "var set of int: g";
     assert_eq!(
-        declarations::pred_par_type_ident_pair::<ContextError<&str>>(&mut input),
+        declarations::pred_par_type_ident_pair::<ContextError>(&mut input),
         Ok((
             types::PredParType::Basic(types::BasicPredParType::VarSetOfInt),
             "g".to_string()

@@ -183,7 +183,7 @@ where
 fn test_int_literal() {
     use winnow::error::ContextError;
     let mut input = "1";
-    assert_eq!(int_literal::<ContextError<&str>>(&mut input), Ok(1));
+    assert_eq!(int_literal::<ContextError>(&mut input), Ok(1));
 }
 
 fn decimal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
@@ -207,7 +207,7 @@ fn test_decimal() {
     use winnow::error::ContextError;
     let mut input = "170141183460469231731687303715884105727";
     assert_eq!(
-        decimal::<ContextError<&str>>(&mut input),
+        decimal::<ContextError>(&mut input),
         Ok(170141183460469231731687303715884105727)
     );
 }
@@ -216,7 +216,7 @@ fn test_decimal2() {
     use winnow::error::ContextError;
     let mut input = "-170141183460469231731687303715884105727";
     assert_eq!(
-        decimal::<ContextError<&str>>(&mut input),
+        decimal::<ContextError>(&mut input),
         Ok(-170141183460469231731687303715884105727)
     );
 }
@@ -225,7 +225,7 @@ fn test_decimal3() {
     use winnow::error::ContextError;
     let mut input = "170141183460469231731687303715884105728";
     //Should fail because of overflow
-    assert!(decimal::<ContextError<&str>>(&mut input).is_err());
+    assert!(decimal::<ContextError>(&mut input).is_err());
 }
 
 fn hexadecimal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
@@ -248,7 +248,7 @@ where
 fn test_hex() {
     use winnow::error::ContextError;
     let mut input = "-0x2f";
-    assert_eq!(hexadecimal::<ContextError<&str>>(&mut input), Ok(-47));
+    assert_eq!(hexadecimal::<ContextError>(&mut input), Ok(-47));
 }
 
 fn octal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
@@ -271,7 +271,7 @@ fn test_oct() {
     use winnow::error::ContextError;
     let mut input = "0o200000000000000000000000000000000001";
     assert_eq!(
-        octal::<ContextError<&str>>(&mut input),
+        octal::<ContextError>(&mut input),
         Ok(81129638414606681695789005144065)
     );
 }
@@ -299,33 +299,33 @@ where
 fn test_float_literal() {
     use winnow::error::ContextError;
     //TODO should return error
-    // float_literal::<ContextError<&str>>("5")
+    // float_literal::<ContextError>("5")
     let mut input = "023.21";
-    assert_eq!(float_literal::<ContextError<&str>>(&mut input), Ok(023.21));
+    assert_eq!(float_literal::<ContextError>(&mut input), Ok(023.21));
     let mut input = "0023.21E-098";
     assert_eq!(
-        float_literal::<ContextError<&str>>(&mut input),
+        float_literal::<ContextError>(&mut input),
         Ok(0023.21E-098)
     );
     let mut input = "0023.21e+098";
     assert_eq!(
-        float_literal::<ContextError<&str>>(&mut input),
+        float_literal::<ContextError>(&mut input),
         Ok(0023.21e+098)
     );
     let mut input = "002e+098";
     assert_eq!(
-        float_literal::<ContextError<&str>>(&mut input),
+        float_literal::<ContextError>(&mut input),
         Ok(002e+098)
     );
     let mut input = "0.21";
-    assert_eq!(float_literal::<ContextError<&str>>(&mut input), Ok(0.21));
+    assert_eq!(float_literal::<ContextError>(&mut input), Ok(0.21));
     let mut input = "1.0,";
-    assert_eq!(float_literal::<ContextError<&str>>(&mut input), Ok(1.0));
+    assert_eq!(float_literal::<ContextError>(&mut input), Ok(1.0));
 
     let mut input = "0.000000000000000000000000000000007609999999000000000000000000000000760999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999900000000000000000000000764DD4DDDDDDDDD%
     ";
     assert_eq!(
-        float_literal::<ContextError<&str>>(&mut input),
+        float_literal::<ContextError>(&mut input),
         Ok(0.000000000000000000000000000000007609999999)
     );
 }
