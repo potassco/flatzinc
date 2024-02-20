@@ -59,6 +59,7 @@ fn test_basic_pred_par_type() {
         Ok(BasicPredParType::VarSetOfInt)
     );
 }
+
 fn bppt_basic_par_type<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> PResult<BasicPredParType, E> {

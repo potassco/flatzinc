@@ -41,7 +41,6 @@ where
     space_or_comment0(input)?;
     Ok(ConstraintItem { id, exprs, annos })
 }
-
 #[test]
 fn test_constraint_item() {
     use crate::{AnnExpr, Annotation, Expr, IntExpr, SetLiteralExpr};
