@@ -176,6 +176,12 @@ where
     crate::comments::space_or_comment0(input)?;
     alt((decimal, hexadecimal, octal)).parse_next(input)
 }
+#[test]
+fn test_int_literal() {
+    use winnow::error::ContextError;
+    let mut input = "1";
+    assert_eq!(int_literal::<ContextError<&str>>(&mut input), Ok(1));
+}
 
 fn decimal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
 where
@@ -211,18 +217,12 @@ fn test_decimal2() {
         Ok(-170141183460469231731687303715884105727)
     );
 }
-//Should fail because of overflow
 #[test]
 fn test_decimal3() {
     use winnow::error::ContextError;
     let mut input = "170141183460469231731687303715884105728";
+    //Should fail because of overflow
     assert!(decimal::<ContextError<&str>>(&mut input).is_err());
-}
-#[test]
-fn test_hex() {
-    use winnow::error::ContextError;
-    let mut input = "-0x2f";
-    assert_eq!(hexadecimal::<ContextError<&str>>(&mut input), Ok(-47));
 }
 
 fn hexadecimal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
@@ -241,6 +241,12 @@ where
         Ok(int)
     }
 }
+#[test]
+fn test_hex() {
+    use winnow::error::ContextError;
+    let mut input = "-0x2f";
+    assert_eq!(hexadecimal::<ContextError<&str>>(&mut input), Ok(-47));
+}
 
 fn octal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
 where
@@ -257,7 +263,6 @@ where
         Ok(int)
     }
 }
-
 #[test]
 fn test_oct() {
     use winnow::error::ContextError;
@@ -280,8 +285,15 @@ fn is_dec_digit(c: char) -> bool {
     c.is_ascii_digit()
 }
 
+pub fn float_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<f64, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+{
+    crate::comments::space_or_comment0(input)?;
+    fz_float(input)
+}
 #[test]
-fn test_float() {
+fn test_float_literal() {
     use winnow::error::ContextError;
     //TODO should return error
     // float_literal::<ContextError<&str>>("5")
@@ -313,14 +325,6 @@ fn test_float() {
         float_literal::<ContextError<&str>>(&mut input),
         Ok(0.000000000000000000000000000000007609999999)
     );
-}
-
-pub fn float_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<f64, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
-{
-    crate::comments::space_or_comment0(input)?;
-    fz_float(input)
 }
 
 fn fz_float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<f64, E>
