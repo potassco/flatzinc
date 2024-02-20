@@ -1,7 +1,6 @@
 use winnow::{
     combinator::alt,
     error::{FromExternalError, ParserError},
-    token::tag,
     PResult, Parser,
 };
 
@@ -31,11 +30,11 @@ fn bpt_basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<B
 // "set" "of" "int"
 // Moved this be a basic-var-type basic-par-type
 fn bpt_set_of_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicParType, E> {
-    tag("set").parse_next(input)?;
+    "set".parse_next(input)?;
     space_or_comment1(input)?;
-    tag("of").parse_next(input)?;
+    "of".parse_next(input)?;
     space_or_comment1(input)?;
-    tag("int").parse_next(input)?;
+    "int".parse_next(input)?;
     Ok(BasicParType::SetOfInt)
 }
 
@@ -77,7 +76,7 @@ fn array_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<P
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    tag("array").parse_next(input)?;
+    "array".parse_next(input)?;
     space_or_comment1(input)?;
     '['.parse_next(input)?;
     space_or_comment0(input)?;
@@ -85,7 +84,7 @@ where
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     space_or_comment1(input)?;
-    tag("of").parse_next(input)?;
+    "of".parse_next(input)?;
     space_or_comment1(input)?;
     let par_type = basic_par_type(input)?;
     Ok(ParType::Array { ix, par_type })

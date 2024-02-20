@@ -1,7 +1,6 @@
 use winnow::{
-    combinator::alt,
+    combinator::{alt, eof},
     error::{FromExternalError, ParserError},
-    token::tag,
     PResult, Parser,
 };
 
@@ -25,7 +24,15 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;
-    tag("solve").parse_next(input)?;
+    "solve".parse_next(input)?;
+    let item = solve_item_tail(input).map_err(|e| e.cut())?;
+    Ok(item)
+}
+pub fn solve_item_tail<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SolveItem, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseIntError>
+        + FromExternalError<&'a str, std::num::ParseFloatError>,
+{
     space_or_comment1(input)?;
     let annotations = annotations(input)?;
     space_or_comment0(input)?;
@@ -40,6 +47,7 @@ where
     space_or_comment0(input)?;
     ';'.parse_next(input)?;
     space_or_comment0(input)?;
+    eof.parse_next(input)?;
     Ok(SolveItem { goal, annotations })
 }
 #[test]
@@ -84,7 +92,7 @@ pub enum OptimizationType {
 }
 
 pub fn satisfy<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E> {
-    tag("satisfy").parse_next(input)?;
+    "satisfy".parse_next(input)?;
     Ok(Goal::Satisfy)
 }
 
@@ -93,12 +101,12 @@ fn opt_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Optimiz
 }
 
 fn minimize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<OptimizationType, E> {
-    tag("minimize").parse_next(input)?;
+    "minimize".parse_next(input)?;
     Ok(OptimizationType::Minimize)
 }
 
 fn maximize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<OptimizationType, E> {
-    tag("maximize").parse_next(input)?;
+    "maximize".parse_next(input)?;
     Ok(OptimizationType::Maximize)
 }
 

@@ -1,7 +1,6 @@
 use winnow::{
     combinator::alt,
     error::{FromExternalError, ParserError},
-    token::tag,
     PResult, Parser,
 };
 
@@ -82,13 +81,13 @@ fn bppt_var_set_of_int<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> PResult<BasicPredParType, E> {
     space_or_comment0(input)?;
-    tag("var").parse_next(input)?;
+    "var".parse_next(input)?;
     space_or_comment1(input)?;
-    tag("set").parse_next(input)?;
+    "set".parse_next(input)?;
     space_or_comment1(input)?;
-    tag("of").parse_next(input)?;
+    "of".parse_next(input)?;
     space_or_comment1(input)?;
-    tag("int").parse_next(input)?;
+    "int".parse_next(input)?;
     space_or_comment0(input)?;
     Ok(BasicPredParType::VarSetOfInt)
 }
@@ -223,7 +222,7 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;
-    tag("array").parse_next(input)?;
+    "array".parse_next(input)?;
     space_or_comment1(input)?;
     '['.parse_next(input)?;
     space_or_comment0(input)?;
@@ -231,7 +230,7 @@ where
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     space_or_comment1(input)?;
-    tag("of").parse_next(input)?;
+    "of".parse_next(input)?;
     space_or_comment1(input)?;
     let par_type = basic_pred_par_type(input)?;
     Ok(PredParType::Array { ix, par_type })
@@ -251,7 +250,7 @@ where
 }
 
 fn pis_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<PredIndexSet, E> {
-    tag("int").parse_next(input)?;
+    "int".parse_next(input)?;
     Ok(PredIndexSet::Int)
 }
 

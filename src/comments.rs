@@ -1,7 +1,6 @@
 use winnow::{
     ascii::{multispace0, multispace1},
-    combinator::alt,
-    combinator::opt,
+    combinator::{alt, eof, opt},
     error::ParserError,
     token::take_till0,
     PResult, Parser,
@@ -11,6 +10,7 @@ use crate::statements::Stmt;
 
 pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E> {
     let s = space_or_comment0(input)?;
+    eof.parse_next(input)?;
     Ok(Stmt::Comment(s.into()))
 }
 pub fn space_or_comment0<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
@@ -35,4 +35,11 @@ fn test_comment() {
         comment::<ContextError<&str>>(&mut input),
         Ok(" Comments can have anyth!ng in it really <3".into())
     );
+}
+#[test]
+fn test_comment2() {
+    use winnow::error::ContextError;
+    let mut input = "5 % Comments can have anyth!ng in it really <3";
+    let res = comment::<ContextError<&str>>(&mut input);
+    assert!(res.is_err());
 }

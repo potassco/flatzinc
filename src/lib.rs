@@ -13,7 +13,7 @@ pub use predicates::{
 };
 pub use primitive_literals::IndexSet;
 pub use solve_items::{Goal, OptimizationType, SolveItem};
-pub use statements::{statement, Stmt};
+pub use statements::{parse_statement, Stmt};
 pub use variables::{declarations::VarDeclItem, types::BasicVarType};
 
 pub mod basic_types;
