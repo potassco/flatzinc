@@ -26,12 +26,12 @@ pub enum Stmt {
     SolveItem(SolveItem),
 }
 
-pub fn statement<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
+pub fn statement<'a, E: ParserError<&'a str>, I>() -> impl Parser<&'a str, Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let res = alt((
+    alt((
         stmt_predicate,
         stmt_parameter,
         stmt_variable,
@@ -39,9 +39,6 @@ where
         stmt_solve_item,
         space_or_comment,
     ))
-    .parse_next(input)?;
-    eof.parse_next(input)?;
-    Ok(res)
 }
 
 fn stmt_predicate<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
