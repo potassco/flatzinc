@@ -4,8 +4,8 @@ use crate::{
     primitive_literals::identifier,
 };
 use winnow::{
-    combinator::{eof, separated},
-    error::{FromExternalError, ParserError},
+    combinator::{cut_err, separated},
+    error::{AddContext, FromExternalError, ParserError, StrContext},
     PResult, Parser,
 };
 
@@ -21,12 +21,13 @@ pub fn constraint_item<'a, E: ParserError<&'a str>>(
 ) -> PResult<ConstraintItem, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
+        + FromExternalError<&'a str, std::num::ParseFloatError>
+        + AddContext<&'a str, StrContext>,
 {
     space_or_comment0(input)?;
     "constraint".parse_next(input)?;
-    let item = constraint_tail(input).map_err(|e| e.cut())?;
-    Ok(item)
+    cut_err(constraint_tail.context(StrContext::Label("Error while parsing constraint")))
+        .parse_next(input)
 }
 pub fn constraint_tail<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
@@ -47,7 +48,6 @@ where
     space_or_comment0(input)?;
     ';'.parse_next(input)?;
     space_or_comment0(input)?;
-    eof.parse_next(input)?;
     Ok(ConstraintItem { id, exprs, annos })
 }
 #[test]
@@ -56,7 +56,7 @@ fn test_constraint_item_1() {
     use winnow::error::ContextError;
     let mut input = "constraint set_in_reif(X_26,1..2,X_52):: defines_var(X_52);";
     assert_eq!(
-        constraint_item::<ContextError<&str>>(&mut input),
+        constraint_item::<ContextError>(&mut input),
         Ok(ConstraintItem {
             id: "set_in_reif".to_string(),
             exprs: vec![
@@ -72,7 +72,7 @@ fn test_constraint_item_1() {
     );
     let mut input = "constraint array_var_int_element(INT01, w, 2);";
     assert_eq!(
-        constraint_item::<ContextError<&str>>(&mut input),
+        constraint_item::<ContextError>(&mut input),
         Ok(ConstraintItem {
             id: "array_var_int_element".to_string(),
             exprs: vec![
@@ -85,7 +85,7 @@ fn test_constraint_item_1() {
     );
     let mut input = "constraint array_var_int_element(INT01, w, 2.0);";
     assert_eq!(
-        constraint_item::<ContextError<&str>>(&mut input),
+        constraint_item::<ContextError>(&mut input),
         Ok(ConstraintItem {
             id: "array_var_int_element".to_string(),
             exprs: vec![
@@ -103,7 +103,7 @@ fn test_constraint_item_2() {
     use winnow::error::ContextError;
     let mut input = "constraint int_lin_eq([-1, 1], [INT01, p], -3);";
     assert_eq!(
-        constraint_item::<ContextError<&str>>(&mut input),
+        constraint_item::<ContextError>(&mut input),
         Ok(ConstraintItem {
             id: "int_lin_eq".to_string(),
             exprs: vec![
@@ -124,7 +124,7 @@ fn test_constraint_item_3() {
     use winnow::error::ContextError;
     let mut input = "constraint float_lin_eq(X_139,[X_27,X_28,X_29],1.0);";
     assert_eq!(
-        constraint_item::<ContextError<&str>>(&mut input),
+        constraint_item::<ContextError>(&mut input),
         Ok(ConstraintItem {
             id: "float_lin_eq".to_string(),
             exprs: vec![
@@ -146,7 +146,7 @@ fn test_constraint_item_4() {
     use winnow::error::ContextError;
     let mut input = "constraint array_bool_or([X_43,X_44],true);";
     assert_eq!(
-        constraint_item::<ContextError<&str>>(&mut input),
+        constraint_item::<ContextError>(&mut input),
         Ok(ConstraintItem {
             id: "array_bool_or".to_string(),
             exprs: vec![
@@ -166,7 +166,7 @@ fn test_constraint_item_5() {
     use winnow::error::ContextError;
     let mut input = "constraint bool_clause([],[X_81,X_77]);";
     assert_eq!(
-        constraint_item::<ContextError<&str>>(&mut input),
+        constraint_item::<ContextError>(&mut input),
         Ok(ConstraintItem {
             id: "bool_clause".to_string(),
             exprs: vec![

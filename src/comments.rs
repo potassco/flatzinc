@@ -1,6 +1,6 @@
 use winnow::{
     ascii::{multispace0, multispace1},
-    combinator::{alt, eof, opt},
+    combinator::{alt, opt},
     error::ParserError,
     token::take_till,
     PResult, Parser,
@@ -10,7 +10,6 @@ use crate::statements::Stmt;
 
 pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E> {
     let s = space_or_comment0(input)?;
-    eof.parse_next(input)?;
     Ok(Stmt::Comment(s.into()))
 }
 pub fn space_or_comment0<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
