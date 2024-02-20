@@ -18,9 +18,10 @@ pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<S
     let combine = format!("{}{}", first, rest);
     // check for reserved key words
     if is_reserved_key_word(&combine) {
-        Err(winnow::error::ErrMode::Backtrack(
-            ParserError::from_error_kind(input, ErrorKind::Token),
-        ))
+        Err(winnow::error::ErrMode::Cut(ParserError::from_error_kind(
+            input,
+            ErrorKind::Token,
+        )))
     } else {
         Ok(combine)
     }
