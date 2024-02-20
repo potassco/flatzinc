@@ -2,7 +2,7 @@ use winnow::{
     ascii::multispace1,
     combinator::{alt, delimited, fold_repeat, opt, preceded, repeat, separated},
     error::{FromExternalError, ParserError},
-    token::{tag, take_till1, take_while},
+    token::{take_till1, take_while},
     PResult, Parser,
 };
 
@@ -28,7 +28,7 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    tag("::").parse_next(input)?;
+    "::".parse_next(input)?;
     space_or_comment0(input)?;
     annotation(input)
 }
@@ -526,7 +526,7 @@ where
 {
     let lb = int_expr(input)?;
     space_or_comment0(input)?;
-    tag("..").parse_next(input)?;
+    "..".parse_next(input)?;
     space_or_comment0(input)?;
     let ub = int_expr(input)?;
     Ok(SetLiteralExpr::IntInRange(lb, ub))
@@ -538,7 +538,7 @@ where
 {
     let lb = float_expr(input)?;
     space_or_comment0(input)?;
-    tag("..").parse_next(input)?;
+    "..".parse_next(input)?;
     space_or_comment0(input)?;
     let ub = float_expr(input)?;
     Ok(SetLiteralExpr::BoundedFloat(lb, ub))
@@ -599,7 +599,7 @@ where
 {
     let lb = int_literal(input)?;
     space_or_comment0(input)?;
-    tag("..").parse_next(input)?;
+    "..".parse_next(input)?;
     space_or_comment0(input)?;
     let ub = int_literal(input)?;
     Ok(SetLiteral::IntRange(lb, ub))
@@ -611,7 +611,7 @@ where
 {
     let lb = float_literal(input)?;
     space_or_comment0(input)?;
-    tag("..").parse_next(input)?;
+    "..".parse_next(input)?;
     space_or_comment0(input)?;
     let ub = float_literal(input)?;
     Ok(SetLiteral::BoundedFloat(lb, ub))

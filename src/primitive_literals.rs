@@ -5,6 +5,8 @@ use winnow::{
     PResult, Parser,
 };
 
+use crate::comments::space_or_comment0;
+
 pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
     let first = one_of([
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
@@ -230,7 +232,7 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let negation = opt('-').parse_next(input)?;
-    tag("0x").parse_next(input)?;
+    "0x".parse_next(input)?;
     let int = take_while(1.., is_hex_digit).parse_next(input)?;
     let int = i128::from_str_radix(int, 16)
         .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
@@ -253,7 +255,7 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let negation = opt('-').parse_next(input)?;
-    tag("0o").parse_next(input)?;
+    "0o".parse_next(input)?;
     let int = take_while(1.., is_oct_digit).parse_next(input)?;
     let int = i128::from_str_radix(int, 8)
         .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
@@ -349,7 +351,7 @@ fn fz_float2<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a st
     let sign = opt('-');
     let digits = take_while(1.., is_dec_digit);
     let e = alt(('e', 'E'));
-    let sign2 = opt(alt((tag("-"), tag("+"))));
+    let sign2 = opt(alt(("-", "+")));
     let digits2 = take_while(1.., is_dec_digit);
     (sign, digits, e, sign2, digits2)
         .recognize()
@@ -358,7 +360,7 @@ fn fz_float2<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a st
 
 fn bpart<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
     let e = alt(('e', 'E')).parse_next(input)?;
-    let sign = opt(alt((tag("-"), tag("+")))).parse_next(input)?;
+    let sign = opt(alt(("-", "+"))).parse_next(input)?;
     let digits = take_while(1.., is_dec_digit).parse_next(input)?;
     if let Some(sign) = sign {
         Ok(format!("{}{}{}", e, sign, digits))
@@ -375,7 +377,9 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     '1'.parse_next(input)?;
-    tag("..").parse_next(input)?;
+    space_or_comment0(input)?;
+    "..".parse_next(input)?;
+    space_or_comment0(input)?;
     let int = int_literal.parse_next(input)?;
     Ok(IndexSet(int))
 }

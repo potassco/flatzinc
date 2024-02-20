@@ -1,7 +1,6 @@
 use winnow::{
-    combinator::separated,
+    combinator::{eof, separated},
     error::{FromExternalError, ParserError},
-    token::tag,
     PResult, Parser,
 };
 
@@ -23,7 +22,17 @@ where
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;
-    tag("predicate").parse_next(input)?;
+    "predicate".parse_next(input)?;
+    let item = predicate_item_tail(input).map_err(|e| e.cut())?;
+    Ok(item)
+}
+pub fn predicate_item_tail<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> PResult<PredicateItem, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseIntError>
+        + FromExternalError<&'a str, std::num::ParseFloatError>,
+{
     space_or_comment1(input)?;
     let id = identifier(input)?;
     '('.parse_next(input)?;
@@ -32,9 +41,9 @@ where
     space_or_comment0(input)?;
     ';'.parse_next(input)?;
     space_or_comment0(input)?;
+    eof.parse_next(input)?;
     Ok(PredicateItem { id, parameters })
 }
-
 #[test]
 fn test_predicate_item() {
     use crate::predicates::types::BasicPredParType;

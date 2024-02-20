@@ -1,5 +1,5 @@
 use winnow::{
-    combinator::{alt, eof},
+    combinator::alt,
     error::{FromExternalError, ParserError},
     PResult, Parser,
 };
@@ -26,7 +26,7 @@ pub enum Stmt {
     SolveItem(SolveItem),
 }
 
-pub fn statement<'a, E: ParserError<&'a str>, I>() -> impl Parser<&'a str, Stmt, E>
+fn statement<'a, E: ParserError<&'a str>>() -> impl Parser<&'a str, Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -41,6 +41,13 @@ where
     ))
 }
 
+pub fn parse_statement<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseIntError>
+        + FromExternalError<&'a str, std::num::ParseFloatError>,
+{
+    statement::<E>().parse_next(input)
+}
 fn stmt_predicate<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
