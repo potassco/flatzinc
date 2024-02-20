@@ -191,8 +191,8 @@ where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let negation = opt('-').parse_next(input)?;
-    let int = take_while(1.., is_dec_digit).parse_next(input)?;
-    let int = int
+    let int = take_while(1.., is_dec_digit)
+        .parse_next(input)?
         .parse::<i128>()
         .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
 
