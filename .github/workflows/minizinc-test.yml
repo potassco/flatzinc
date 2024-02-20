@@ -1,0 +1,101 @@
+name: MiniZinc test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        clingconversion: [5.1.0]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install clingcon
+        run: |
+          sudo add-apt-repository ppa:potassco/wip
+          sudo apt-get update
+          sudo apt-get install clingcon=${{ matrix.clingconversion }}-focal5
+
+      - name: Test clingcon
+        run: clingcon --version
+
+      - name: Install MiniZinc
+        run: |
+          wget https://github.com/MiniZinc/MiniZincIDE/releases/download/2.6.1/MiniZincIDE-2.6.1-bundle-linux-x86_64.tgz
+          tar xzf MiniZincIDE-2.6.1-bundle-linux-x86_64.tgz
+          echo "$(pwd)/MiniZincIDE-2.6.1-bundle-linux-x86_64/bin" >> $GITHUB_PATH
+
+      - name: Test MiniZinc
+        run: minizinc --version
+
+      - name: Checkout fzn2lp
+        uses: actions/checkout@v2
+        with:
+          repository: "potassco/fzn2lp"
+          ref: "master"
+          path: "fzn2lp"
+
+      - name: Build fzn2lp with current flatzinc
+        run: |
+          cd fzn2lp
+          sed -i 's|flatzinc = .*|flatzinc = { path = "../" }|g' Cargo.toml
+          cargo update
+          cargo build --release
+          echo "$(pwd)/target/release" >> $GITHUB_PATH
+
+      - name: Test fzn2lp
+        run: fzn2lp --version
+
+      - name: Checkout flatzingo
+        uses: actions/checkout@v2
+        with:
+          repository: "potassco/flatzingo"
+          ref: "master"
+          path: "flatzingo"
+
+      - name: Install flatzingo
+        run: |
+          mkdir -p ~/.minizinc/solvers
+          mkdir -p ~/.minizinc/share
+          cp ./flatzingo/configuration/flatzingo.msc ~/.minizinc/solvers/
+          cp -r ./flatzingo/share/minizinc/flatzingo ~/.minizinc/share/
+          echo "$(pwd)/flatzingo" >> $GITHUB_PATH
+
+      - name: Install python stuff
+        run: |
+          sudo apt-get install -y python3-pip
+          pip3 install pytest
+          pip3 install --extra-index-url https://test.pypi.org/simple/ clingcon==${{ matrix.clingconversion }}.post4
+
+      - name: Test flatzingo
+        run: |
+          cd flatzingo
+          python3 -m pytest ./tests
+
+      - name: Install MiniZinc testcases
+        uses: actions/checkout@v2
+        with:
+          repository: "MiniZinc/libminizinc"
+          ref: "2.6.1"
+          path: "libminizinc"
+
+      - name: Patch libminizinc 2.6.1
+        run: |
+          cd libminizinc/tests/
+          sed -i '$d' requirements.txt
+          echo 'git+https://github.com/MiniZinc/minizinc-python.git@develop#egg=minizinc' >> requirements.txt
+          cat requirements.txt
+
+      - name: Install MiniZinc test requirements
+        run: pip3 install -r libminizinc/tests/requirements.txt
+
+      - name: Prepare MiniZinc testcases
+        run: sed -i 's/"gecode", "cbc", "chuffed"/"flatzingo"/' libminizinc/tests/minizinc_testing/spec.py
+
+      - name: Run MiniZinc tests
+        run: |
+          cd libminizinc/tests
+          pytest -k "not test_output_checker and not test_var_set_element and not bug269 and not bug347 and not test-search1" --driver=../../MiniZincIDE-2.6.1-bundle-linux-x86_64/bin
