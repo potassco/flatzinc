@@ -1,43 +1,46 @@
-use std::str;
-
-use nom::{
-    branch::alt,
-    bytes::complete::{tag, take_while, take_while1},
-    character::complete::{char, one_of},
-    combinator::{map_res, opt, value},
-    error::{ErrorKind, FromExternalError, ParseError},
-    IResult,
+use winnow::{
+    combinator::{alt, opt},
+    error::{ErrorKind, FromExternalError, ParserError},
+    token::{one_of, tag, take_while},
+    PResult, Parser,
 };
 
-pub fn identifier<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
-    let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")(input)?;
-    let (input, rest) = take_while(is_identifier_rest)(input)?;
+pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
+    let first = one_of([
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+        's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+        'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    ])
+    .parse_next(input)?;
+    let rest = take_while(0.., is_identifier_rest).parse_next(input)?;
     let combine = format!("{}{}", first, rest);
     // check for reserved key words
     if is_reserved_key_word(&combine) {
-        Err(crate::Err::Error(ParseError::from_error_kind(
-            input,
-            ErrorKind::IsA,
-        )))
+        Err(winnow::error::ErrMode::Backtrack(
+            ParserError::from_error_kind(input, ErrorKind::Token),
+        ))
     } else {
-        Ok((input, combine))
+        Ok(combine)
     }
 }
 
-pub fn var_par_identifier<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, String, E> {
-    let (input, first) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")(input)?;
-    let (input, rest) = take_while(is_identifier_rest)(input)?;
+pub fn var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
+    let first = one_of([
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+        's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+        'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '_',
+    ])
+    .parse_next(input)?;
+
+    let rest = take_while(0.., is_identifier_rest).parse_next(input)?;
     let combine = format!("{}{}", first, rest);
     // check for reserved key words
     if is_reserved_key_word(&combine) {
-        Err(crate::Err::Error(ParseError::from_error_kind(
-            input,
-            ErrorKind::IsA,
-        )))
+        Err(winnow::error::ErrMode::Backtrack(
+            ParserError::from_error_kind(input, ErrorKind::Token),
+        ))
     } else {
-        Ok((input, combine))
+        Ok(combine)
     }
 }
 
@@ -95,7 +98,6 @@ fn is_reserved_key_word(string: &str) -> bool {
 }
 
 fn is_identifier_rest(c: char) -> bool {
-    //one_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")(input.into()) {
     matches!(
         c,
         'a' | 'b'
@@ -163,197 +165,203 @@ fn is_identifier_rest(c: char) -> bool {
     )
 }
 
-pub fn bool_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, bool, E> {
-    alt((value(true, tag("true")), value(false, tag("false"))))(input)
+pub fn bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<bool, E> {
+    alt((tag("true").value(true), tag("false").value(false))).parse_next(input)
 }
 
-pub fn int_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E>
+pub fn int_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, _) = crate::comments::space_or_comment0(input)?;
-    let (input, int) = alt((decimal, hexadecimal, octal))(input)?;
-    Ok((input, int as i128))
+    crate::comments::space_or_comment0(input)?;
+    alt((decimal, hexadecimal, octal)).parse_next(input)
 }
 
-fn decimal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E>
+fn decimal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, negation) = opt(char('-'))(input)?;
-    let (input, int) = map_res(take_while1(is_dec_digit), from_dec)(input)?;
+    let negation = opt('-').parse_next(input)?;
+    let int = take_while(1.., is_dec_digit).parse_next(input)?;
+    let int = int
+        .parse::<u128>()
+        .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
     if negation.is_some() {
-        Ok((input, -(int as i128)))
+        Ok(-(int as i128))
     } else {
-        Ok((input, int as i128))
+        Ok(int as i128)
+    }
+}
+#[test]
+fn test_decimal() {
+    use winnow::error::ContextError;
+    let mut input = "170141183460469231731687303715884105727";
+    assert_eq!(
+        decimal::<ContextError<&str>>(&mut input),
+        Ok(170141183460469231731687303715884105727)
+    );
+}
+//Should fail because of overflow
+// #[test]
+// fn test_decimal2() {
+//     use winnow::error::ContextError;
+//     let mut input = "170141183460469231731687303715884105728";
+//     assert_eq!(decimal::<ContextError<&str>>(&mut input), Ok(170141183460469231731687303715884105727));
+// }
+#[test]
+fn test_hex() {
+    use winnow::error::ContextError;
+    let mut input = "-0x2f";
+    assert_eq!(hexadecimal::<ContextError<&str>>(&mut input), Ok(-47));
+}
+
+fn hexadecimal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
+where
+    E: FromExternalError<&'a str, std::num::ParseIntError>,
+{
+    let negation = opt('-').parse_next(input)?;
+    tag("0x").parse_next(input)?;
+    let int = take_while(1.., is_hex_digit).parse_next(input)?;
+    let int = u128::from_str_radix(int, 16)
+        .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
+
+    if negation.is_some() {
+        Ok(-(int as i128))
+    } else {
+        Ok(int as i128)
     }
 }
 
-#[test]
-fn test_hex() {
-    use nom::error::VerboseError;
-    assert_eq!(hexadecimal::<VerboseError<&str>>("-0x2f"), Ok(("", -47)));
-}
-
-fn hexadecimal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E>
+fn octal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, negation) = opt(char('-'))(input)?;
-    let (input, _tag) = tag("0x")(input)?;
-    let (input, int) = map_res(take_while1(is_hex_digit), from_hex)(input)?;
+    let negation = opt('-').parse_next(input)?;
+    tag("0o").parse_next(input)?;
+    let int = take_while(1.., is_oct_digit).parse_next(input)?;
+    let int = u128::from_str_radix(int, 8)
+        .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
     if negation.is_some() {
-        Ok((input, -(int as i128)))
+        Ok(-(int as i128))
     } else {
-        Ok((input, int as i128))
+        Ok(int as i128)
     }
 }
 
 #[test]
 fn test_oct() {
-    use nom::error::VerboseError;
-    assert_eq!(octal::<VerboseError<&str>>("0o21"), Ok(("", 17)));
-}
-
-fn octal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, i128, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
-{
-    let (input, negation) = opt(char('-'))(input)?;
-    let (input, _tag) = tag("0o")(input)?;
-    let (input, int) = map_res(take_while1(is_oct_digit), from_oct)(input)?;
-    if negation.is_some() {
-        Ok((input, -(int as i128)))
-    } else {
-        Ok((input, int as i128))
-    }
-}
-
-fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
-    u8::from_str_radix(input, 16)
+    use winnow::error::ContextError;
+    let mut input = "0o200000000000000000000000000000000001";
+    assert_eq!(
+        octal::<ContextError<&str>>(&mut input),
+        Ok(81129638414606681695789005144065)
+    );
 }
 
 fn is_hex_digit(c: char) -> bool {
-    c.is_digit(16)
-}
-
-fn from_oct(input: &str) -> Result<u8, std::num::ParseIntError> {
-    u8::from_str_radix(input, 8)
+    c.is_ascii_hexdigit()
 }
 
 fn is_oct_digit(c: char) -> bool {
     c.is_digit(8)
 }
 
-fn from_dec(input: &str) -> Result<u128, std::num::ParseIntError> {
-    input.parse::<u128>()
-}
-
-fn from_float(input: &str) -> Result<f64, std::num::ParseFloatError> {
-    input.parse::<f64>()
-}
-
 fn is_dec_digit(c: char) -> bool {
-    c.is_digit(10)
+    c.is_ascii_digit()
 }
 
 #[test]
 fn test_float() {
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
     //TODO should return error
-    // float_literal::<VerboseError<&str>>("5")
+    // float_literal::<ContextError<&str>>("5")
+    let mut input = "023.21";
+    assert_eq!(float_literal::<ContextError<&str>>(&mut input), Ok(023.21));
+    let mut input = "0023.21E-098";
     assert_eq!(
-        float_literal::<VerboseError<&str>>("023.21"),
-        Ok(("", 023.21))
+        float_literal::<ContextError<&str>>(&mut input),
+        Ok(0023.21E-098)
     );
+    let mut input = "0023.21e+098";
     assert_eq!(
-        float_literal::<VerboseError<&str>>("0023.21E-098"),
-        Ok(("", 0023.21E-098))
+        float_literal::<ContextError<&str>>(&mut input),
+        Ok(0023.21e+098)
     );
+    let mut input = "002e+098";
     assert_eq!(
-        float_literal::<VerboseError<&str>>("0023.21e+098"),
-        Ok(("", 0023.21e+098))
+        float_literal::<ContextError<&str>>(&mut input),
+        Ok(002e+098)
     );
-    assert_eq!(
-        float_literal::<VerboseError<&str>>("002e+098"),
-        Ok(("", 002e+098))
-    );
-    assert_eq!(float_literal::<VerboseError<&str>>("0.21"), Ok(("", 0.21)));
-    assert_eq!(float_literal::<VerboseError<&str>>("1.0,"), Ok((",", 1.0)));
+    let mut input = "0.21";
+    assert_eq!(float_literal::<ContextError<&str>>(&mut input), Ok(0.21));
+    let mut input = "1.0,";
+    assert_eq!(float_literal::<ContextError<&str>>(&mut input), Ok(1.0));
 
-    assert_eq!(float_literal::<VerboseError<&str>>("0.000000000000000000000000000000007609999999000000000000000000000000760999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999900000000000000000000000764DD4DDDDDDDDD%
-    "), Ok(("DD4DDDDDDDDD%\n    ", 0.000000000000000000000000000000007609999999)));
+    let mut input = "0.000000000000000000000000000000007609999999000000000000000000000000760999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999900000000000000000000000764DD4DDDDDDDDD%
+    ";
+    assert_eq!(
+        float_literal::<ContextError<&str>>(&mut input),
+        Ok(0.000000000000000000000000000000007609999999)
+    );
 }
 
-pub fn float_literal<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E>
+pub fn float_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<f64, E>
 where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = crate::comments::space_or_comment0(input)?;
-    let (input, f) = fz_float(input)?;
-    Ok((input, f))
+    crate::comments::space_or_comment0(input)?;
+    fz_float(input)
 }
 
-fn fz_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, f64, E>
+fn fz_float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<f64, E>
 where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input2, fl) = map_res(alt((fz_float1, fz_float2)), from_float)(input)?;
-    Ok((input2, fl))
+    let mut fl = alt((fz_float1, fz_float2)).parse_next(input)?;
+    winnow::ascii::float.parse_next(&mut fl)
 }
 
-fn fz_float1<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
-    let (input1, sign) = opt(char('-'))(input)?;
-    let (input2, a) = take_while1(is_dec_digit)(input1)?;
-    let (input3, _) = char('.')(input2)?;
-    let (input4, b) = take_while1(is_dec_digit)(input3)?;
-    let (input5, rest) = opt(bpart)(input4)?;
-    let len = if sign.is_some() {
-        if let Some(rest) = rest {
-            1 + a.len() + 1 + b.len() + rest.len()
-        } else {
-            1 + a.len() + 1 + b.len()
-        }
-    } else if let Some(rest) = rest {
-        a.len() + 1 + b.len() + rest.len()
-    } else {
-        a.len() + 1 + b.len()
-    };
-    Ok((input5, &input[..len]))
+fn fz_float1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+    let sign = opt('-');
+
+    let pre = take_while(1.., is_dec_digit);
+    let post = take_while(1.., is_dec_digit);
+    let rest = opt(bpart);
+
+    (sign, pre, '.', post, rest).recognize().parse_next(input)
 }
 
-fn fz_float2<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, &'a str, E> {
-    let (input1, sign) = opt(char('-'))(input)?;
-    let (input2, digits) = take_while1(is_dec_digit)(input1)?;
-    let (input3, rest) = bpart(input2)?;
-    let len = if sign.is_some() {
-        1 + digits.len() + rest.len()
-    } else {
-        digits.len() + rest.len()
-    };
-    Ok((input3, &input[..len]))
+fn fz_float2<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+    let sign = opt('-');
+    let digits = take_while(1.., is_dec_digit);
+    let e = alt(('e', 'E'));
+    let sign2 = opt(alt((tag("-"), tag("+"))));
+    let digits2 = take_while(1.., is_dec_digit);
+    (sign, digits, e, sign2, digits2)
+        .recognize()
+        .parse_next(input)
 }
 
-fn bpart<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, String, E> {
-    let (input, e) = alt((tag("e"), tag("E")))(input)?;
-    let (input, sign) = opt(alt((tag("-"), tag("+"))))(input)?;
-    let (input, digits) = take_while1(is_dec_digit)(input)?;
+fn bpart<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
+    let e = alt(('e', 'E')).parse_next(input)?;
+    let sign = opt(alt((tag("-"), tag("+")))).parse_next(input)?;
+    let digits = take_while(1.., is_dec_digit).parse_next(input)?;
     if let Some(sign) = sign {
-        Ok((input, format!("{}{}{}", e, sign, digits)))
+        Ok(format!("{}{}{}", e, sign, digits))
     } else {
-        Ok((input, format!("{}{}", e, digits)))
+        Ok(format!("{}{}", e, digits))
     }
 }
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct IndexSet(pub i128);
 
-pub fn index_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, IndexSet, E>
+pub fn index_set<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<IndexSet, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, _) = char('1')(input)?;
-    let (input, _tag) = tag("..")(input)?;
-    let (input, int) = int_literal(input)?;
-    Ok((input, IndexSet(int)))
+    '1'.parse_next(input)?;
+    tag("..").parse_next(input)?;
+    let int = int_literal.parse_next(input)?;
+    Ok(IndexSet(int))
 }

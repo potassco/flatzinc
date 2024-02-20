@@ -14,7 +14,7 @@ In your Cargo.toml
 
 ```toml
 [dependencies]
-flatzinc = "0.3"
+flatzinc = "0.3.20-dev"
 ```
 
 In your code:
@@ -22,12 +22,11 @@ In your code:
 ```rust
 use flatzinc::*;
 
-match flatzinc::model::<VerboseError<&str>>(&buf) {
-    Ok((_, result)) => println!("{:#?}", result),
-    Err(Err::Error(e)) | Err(Err::Failure(e)) => {
-        println!("Failed to parse flatzinc!\n{}", convert_error(&buf, e))
+match flatzinc::model::<ContextError<&str>>(&buf) {
+    Ok(result) => println!("{:#?}", result),
+    Err(e) => {
+        error!("Failed to parse flatzinc!\n{}", e)
     }
-    Err(e) => println!("Failed to parse flatzinc: {:?}", e),
 }
 ```
 

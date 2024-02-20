@@ -1,11 +1,8 @@
-use std::str;
-
-use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    character::complete::char,
-    error::{FromExternalError, ParseError},
-    IResult,
+use winnow::{
+    combinator::alt,
+    error::{FromExternalError, ParserError},
+    token::tag,
+    PResult, Parser,
 };
 
 use crate::{
@@ -22,27 +19,28 @@ pub struct SolveItem {
     pub annotations: Annotations,
 }
 
-pub fn solve_item<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, SolveItem, E>
+pub fn solve_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SolveItem, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, _) = space_or_comment0(input)?;
-    let (input, _) = tag("solve")(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, annotations) = annotations(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, goal) = alt((
+    space_or_comment0(input)?;
+    tag("solve").parse_next(input)?;
+    space_or_comment1(input)?;
+    let annotations = annotations(input)?;
+    space_or_comment0(input)?;
+    let goal = alt((
         satisfy,
         optimize_bool,
         optimize_int,
         optimize_float,
         optimize_set,
-    ))(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    let (input, _) = char(';')(input)?;
-    let (input, _) = space_or_comment0(input)?;
-    Ok((input, SolveItem { goal, annotations }))
+    ))
+    .parse_next(input)?;
+    space_or_comment0(input)?;
+    ';'.parse_next(input)?;
+    space_or_comment0(input)?;
+    Ok(SolveItem { goal, annotations })
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -60,89 +58,85 @@ pub enum OptimizationType {
     Maximize,
 }
 
-pub fn satisfy<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
-    let (input, _) = tag("satisfy")(input)?;
-    Ok((input, Goal::Satisfy))
+pub fn satisfy<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E> {
+    tag("satisfy").parse_next(input)?;
+    Ok(Goal::Satisfy)
 }
 
-fn opt_type<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
-    alt((minimize, maximize))(input)
+fn opt_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<OptimizationType, E> {
+    alt((minimize, maximize)).parse_next(input)
 }
 
-fn minimize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
-    let (input, _) = tag("minimize")(input)?;
-    Ok((input, OptimizationType::Minimize))
+fn minimize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<OptimizationType, E> {
+    tag("minimize").parse_next(input)?;
+    Ok(OptimizationType::Minimize)
 }
 
-fn maximize<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, OptimizationType, E> {
-    let (input, _) = tag("maximize")(input)?;
-    Ok((input, OptimizationType::Maximize))
+fn maximize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<OptimizationType, E> {
+    tag("maximize").parse_next(input)?;
+    Ok(OptimizationType::Maximize)
 }
 
-pub fn optimize_bool<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E> {
-    let (input, opt_type) = opt_type(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, be) = bool_expr(input)?;
-    Ok((input, Goal::OptimizeBool(opt_type, be)))
+pub fn optimize_bool<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E> {
+    let opt_type = opt_type(input)?;
+    space_or_comment1(input)?;
+    let be = bool_expr(input)?;
+    Ok(Goal::OptimizeBool(opt_type, be))
 }
 
-pub fn optimize_int<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E>
+pub fn optimize_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    let (input, opt_type) = opt_type(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, be) = int_expr(input)?;
-    Ok((input, Goal::OptimizeInt(opt_type, be)))
+    let opt_type = opt_type(input)?;
+    space_or_comment1(input)?;
+    let be = int_expr(input)?;
+    Ok(Goal::OptimizeInt(opt_type, be))
 }
 
-pub fn optimize_float<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E>
+pub fn optimize_float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E>
 where
     E: FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, opt_type) = opt_type(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, be) = float_expr(input)?;
-    Ok((input, Goal::OptimizeFloat(opt_type, be)))
+    let opt_type = opt_type(input)?;
+    space_or_comment1(input)?;
+    let be = float_expr(input)?;
+    Ok(Goal::OptimizeFloat(opt_type, be))
 }
 
-pub fn optimize_set<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, Goal, E>
+pub fn optimize_set<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    let (input, opt_type) = opt_type(input)?;
-    let (input, _) = space_or_comment1(input)?;
-    let (input, be) = set_expr(input)?;
-    Ok((input, Goal::OptimizeSet(opt_type, be)))
+    let opt_type = opt_type(input)?;
+    space_or_comment1(input)?;
+    let be = set_expr(input)?;
+    Ok(Goal::OptimizeSet(opt_type, be))
 }
 
 #[test]
 fn test_solve_item() {
     use crate::solve_items::{Goal, OptimizationType};
     use crate::{AnnExpr, Annotation, Expr};
-    use nom::error::VerboseError;
+    use winnow::error::ContextError;
+    let mut input = "solve :: int_search(X_59,input_order,indomain_min,complete) minimize X_24;";
     assert_eq!(
-        solve_item::<VerboseError<&str>>(
-            "solve :: int_search(X_59,input_order,indomain_min,complete) minimize X_24;"
-        ),
-        Ok((
-            "",
-            SolveItem {
-                goal: Goal::OptimizeBool(
-                    OptimizationType::Minimize,
-                    BoolExpr::VarParIdentifier("X_24".to_string())
-                ),
-                annotations: vec![Annotation {
-                    id: "int_search".to_string(),
-                    expressions: vec![
-                        AnnExpr::Expr(Expr::VarParIdentifier("X_59".to_string())),
-                        AnnExpr::Expr(Expr::VarParIdentifier("input_order".to_string())),
-                        AnnExpr::Expr(Expr::VarParIdentifier("indomain_min".to_string())),
-                        AnnExpr::Expr(Expr::VarParIdentifier("complete".to_string()))
-                    ]
-                }]
-            }
-        ))
+        solve_item::<ContextError<&str>>(&mut input),
+        Ok(SolveItem {
+            goal: Goal::OptimizeBool(
+                OptimizationType::Minimize,
+                BoolExpr::VarParIdentifier("X_24".to_string())
+            ),
+            annotations: vec![Annotation {
+                id: "int_search".to_string(),
+                expressions: vec![
+                    AnnExpr::Expr(Expr::VarParIdentifier("X_59".to_string())),
+                    AnnExpr::Expr(Expr::VarParIdentifier("input_order".to_string())),
+                    AnnExpr::Expr(Expr::VarParIdentifier("indomain_min".to_string())),
+                    AnnExpr::Expr(Expr::VarParIdentifier("complete".to_string()))
+                ]
+            }]
+        })
     );
 }
