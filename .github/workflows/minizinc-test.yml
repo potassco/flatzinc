@@ -9,7 +9,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         clingconversion: [5.2.1]
-        minizincversion: [2.8.0]
+        minizincversion: [2.8.1]
         fzn2lpversion: [v0.1.4]
 
     steps:
@@ -97,6 +97,7 @@ jobs:
         run: sed -i 's/"gecode", "cbc", "chuffed"/"flatzingo"/' libminizinc/tests/minizinc_testing/spec.py
 
       - name: Run libminizinc tests
+        shell: bash -l {0}
         run: |
           cd libminizinc/tests
           pytest -k "not test_output_checker and not test_var_set_element and not bug269 and not bug347 and not test-search1 and not test_vis_ann and not test_vis_custom" --driver=../../MiniZincIDE-${{ matrix.minizincversion }}-bundle-linux-x86_64/bin
