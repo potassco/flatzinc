@@ -2,7 +2,7 @@ use winnow::{
     ascii::{multispace0, multispace1},
     combinator::{alt, eof, opt},
     error::ParserError,
-    token::take_till0,
+    token::take_till,
     PResult, Parser,
 };
 
@@ -22,7 +22,7 @@ pub fn space_or_comment1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PR
 fn comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
     multispace0.parse_next(input)?;
     '%'.parse_next(input)?;
-    let string = take_till0(|c| c == '\n').parse_next(input)?;
+    let string = take_till(0.., |c| c == '\n').parse_next(input)?;
     multispace0.parse_next(input)?;
     opt(comment).parse_next(input)?;
     Ok(string)

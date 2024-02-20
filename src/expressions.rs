@@ -2,7 +2,7 @@ use winnow::{
     ascii::multispace1,
     combinator::{alt, delimited, fold_repeat, opt, preceded, repeat, separated},
     error::{FromExternalError, ParserError},
-    token::{take_till1, take_while},
+    token::{take_till, take_while},
     PResult, Parser,
 };
 
@@ -200,7 +200,7 @@ fn parse_escaped_whitespace<'a, E: ParserError<&'a str>>(
 fn parse_literal<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> PResult<StringFragment<'a>, E> {
-    let c = take_till1(['\"', '\\']).parse_next(input)?;
+    let c = take_till(1.., ['\"', '\\']).parse_next(input)?;
     Ok(StringFragment::Literal(c))
 }
 
