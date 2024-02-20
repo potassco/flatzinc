@@ -59,7 +59,7 @@ fn test_par_type() {
     use winnow::error::ContextError;
     let mut input = "array [1..3] of float";
     assert_eq!(
-        par_type::<ContextError<&str>>(&mut input),
+        par_type::<ContextError>(&mut input),
         Ok(ParType::Array {
             ix: IndexSet(3),
             par_type: BasicParType::BasicType(BasicType::Float)
