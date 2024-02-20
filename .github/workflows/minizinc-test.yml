@@ -9,7 +9,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         clingconversion: [5.2.1]
-        minizincversion: [2.8.1]
+        minizincversion: [2.8.2]
         fzn2lpversion: [v0.1.4]
 
     steps:
