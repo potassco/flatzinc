@@ -303,20 +303,11 @@ fn test_float_literal() {
     let mut input = "023.21";
     assert_eq!(float_literal::<ContextError>(&mut input), Ok(023.21));
     let mut input = "0023.21E-098";
-    assert_eq!(
-        float_literal::<ContextError>(&mut input),
-        Ok(0023.21E-098)
-    );
+    assert_eq!(float_literal::<ContextError>(&mut input), Ok(0023.21E-098));
     let mut input = "0023.21e+098";
-    assert_eq!(
-        float_literal::<ContextError>(&mut input),
-        Ok(0023.21e+098)
-    );
+    assert_eq!(float_literal::<ContextError>(&mut input), Ok(0023.21e+098));
     let mut input = "002e+098";
-    assert_eq!(
-        float_literal::<ContextError>(&mut input),
-        Ok(002e+098)
-    );
+    assert_eq!(float_literal::<ContextError>(&mut input), Ok(002e+098));
     let mut input = "0.21";
     assert_eq!(float_literal::<ContextError>(&mut input), Ok(0.21));
     let mut input = "1.0,";
