@@ -9,7 +9,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         clingconversion: [5.2.1]
-        minizincversion: [2.6.3]
+        minizincversion: [2.8.0]
         fzn2lpversion: [v0.1.4]
 
     steps:
@@ -90,9 +90,9 @@ jobs:
           ref: ${{ matrix.minizincversion }}
           path: "libminizinc"
 
-      - name: Patch libminizinc 2.6.3
-        run: |
-            sed -i 's/develop/0.6.0/' libminizinc/tests/requirements.txt
+      # - name: Patch libminizinc 2.6.3
+      #   run: |
+      #       sed -i 's/develop/0.6.0/' libminizinc/tests/requirements.txt
 
       - name: Install libminizinc test requirements
         run: pip3 install -r libminizinc/tests/requirements.txt
