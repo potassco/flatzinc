@@ -1,6 +1,6 @@
 use winnow::{
     combinator::alt,
-    error::{FromExternalError, ParserError},
+    error::{AddContext, FromExternalError, ParserError, StrContext, TreeError},
     PResult, Parser,
 };
 
@@ -25,11 +25,22 @@ pub enum Stmt {
     Constraint(ConstraintItem),
     SolveItem(SolveItem),
 }
+impl std::str::FromStr for Stmt {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        statement::<TreeError<&str>>()
+            .context(StrContext::Label("Error while parsing statement"))
+            .parse(input)
+            .map_err(|e| e.to_string())
+    }
+}
 
 fn statement<'a, E: ParserError<&'a str>>() -> impl Parser<&'a str, Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
+        + FromExternalError<&'a str, std::num::ParseFloatError>
+        + AddContext<&'a str, StrContext>,
 {
     alt((
         stmt_predicate,
@@ -41,17 +52,11 @@ where
     ))
 }
 
-pub fn parse_statement<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
-where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
-{
-    statement::<E>().parse_next(input)
-}
 fn stmt_predicate<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
+        + FromExternalError<&'a str, std::num::ParseFloatError>
+        + AddContext<&'a str, StrContext>,
 {
     let item = predicate_declarations::predicate_item(input)?;
     Ok(Stmt::Predicate(item))
@@ -78,7 +83,8 @@ where
 fn stmt_constraint<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
+        + FromExternalError<&'a str, std::num::ParseFloatError>
+        + AddContext<&'a str, StrContext>,
 {
     let item = constraint_item(input)?;
     Ok(Stmt::Constraint(item))
@@ -87,7 +93,8 @@ where
 fn stmt_solve_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
 where
     E: FromExternalError<&'a str, std::num::ParseIntError>
-        + FromExternalError<&'a str, std::num::ParseFloatError>,
+        + FromExternalError<&'a str, std::num::ParseFloatError>
+        + AddContext<&'a str, StrContext>,
 {
     let item = solve_item(input)?;
     Ok(Stmt::SolveItem(item))

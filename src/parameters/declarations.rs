@@ -1,5 +1,4 @@
 use winnow::{
-    combinator::eof,
     error::{FromExternalError, ParserError},
     PResult, Parser,
 };
@@ -70,7 +69,7 @@ where
     space_or_comment0(input)?;
     '='.parse_next(input)?;
     space_or_comment0(input)?;
-    let item = match ptype {
+    match ptype {
         ParType::BasicParType(bpt) => match bpt {
             BasicParType::BasicType(bt) => match bt {
                 BasicType::Bool => {
@@ -135,9 +134,7 @@ where
                 Ok(ParDeclItem::ArrayOfSet { ix, id, v })
             }
         },
-    };
-    eof.parse_next(input)?;
-    item
+    }
 }
 #[test]
 fn test_par_decl_item_1() {

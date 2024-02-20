@@ -1,5 +1,5 @@
 use winnow::{
-    combinator::{eof, opt},
+    combinator::opt,
     error::{FromExternalError, ParserError},
     PResult, Parser,
 };
@@ -147,7 +147,6 @@ where
     space_or_comment0(input)?;
     ';'.parse_next(input)?;
     space_or_comment0(input)?;
-    eof.parse_next(input)?;
     Ok(item)
 }
 #[test]
