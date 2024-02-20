@@ -184,12 +184,13 @@ where
     let negation = opt('-').parse_next(input)?;
     let int = take_while(1.., is_dec_digit).parse_next(input)?;
     let int = int
-        .parse::<u128>()
+        .parse::<i128>()
         .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
+
     if negation.is_some() {
-        Ok(-(int as i128))
+        Ok(-int)
     } else {
-        Ok(int as i128)
+        Ok(int)
     }
 }
 #[test]
@@ -201,13 +202,22 @@ fn test_decimal() {
         Ok(170141183460469231731687303715884105727)
     );
 }
+#[test]
+fn test_decimal2() {
+    use winnow::error::ContextError;
+    let mut input = "-170141183460469231731687303715884105727";
+    assert_eq!(
+        decimal::<ContextError<&str>>(&mut input),
+        Ok(-170141183460469231731687303715884105727)
+    );
+}
 //Should fail because of overflow
-// #[test]
-// fn test_decimal2() {
-//     use winnow::error::ContextError;
-//     let mut input = "170141183460469231731687303715884105728";
-//     assert_eq!(decimal::<ContextError<&str>>(&mut input), Ok(170141183460469231731687303715884105727));
-// }
+#[test]
+fn test_decimal3() {
+    use winnow::error::ContextError;
+    let mut input = "170141183460469231731687303715884105728";
+    assert!(decimal::<ContextError<&str>>(&mut input).is_err());
+}
 #[test]
 fn test_hex() {
     use winnow::error::ContextError;
@@ -222,13 +232,13 @@ where
     let negation = opt('-').parse_next(input)?;
     tag("0x").parse_next(input)?;
     let int = take_while(1.., is_hex_digit).parse_next(input)?;
-    let int = u128::from_str_radix(int, 16)
+    let int = i128::from_str_radix(int, 16)
         .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
 
     if negation.is_some() {
-        Ok(-(int as i128))
+        Ok(-int)
     } else {
-        Ok(int as i128)
+        Ok(int)
     }
 }
 
@@ -239,12 +249,12 @@ where
     let negation = opt('-').parse_next(input)?;
     tag("0o").parse_next(input)?;
     let int = take_while(1.., is_oct_digit).parse_next(input)?;
-    let int = u128::from_str_radix(int, 8)
+    let int = i128::from_str_radix(int, 8)
         .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
     if negation.is_some() {
-        Ok(-(int as i128))
+        Ok(-int)
     } else {
-        Ok(int as i128)
+        Ok(int)
     }
 }
 
