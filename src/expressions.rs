@@ -302,6 +302,27 @@ fn be_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PR
     Ok(BoolExpr::VarParIdentifier(id))
 }
 
+impl TryFrom<Expr> for BoolExpr {
+    type Error = ();
+
+    fn try_from(expr: Expr) -> Result<Self, Self::Error> {
+        match expr {
+            Expr::VarParIdentifier(id) => Ok(Self::VarParIdentifier(id)),
+            Expr::Bool(value) => Ok(Self::Bool(value)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<BoolExpr> for Expr {
+    fn from(expr: BoolExpr) -> Self {
+        match expr {
+            BoolExpr::Bool(value) => Self::Bool(value),
+            BoolExpr::VarParIdentifier(id) => self::Expr::VarParIdentifier(id),
+        }
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum IntExpr {
     Int(i128),
@@ -328,6 +349,27 @@ where
 fn ie_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<IntExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(IntExpr::VarParIdentifier(id))
+}
+
+impl TryFrom<Expr> for IntExpr {
+    type Error = ();
+
+    fn try_from(expr: Expr) -> Result<Self, Self::Error> {
+        match expr {
+            Expr::VarParIdentifier(id) => Ok(Self::VarParIdentifier(id)),
+            Expr::Int(value) => Ok(Self::Int(value)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<IntExpr> for Expr {
+    fn from(expr: IntExpr) -> Self {
+        match expr {
+            IntExpr::Int(value) => Self::Int(value),
+            IntExpr::VarParIdentifier(id) => self::Expr::VarParIdentifier(id),
+        }
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -358,6 +400,27 @@ fn fe_var_par_identifier<'a, E: ParserError<&'a str>>(
     Ok(FloatExpr::VarParIdentifier(id))
 }
 
+impl TryFrom<Expr> for FloatExpr {
+    type Error = ();
+
+    fn try_from(expr: Expr) -> Result<Self, Self::Error> {
+        match expr {
+            Expr::VarParIdentifier(id) => Ok(Self::VarParIdentifier(id)),
+            Expr::Float(value) => Ok(Self::Float(value)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<FloatExpr> for Expr {
+    fn from(expr: FloatExpr) -> Self {
+        match expr {
+            FloatExpr::Float(value) => Self::Float(value),
+            FloatExpr::VarParIdentifier(id) => self::Expr::VarParIdentifier(id),
+        }
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum SetExpr {
     Set(SetLiteralExpr),
@@ -384,6 +447,27 @@ where
 fn se_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(SetExpr::VarParIdentifier(id))
+}
+
+impl TryFrom<Expr> for SetExpr {
+    type Error = ();
+
+    fn try_from(expr: Expr) -> Result<Self, Self::Error> {
+        match expr {
+            Expr::VarParIdentifier(id) => Ok(Self::VarParIdentifier(id)),
+            Expr::Set(value) => Ok(Self::Set(value)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<SetExpr> for Expr {
+    fn from(expr: SetExpr) -> Self {
+        match expr {
+            SetExpr::Set(value) => Self::Set(value),
+            SetExpr::VarParIdentifier(id) => self::Expr::VarParIdentifier(id),
+        }
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -683,6 +767,27 @@ pub fn array_of_bool_literal<'a, E: ParserError<&'a str>>(
     Ok(al)
 }
 
+impl TryFrom<Expr> for ArrayOfBoolExpr {
+    type Error = ();
+
+    fn try_from(expr: Expr) -> Result<Self, Self::Error> {
+        match expr {
+            Expr::VarParIdentifier(id) => Ok(Self::VarParIdentifier(id)),
+            Expr::ArrayOfBool(value) => Ok(Self::Array(value)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<ArrayOfBoolExpr> for Expr {
+    fn from(expr: ArrayOfBoolExpr) -> Self {
+        match expr {
+            ArrayOfBoolExpr::Array(value) => Self::ArrayOfBool(value),
+            ArrayOfBoolExpr::VarParIdentifier(id) => self::Expr::VarParIdentifier(id),
+        }
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum ArrayOfIntExpr {
     Array(Vec<IntExpr>),
@@ -732,6 +837,27 @@ where
     Ok(al)
 }
 
+impl TryFrom<Expr> for ArrayOfIntExpr {
+    type Error = ();
+
+    fn try_from(expr: Expr) -> Result<Self, Self::Error> {
+        match expr {
+            Expr::VarParIdentifier(id) => Ok(Self::VarParIdentifier(id)),
+            Expr::ArrayOfInt(value) => Ok(Self::Array(value)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<ArrayOfIntExpr> for Expr {
+    fn from(expr: ArrayOfIntExpr) -> Self {
+        match expr {
+            ArrayOfIntExpr::Array(value) => Self::ArrayOfInt(value),
+            ArrayOfIntExpr::VarParIdentifier(id) => self::Expr::VarParIdentifier(id),
+        }
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum ArrayOfFloatExpr {
     Array(Vec<FloatExpr>),
@@ -779,6 +905,27 @@ where
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
+}
+
+impl TryFrom<Expr> for ArrayOfFloatExpr {
+    type Error = ();
+
+    fn try_from(expr: Expr) -> Result<Self, Self::Error> {
+        match expr {
+            Expr::VarParIdentifier(id) => Ok(Self::VarParIdentifier(id)),
+            Expr::ArrayOfFloat(value) => Ok(Self::Array(value)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<ArrayOfFloatExpr> for Expr {
+    fn from(expr: ArrayOfFloatExpr) -> Self {
+        match expr {
+            ArrayOfFloatExpr::Array(value) => Self::ArrayOfFloat(value),
+            ArrayOfFloatExpr::VarParIdentifier(id) => self::Expr::VarParIdentifier(id),
+        }
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -831,4 +978,25 @@ where
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
+}
+
+impl TryFrom<Expr> for ArrayOfSetExpr {
+    type Error = ();
+
+    fn try_from(expr: Expr) -> Result<Self, Self::Error> {
+        match expr {
+            Expr::VarParIdentifier(id) => Ok(Self::VarParIdentifier(id)),
+            Expr::ArrayOfSet(value) => Ok(Self::Array(value)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<ArrayOfSetExpr> for Expr {
+    fn from(expr: ArrayOfSetExpr) -> Self {
+        match expr {
+            ArrayOfSetExpr::Array(value) => Self::ArrayOfSet(value),
+            ArrayOfSetExpr::VarParIdentifier(id) => self::Expr::VarParIdentifier(id),
+        }
+    }
 }
