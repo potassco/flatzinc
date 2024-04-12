@@ -2,3 +2,4 @@
 Cargo.lock
 .directory
 Notes.md
+fuzz/coverage
