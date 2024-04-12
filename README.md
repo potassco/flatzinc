@@ -22,7 +22,7 @@ In your code:
 ```rust
 use flatzinc::Stmt;
 
-match <Stmt as std::str::FromStr>::from_str(&mut line) {
+match <Stmt as std::str::FromStr>::from_str(line) {
     Ok(result) => println!("{:#?}", result),
     Err(e) => {
         error!("Failed to parse flatzinc statement:\n{}", e);
