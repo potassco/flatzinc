@@ -18,9 +18,10 @@ pub struct SolveItem {
     pub annotations: Annotations,
 }
 
-pub fn solve_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SolveItem, E>
+pub fn solve_item<'a, E>(input: &mut &'a str) -> PResult<SolveItem, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>
         + AddContext<&'a str, StrContext>,
 {
@@ -29,9 +30,10 @@ where
     cut_err(solve_item_tail.context(StrContext::Label("Error while parsing solve statement")))
         .parse_next(input)
 }
-pub fn solve_item_tail<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SolveItem, E>
+pub fn solve_item_tail<'a, E>(input: &mut &'a str) -> PResult<SolveItem, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment1(input)?;
@@ -117,9 +119,9 @@ pub fn optimize_bool<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResul
     Ok(Goal::OptimizeBool(opt_type, be))
 }
 
-pub fn optimize_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E>
+pub fn optimize_int<'a, E>(input: &mut &'a str) -> PResult<Goal, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let opt_type = opt_type(input)?;
     space_or_comment1(input)?;
@@ -127,9 +129,9 @@ where
     Ok(Goal::OptimizeInt(opt_type, be))
 }
 
-pub fn optimize_float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E>
+pub fn optimize_float<'a, E>(input: &mut &'a str) -> PResult<Goal, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let opt_type = opt_type(input)?;
     space_or_comment1(input)?;
@@ -137,9 +139,10 @@ where
     Ok(Goal::OptimizeFloat(opt_type, be))
 }
 
-pub fn optimize_set<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E>
+pub fn optimize_set<'a, E>(input: &mut &'a str) -> PResult<Goal, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let opt_type = opt_type(input)?;

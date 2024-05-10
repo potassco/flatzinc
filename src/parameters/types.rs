@@ -47,9 +47,9 @@ pub enum ParType {
     },
 }
 
-pub fn par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E>
+pub fn par_type<'a, E>(input: &mut &'a str) -> PResult<ParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     alt((pt_basic_par_type, array_par_type)).parse_next(input)
 }
@@ -72,9 +72,9 @@ fn pt_basic_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResul
     Ok(ParType::BasicParType(pt))
 }
 
-fn array_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E>
+fn array_par_type<'a, E>(input: &mut &'a str) -> PResult<ParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     "array".parse_next(input)?;
     space_or_comment1(input)?;

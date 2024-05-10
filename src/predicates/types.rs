@@ -27,11 +27,10 @@ pub enum BasicPredParType {
     SubSetOfIntRange(i128, i128),
 }
 
-pub fn basic_pred_par_type<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<BasicPredParType, E>
+pub fn basic_pred_par_type<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     alt((
@@ -66,11 +65,10 @@ fn bppt_basic_par_type<'a, E: ParserError<&'a str>>(
     Ok(BasicPredParType::BasicParType(bpt))
 }
 
-fn bppt_basic_var_type<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<BasicPredParType, E>
+fn bppt_basic_var_type<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let bvt = basic_var_type(input)?;
@@ -92,59 +90,49 @@ fn bppt_var_set_of_int<'a, E: ParserError<&'a str>>(
     Ok(BasicPredParType::VarSetOfInt)
 }
 
-fn bppt_int_in_range<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<BasicPredParType, E>
+fn bppt_int_in_range<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (lb, ub) = int_in_range(input)?;
     Ok(BasicPredParType::IntInRange(lb, ub))
 }
 
-fn bppt_int_in_set<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+fn bppt_int_in_set<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let set = int_in_set(input)?;
     Ok(BasicPredParType::IntInSet(set))
 }
 
-fn bppt_bounded_float<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<BasicPredParType, E>
+fn bppt_bounded_float<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let (lb, ub) = bounded_float(input)?;
     Ok(BasicPredParType::BoundedFloat(lb, ub))
 }
 
-fn bppt_float_in_set<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<BasicPredParType, E>
+fn bppt_float_in_set<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let set = float_in_set(input)?;
     Ok(BasicPredParType::FloatInSet(set))
 }
 
-fn bppt_subset_of_int_range<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<BasicPredParType, E>
+fn bppt_subset_of_int_range<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let (lb, ub) = subset_of_int_range(input)?;
     Ok(BasicPredParType::SubSetOfIntRange(lb, ub))
 }
 
-fn bppt_subset_of_int_set<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<BasicPredParType, E>
+fn bppt_subset_of_int_set<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let set = subset_of_int_set(input)?;
     Ok(BasicPredParType::SubSetOfIntSet(set))
@@ -159,9 +147,10 @@ pub enum PredParType {
     },
 }
 
-pub fn pred_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<PredParType, E>
+pub fn pred_par_type<'a, E>(input: &mut &'a str) -> PResult<PredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     alt((ppt_basic_pred_par_type, array_of_pred_index_set)).parse_next(input)
@@ -203,22 +192,20 @@ fn test_pred_par_type_3() {
         ))
     );
 }
-fn ppt_basic_pred_par_type<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<PredParType, E>
+fn ppt_basic_pred_par_type<'a, E>(input: &mut &'a str) -> PResult<PredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let bppt = basic_pred_par_type(input)?;
     Ok(PredParType::Basic(bppt))
 }
 
-fn array_of_pred_index_set<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<PredParType, E>
+fn array_of_pred_index_set<'a, E>(input: &mut &'a str) -> PResult<PredParType, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;
@@ -242,9 +229,9 @@ pub enum PredIndexSet {
     Int,
 }
 
-fn pred_index_set<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<PredIndexSet, E>
+fn pred_index_set<'a, E>(input: &mut &'a str) -> PResult<PredIndexSet, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     alt((pis_int, pis_index_set)).parse_next(input)
 }
@@ -254,9 +241,9 @@ fn pis_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<PredInde
     Ok(PredIndexSet::Int)
 }
 
-fn pis_index_set<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<PredIndexSet, E>
+fn pis_index_set<'a, E>(input: &mut &'a str) -> PResult<PredIndexSet, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let ix = index_set(input)?;
     Ok(PredIndexSet::IndexSet(ix.0))
