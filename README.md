@@ -1,6 +1,6 @@
 # flatzinc [![Build Status](https://github.com/potassco/flatzinc/workflows/CI%20test/badge.svg)](https://github.com/potassco/flatzinc) [![Latest Version](https://img.shields.io/crates/v/flatzinc.svg)](https://crates.io/crates/flatzinc) [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/flatzinc)
 
-A parser for the [FlatZinc](https://www.minizinc.org/doc-2.4.3/en/fzn-spec.html#specification-of-flatzinc) modelling language version 2.4.3.
+A parser for the [FlatZinc](https://www.minizinc.org/doc-2.8.3/en/fzn-spec.html#specification-of-flatzinc) modelling language version 2.8.3.
 
 ## Compile
 
@@ -14,7 +14,7 @@ In your `Cargo.toml`:
 
 ```toml
 [dependencies]
-flatzinc = "0.3.20-dev"
+flatzinc = "0.3.20"
 ```
 
 In your code:
