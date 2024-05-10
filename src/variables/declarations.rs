@@ -137,9 +137,10 @@ pub enum VarDeclItem {
     },
 }
 
-pub fn var_decl_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<VarDeclItem, E>
+pub fn var_decl_item<'a, E>(input: &mut &'a str) -> PResult<VarDeclItem, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;
@@ -263,9 +264,10 @@ fn test_var_decl_item_5() {
     );
 }
 
-fn vdi_var<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<VarDeclItem, E>
+fn vdi_var<'a, E>(input: &mut &'a str) -> PResult<VarDeclItem, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let vt = var_type(input)?;
