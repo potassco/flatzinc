@@ -16,9 +16,10 @@ pub struct PredicateItem {
     pub parameters: Vec<(PredParType, String)>,
 }
 
-pub fn predicate_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<PredicateItem, E>
+pub fn predicate_item<'a, E>(input: &mut &'a str) -> PResult<PredicateItem, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>
         + AddContext<&'a str, StrContext>,
 {
@@ -27,11 +28,10 @@ where
     cut_err(predicate_item_tail.context(StrContext::Label("Error while parsing solve statement")))
         .parse_next(input)
 }
-pub fn predicate_item_tail<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<PredicateItem, E>
+pub fn predicate_item_tail<'a, E>(input: &mut &'a str) -> PResult<PredicateItem, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment1(input)?;
@@ -84,11 +84,10 @@ fn test_predicate_item_3() {
     predicate_item::<ContextError>(&mut input).unwrap();
 }
 
-pub fn pred_par_type_ident_pair<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<(PredParType, String), E>
+pub fn pred_par_type_ident_pair<'a, E>(input: &mut &'a str) -> PResult<(PredParType, String), E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;

@@ -172,9 +172,9 @@ pub fn bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult
     alt((literal("true").value(true), literal("false").value(false))).parse_next(input)
 }
 
-pub fn int_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
+pub fn int_literal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     crate::comments::space_or_comment0(input)?;
     alt((decimal, hexadecimal, octal)).parse_next(input)
@@ -186,9 +186,9 @@ fn test_int_literal() {
     assert_eq!(int_literal::<ContextError>(&mut input), Ok(1));
 }
 
-fn decimal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
+fn decimal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let negation = opt('-').parse_next(input)?;
     let int = take_while(1.., is_dec_digit)
@@ -228,9 +228,9 @@ fn test_decimal3() {
     assert!(decimal::<ContextError>(&mut input).is_err());
 }
 
-fn hexadecimal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
+fn hexadecimal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let negation = opt('-').parse_next(input)?;
     "0x".parse_next(input)?;
@@ -251,9 +251,9 @@ fn test_hex() {
     assert_eq!(hexadecimal::<ContextError>(&mut input), Ok(-47));
 }
 
-fn octal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<i128, E>
+fn octal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let negation = opt('-').parse_next(input)?;
     "0o".parse_next(input)?;
@@ -288,9 +288,9 @@ fn is_dec_digit(c: char) -> bool {
     c.is_ascii_digit()
 }
 
-pub fn float_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<f64, E>
+pub fn float_literal<'a, E>(input: &mut &'a str) -> PResult<f64, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     crate::comments::space_or_comment0(input)?;
     fz_float(input)
@@ -321,9 +321,9 @@ fn test_float_literal() {
     );
 }
 
-fn fz_float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<f64, E>
+fn fz_float<'a, E>(input: &mut &'a str) -> PResult<f64, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let mut fl = alt((fz_float1, fz_float2)).parse_next(input)?;
     winnow::ascii::float.parse_next(&mut fl)
@@ -364,9 +364,9 @@ fn bpart<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E>
 #[derive(PartialEq, Clone, Debug)]
 pub struct IndexSet(pub i128);
 
-pub fn index_set<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<IndexSet, E>
+pub fn index_set<'a, E>(input: &mut &'a str) -> PResult<IndexSet, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     '1'.parse_next(input)?;
     space_or_comment0(input)?;

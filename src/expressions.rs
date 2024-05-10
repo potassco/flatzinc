@@ -15,17 +15,19 @@ use crate::{
 
 pub type Annotations = Vec<Annotation>;
 
-pub fn annotations<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Annotations, E>
+pub fn annotations<'a, E>(input: &mut &'a str) -> PResult<Annotations, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     repeat(0.., annotation1).parse_next(input)
 }
 
-fn annotation1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Annotation, E>
+fn annotation1<'a, E>(input: &mut &'a str) -> PResult<Annotation, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     "::".parse_next(input)?;
@@ -41,9 +43,10 @@ pub struct Annotation {
 
 // <annotation> ::= <identifier>
 //                | <identifier> "(" <ann-expr> "," ... ")"
-fn annotation<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Annotation, E>
+fn annotation<'a, E>(input: &mut &'a str) -> PResult<Annotation, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let id = identifier(input)?;
@@ -74,17 +77,19 @@ pub enum AnnExpr {
     Expr(Expr),
 }
 
-fn ann_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<AnnExpr, E>
+fn ann_expr<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     alt((ann_non_array_expr, ae_annotations)).parse_next(input)
 }
 
-fn ae_annotations<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<AnnExpr, E>
+fn ae_annotations<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     '['.parse_next(input)?;
@@ -103,17 +108,19 @@ where
 //     | var_par_id /* variable, possibly array */
 //     | var_par_id '[' ann_non_array_expr ']' /* array access */
 //     | FZ_STRING_LIT
-fn ann_non_array_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<AnnExpr, E>
+fn ann_non_array_expr<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     alt((ae_expr, string_lit)).parse_next(input)
 }
 
-fn ae_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<AnnExpr, E>
+fn ae_expr<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let expr = expr(input)?;
@@ -229,9 +236,9 @@ where
 }
 
 /// Parse a string literal, including escaped characters such as `\n` and `\"`.
-pub fn string_lit<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<AnnExpr, E>
+pub fn string_lit<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let build_string = repeat(0.., parse_fragment).fold(String::new, |mut string, fragment| {
         match fragment {
@@ -329,18 +336,18 @@ pub enum IntExpr {
     VarParIdentifier(String),
 }
 
-pub fn int_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<IntExpr, E>
+pub fn int_expr<'a, E>(input: &mut &'a str) -> PResult<IntExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     space_or_comment0(input)?;
     let expr = alt((ie_int_literal, ie_var_par_identifier)).parse_next(input)?;
     Ok(expr)
 }
 
-fn ie_int_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<IntExpr, E>
+fn ie_int_literal<'a, E>(input: &mut &'a str) -> PResult<IntExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let expr = int_literal(input)?;
     Ok(IntExpr::Int(expr))
@@ -378,16 +385,16 @@ pub enum FloatExpr {
     VarParIdentifier(String),
 }
 
-pub fn float_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<FloatExpr, E>
+pub fn float_expr<'a, E>(input: &mut &'a str) -> PResult<FloatExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     alt((fe_float_literal, fe_var_par_identifier)).parse_next(input)
 }
 
-fn fe_float_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<FloatExpr, E>
+fn fe_float_literal<'a, E>(input: &mut &'a str) -> PResult<FloatExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let expr = float_literal(input)?;
     Ok(FloatExpr::Float(expr))
@@ -427,17 +434,19 @@ pub enum SetExpr {
     VarParIdentifier(String),
 }
 
-pub fn set_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetExpr, E>
+pub fn set_expr<'a, E>(input: &mut &'a str) -> PResult<SetExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     alt((se_set_literal_expr, se_var_par_identifier)).parse_next(input)
 }
 
-fn se_set_literal_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetExpr, E>
+fn se_set_literal_expr<'a, E>(input: &mut &'a str) -> PResult<SetExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let sl = set_literal_expr(input)?;
@@ -483,9 +492,10 @@ pub enum Expr {
     ArrayOfSet(Vec<SetExpr>),
 }
 
-pub fn expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E>
+pub fn expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     space_or_comment0(input)?;
@@ -526,25 +536,26 @@ fn e_bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr
     Ok(Expr::Bool(b))
 }
 
-fn e_int_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_int_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let int = int_literal(input)?;
     Ok(Expr::Int(int))
 }
 
-fn e_float_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_float_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let float = float_literal(input)?;
     Ok(Expr::Float(float))
 }
 
-fn e_set_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_set_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let set = set_literal_expr(input)?;
@@ -556,15 +567,15 @@ fn e_array_of_bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PRe
     Ok(Expr::ArrayOfBool(v))
 }
 
-fn e_array_of_int_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_array_of_int_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let v = array_of_int_expr_literal(input)?;
     Ok(Expr::ArrayOfInt(v))
 }
 
-fn e_array_of_float_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_array_of_float_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -572,7 +583,7 @@ where
     Ok(Expr::ArrayOfFloat(v))
 }
 
-fn e_array_of_set_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_array_of_set_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -590,9 +601,10 @@ pub enum SetLiteralExpr {
     SetInts(Vec<IntExpr>),
 }
 
-fn set_literal_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn set_literal_expr<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     alt((
@@ -604,9 +616,9 @@ where
     .parse_next(input)
 }
 
-fn sle_int_in_range<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn sle_int_in_range<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let lb = int_expr(input)?;
     space_or_comment0(input)?;
@@ -616,9 +628,9 @@ where
     Ok(SetLiteralExpr::IntInRange(lb, ub))
 }
 
-fn sle_bounded_float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn sle_bounded_float<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let lb = float_expr(input)?;
     space_or_comment0(input)?;
@@ -629,9 +641,9 @@ where
 }
 
 // "{" <int-expr> "," ... "}"
-fn sle_set_of_ints<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn sle_set_of_ints<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
@@ -642,9 +654,9 @@ where
 }
 
 // "{" <float-expr> "," ... "}"
-fn sle_set_of_floats<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn sle_set_of_floats<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
@@ -662,7 +674,7 @@ pub enum SetLiteral {
     SetInts(Vec<i128>),
 }
 
-pub fn set_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteral, E>
+pub fn set_literal<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -677,9 +689,9 @@ where
     .parse_next(input)
 }
 
-fn sl_int_range<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteral, E>
+fn sl_int_range<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let lb = int_literal(input)?;
     space_or_comment0(input)?;
@@ -689,9 +701,9 @@ where
     Ok(SetLiteral::IntRange(lb, ub))
 }
 
-fn sl_bounded_float<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteral, E>
+fn sl_bounded_float<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let lb = float_literal(input)?;
     space_or_comment0(input)?;
@@ -702,9 +714,9 @@ where
 }
 
 // "{" <int-literal> "," ... "}"
-fn sl_set_of_ints<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteral, E>
+fn sl_set_of_ints<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
@@ -715,9 +727,9 @@ where
 }
 
 // "{" <float-literal> "," ... "}"
-fn sl_set_of_floats<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetLiteral, E>
+fn sl_set_of_floats<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
@@ -794,11 +806,9 @@ pub enum ArrayOfIntExpr {
     VarParIdentifier(String),
 }
 
-pub fn array_of_int_expr<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<ArrayOfIntExpr, E>
+pub fn array_of_int_expr<'a, E>(input: &mut &'a str) -> PResult<ArrayOfIntExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     let id = opt(var_par_identifier).parse_next(input)?;
     if let Some(id) = id {
@@ -809,11 +819,9 @@ where
     }
 }
 
-fn array_of_int_expr_literal<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<Vec<IntExpr>, E>
+fn array_of_int_expr_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<IntExpr>, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
@@ -823,11 +831,9 @@ where
     Ok(v)
 }
 
-pub fn array_of_int_literal<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<Vec<i128>, E>
+pub fn array_of_int_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<i128>, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
@@ -864,11 +870,9 @@ pub enum ArrayOfFloatExpr {
     VarParIdentifier(String),
 }
 
-pub fn array_of_float_expr<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<ArrayOfFloatExpr, E>
+pub fn array_of_float_expr<'a, E>(input: &mut &'a str) -> PResult<ArrayOfFloatExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let id = opt(var_par_identifier).parse_next(input)?;
     if let Some(id) = id {
@@ -879,11 +883,9 @@ where
     }
 }
 
-fn array_of_float_expr_literal<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<Vec<FloatExpr>, E>
+fn array_of_float_expr_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<FloatExpr>, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
@@ -893,11 +895,9 @@ where
     Ok(v)
 }
 
-pub fn array_of_float_literal<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<Vec<f64>, E>
+pub fn array_of_float_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<f64>, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseFloatError>,
+    E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
@@ -934,11 +934,10 @@ pub enum ArrayOfSetExpr {
     VarParIdentifier(String),
 }
 
-pub fn array_of_set_expr<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<ArrayOfSetExpr, E>
+pub fn array_of_set_expr<'a, E>(input: &mut &'a str) -> PResult<ArrayOfSetExpr, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let id = opt(var_par_identifier).parse_next(input)?;
@@ -950,11 +949,10 @@ where
     }
 }
 
-fn array_of_set_expr_literal<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<Vec<SetExpr>, E>
+fn array_of_set_expr_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<SetExpr>, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     '['.parse_next(input)?;
@@ -965,11 +963,10 @@ where
     Ok(v)
 }
 
-pub fn array_of_set_literal<'a, E: ParserError<&'a str>>(
-    input: &mut &'a str,
-) -> PResult<Vec<SetLiteral>, E>
+pub fn array_of_set_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<SetLiteral>, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     '['.parse_next(input)?;

@@ -36,9 +36,10 @@ impl std::str::FromStr for Stmt {
     }
 }
 
-fn statement<'a, E: ParserError<&'a str>>() -> impl Parser<&'a str, Stmt, E>
+fn statement<'a, E>() -> impl Parser<&'a str, Stmt, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>
         + AddContext<&'a str, StrContext>,
 {
@@ -52,9 +53,10 @@ where
     ))
 }
 
-fn stmt_predicate<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_predicate<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>
         + AddContext<&'a str, StrContext>,
 {
@@ -62,27 +64,30 @@ where
     Ok(Stmt::Predicate(item))
 }
 
-fn stmt_parameter<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_parameter<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let item = parameter_declarations::par_decl_item(input)?;
     Ok(Stmt::Parameter(item))
 }
 
-fn stmt_variable<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_variable<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     let item = variable_declarations::var_decl_item(input)?;
     Ok(Stmt::Variable(item))
 }
 
-fn stmt_constraint<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_constraint<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>
         + AddContext<&'a str, StrContext>,
 {
@@ -90,9 +95,10 @@ where
     Ok(Stmt::Constraint(item))
 }
 
-fn stmt_solve_item<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_solve_item<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
 where
-    E: FromExternalError<&'a str, std::num::ParseIntError>
+    E: ParserError<&'a str>
+        + FromExternalError<&'a str, std::num::ParseIntError>
         + FromExternalError<&'a str, std::num::ParseFloatError>
         + AddContext<&'a str, StrContext>,
 {
