@@ -20,11 +20,7 @@ fn main() {
     }
 }
 fn run() -> Result<()> {
-    stderrlog::new()
-        .module(module_path!())
-        .verbosity(2)
-        .init()
-        .unwrap();
+    env_logger::builder().format_timestamp(None).init();
 
     let opt = Opt::parse();
     let buf = std::fs::read_to_string(opt.file)?;
