@@ -42,3 +42,11 @@ fn test_comment2() {
     let res = comment::<ContextError>(&mut input);
     assert!(res.is_err());
 }
+
+// Separator comma that allows for white space and comments
+pub fn separator<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<(), E> {
+    space_or_comment0(input)?;
+    ','.parse_next(input)?;
+    space_or_comment0(input)?;
+    Ok(())
+}
