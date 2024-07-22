@@ -263,6 +263,29 @@ fn test_var_decl_item_5() {
         })
     );
 }
+#[test]
+fn test_var_decl_item_6() {
+    use crate::{AnnExpr, Annotation, Expr, IntExpr, SetExpr, SetLiteralExpr};
+    use winnow::error::ContextError;
+    let mut input = "array [1..2] of var bool: bools:: output_array([1..2]) = [x1, x2];";
+    assert_eq!(
+        var_decl_item::<ContextError>(&mut input),
+        Ok(VarDeclItem::ArrayOfBool {
+            ix: IndexSet(2),
+            id: "bools".to_string(),
+            annos: vec![Annotation {
+                id: "output_array".to_string(),
+                expressions: vec![AnnExpr::Expr(Expr::ArrayOfSet(vec![SetExpr::Set(
+                    SetLiteralExpr::IntInRange(IntExpr::Int(1), IntExpr::Int(2))
+                )]))]
+            }],
+            array_expr: Some(ArrayOfBoolExpr::Array(vec![
+                BoolExpr::VarParIdentifier("x1".to_owned()),
+                BoolExpr::VarParIdentifier("x2".to_owned())
+            ]))
+        })
+    );
+}
 
 fn vdi_var<'a, E>(input: &mut &'a str) -> PResult<VarDeclItem, E>
 where

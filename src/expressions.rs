@@ -1,5 +1,5 @@
 use winnow::{
-    ascii::multispace1,
+    ascii::{multispace0, multispace1},
     combinator::{alt, delimited, opt, preceded, repeat, separated},
     error::{FromExternalError, ParserError},
     token::{take_till, take_while},
@@ -762,10 +762,17 @@ fn array_of_bool_expr_literal<'a, E: ParserError<&'a str>>(
 ) -> PResult<Vec<BoolExpr>, E> {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., bool_expr, ',').parse_next(input)?;
+    let v = separated(0.., bool_expr, array_separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
+}
+
+fn array_separator<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<(), E> {
+    multispace0(input)?;
+    ",".parse_next(input)?;
+    multispace0(input)?;
+    Ok(())
 }
 
 pub fn array_of_bool_literal<'a, E: ParserError<&'a str>>(

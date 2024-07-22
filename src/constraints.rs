@@ -97,7 +97,7 @@ fn test_constraint_item_1() {
 }
 #[test]
 fn test_constraint_item_2() {
-    use crate::{Expr, IntExpr};
+    use crate::{BoolExpr, Expr, IntExpr};
     use winnow::error::ContextError;
     let mut input = "constraint int_lin_eq([-1, 1], [INT01, p], -3);";
     assert_eq!(
@@ -106,9 +106,9 @@ fn test_constraint_item_2() {
             id: "int_lin_eq".to_string(),
             exprs: vec![
                 Expr::ArrayOfInt(vec![IntExpr::Int(-1), IntExpr::Int(1)]),
-                Expr::ArrayOfInt(vec![
-                    IntExpr::VarParIdentifier("INT01".to_string()),
-                    IntExpr::VarParIdentifier("p".to_string())
+                Expr::ArrayOfBool(vec![
+                    BoolExpr::VarParIdentifier("INT01".to_string()),
+                    BoolExpr::VarParIdentifier("p".to_string())
                 ]),
                 Expr::Int(-3)
             ],
