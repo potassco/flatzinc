@@ -7,7 +7,7 @@ use winnow::{
 
 use crate::{
     basic_types::{basic_type, BasicType},
-    comments::{space_or_comment0, space_or_comment1},
+    comments::{separator, space_or_comment0, space_or_comment1},
     primitive_literals::{float_literal, index_set, int_literal, IndexSet},
 };
 
@@ -166,7 +166,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., float_literal, ',').parse_next(input)?;
+    let v = separated(0.., float_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(v)
@@ -200,7 +200,7 @@ where
     space_or_comment1(input)?;
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., int_literal, ',').parse_next(input)?;
+    let v = separated(0.., int_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(v)
@@ -213,7 +213,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., int_literal, ',').parse_next(input)?;
+    let v = separated(0.., int_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(v)

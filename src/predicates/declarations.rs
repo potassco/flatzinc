@@ -5,7 +5,7 @@ use winnow::{
 };
 
 use crate::{
-    comments::{space_or_comment0, space_or_comment1},
+    comments::{separator, space_or_comment0, space_or_comment1},
     predicates::types::{pred_par_type, PredParType},
     primitive_literals::identifier,
 };
@@ -37,7 +37,7 @@ where
     space_or_comment1(input)?;
     let id = identifier(input)?;
     '('.parse_next(input)?;
-    let parameters = separated(1.., pred_par_type_ident_pair, ",").parse_next(input)?;
+    let parameters = separated(1.., pred_par_type_ident_pair, separator).parse_next(input)?;
     ')'.parse_next(input)?;
     space_or_comment0(input)?;
     ';'.parse_next(input)?;

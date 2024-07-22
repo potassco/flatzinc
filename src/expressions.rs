@@ -7,7 +7,7 @@ use winnow::{
 };
 
 use crate::{
-    comments::space_or_comment0,
+    comments::{separator, space_or_comment0},
     primitive_literals::{
         bool_literal, float_literal, identifier, int_literal, var_par_identifier,
     },
@@ -52,7 +52,7 @@ where
     let id = identifier(input)?;
     let we = opt('(').parse_next(input)?;
     if we.is_some() {
-        let expressions_what = separated(1.., ann_expr, ',').parse_next(input)?;
+        let expressions_what = separated(1.., ann_expr, separator).parse_next(input)?;
         ')'.parse_next(input)?;
         Ok(Annotation {
             id,
@@ -94,7 +94,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let res = separated(1.., annotation, ',').parse_next(input)?;
+    let res = separated(1.., annotation, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(AnnExpr::Annotations(res))
@@ -647,7 +647,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., int_expr, ',').parse_next(input)?;
+    let v = separated(0.., int_expr, separator).parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(SetLiteralExpr::SetInts(v))
@@ -660,7 +660,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., float_expr, ',').parse_next(input)?;
+    let v = separated(0.., float_expr, separator).parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(SetLiteralExpr::SetFloats(v))
@@ -720,7 +720,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., int_literal, ',').parse_next(input)?;
+    let v = separated(0.., int_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(SetLiteral::SetInts(v))
@@ -733,7 +733,7 @@ where
 {
     '{'.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., float_literal, ',').parse_next(input)?;
+    let v = separated(0.., float_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     '}'.parse_next(input)?;
     Ok(SetLiteral::SetFloats(v))
@@ -762,18 +762,45 @@ fn array_of_bool_expr_literal<'a, E: ParserError<&'a str>>(
 ) -> PResult<Vec<BoolExpr>, E> {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., bool_expr, ',').parse_next(input)?;
+    let v = separated(0.., bool_expr, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
 }
-
+#[test]
+fn test_array_of_bool_expr_literal() {
+    use winnow::error::ContextError;
+    let mut input = "[x1 ,x2, x3 , x4]";
+    assert_eq!(
+        array_of_bool_expr_literal::<ContextError>(&mut input),
+        Ok(vec![
+            BoolExpr::VarParIdentifier("x1".into()),
+            BoolExpr::VarParIdentifier("x2".into()),
+            BoolExpr::VarParIdentifier("x3".into()),
+            BoolExpr::VarParIdentifier("x4".into())
+        ])
+    );
+}
+#[test]
+fn test_array_of_bool_expr_literal2() {
+    use winnow::error::ContextError;
+    let mut input: &str = "[true ,false, true , false]";
+    assert_eq!(
+        array_of_bool_expr_literal::<ContextError>(&mut input),
+        Ok(vec![
+            BoolExpr::Bool(true),
+            BoolExpr::Bool(false),
+            BoolExpr::Bool(true),
+            BoolExpr::Bool(false),
+        ])
+    );
+}
 pub fn array_of_bool_literal<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> PResult<Vec<bool>, E> {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let al = separated(0.., bool_literal, ',').parse_next(input)?;
+    let al = separated(0.., bool_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
@@ -825,7 +852,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., int_expr, ',').parse_next(input)?;
+    let v = separated(0.., int_expr, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
@@ -837,7 +864,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let al = separated(0.., int_literal, ',').parse_next(input)?;
+    let al = separated(0.., int_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
@@ -889,7 +916,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., float_expr, ',').parse_next(input)?;
+    let v = separated(0.., float_expr, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
@@ -901,7 +928,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let al = separated(0.., float_literal, ',').parse_next(input)?;
+    let al = separated(0.., float_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
@@ -957,7 +984,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let v = separated(0.., set_expr, ',').parse_next(input)?;
+    let v = separated(0.., set_expr, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(v)
@@ -971,7 +998,7 @@ where
 {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
-    let al = separated(0.., set_literal, ',').parse_next(input)?;
+    let al = separated(0.., set_literal, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ']'.parse_next(input)?;
     Ok(al)
