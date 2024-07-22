@@ -176,7 +176,6 @@ pub fn int_literal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
-    crate::comments::space_or_comment0(input)?;
     alt((decimal, hexadecimal, octal)).parse_next(input)
 }
 #[test]
@@ -292,7 +291,6 @@ pub fn float_literal<'a, E>(input: &mut &'a str) -> PResult<f64, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
-    crate::comments::space_or_comment0(input)?;
     fz_float(input)
 }
 #[test]

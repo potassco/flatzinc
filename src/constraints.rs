@@ -1,5 +1,5 @@
 use crate::{
-    comments::{space_or_comment0, space_or_comment1},
+    comments::{separator, space_or_comment0, space_or_comment1},
     expressions::{annotations, expr, Annotation, Expr},
     primitive_literals::identifier,
 };
@@ -38,7 +38,7 @@ where
     let id = identifier(input)?;
     '('.parse_next(input)?;
     space_or_comment0(input)?;
-    let exprs = separated(1.., expr, ",").parse_next(input)?;
+    let exprs = separated(1.., expr, separator).parse_next(input)?;
     space_or_comment0(input)?;
     ')'.parse_next(input)?;
     space_or_comment0(input)?;
@@ -106,9 +106,9 @@ fn test_constraint_item_2() {
             id: "int_lin_eq".to_string(),
             exprs: vec![
                 Expr::ArrayOfInt(vec![IntExpr::Int(-1), IntExpr::Int(1)]),
-                Expr::ArrayOfInt(vec![
-                    IntExpr::VarParIdentifier("INT01".to_string()),
-                    IntExpr::VarParIdentifier("p".to_string())
+                Expr::ArrayOfBool(vec![
+                    crate::BoolExpr::VarParIdentifier("INT01".to_string()),
+                    crate::BoolExpr::VarParIdentifier("p".to_string())
                 ]),
                 Expr::Int(-3)
             ],
