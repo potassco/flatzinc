@@ -10,7 +10,7 @@ jobs:
         os: [ubuntu-latest]
         clingconversion: [5.2.1]
         minizincversion: [2.8.3]
-        fzn2lpversion: [v0.1.4]
+        fzn2lpversion: [v0.1.5]
 
     steps:
       - uses: actions/checkout@v4
@@ -42,9 +42,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: "potassco/fzn2lp"
-          # ref: ${{ matrix.fzn2lpversion }}
+          ref: ${{ matrix.fzn2lpversion }}
           path: "fzn2lp"
-          ref: "st/winnow"
+          # ref: "st/winnow"
 
       - name: Build fzn2lp with current flatzinc
         run: |
