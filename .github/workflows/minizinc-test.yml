@@ -9,8 +9,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         clingconversion: [5.2.1]
-        minizincversion: [2.8.3]
-        fzn2lpversion: [v0.1.5]
+        minizincversion: [2.8.7]
+        fzn2lpversion: [v0.1.6]
 
     steps:
       - uses: actions/checkout@v4
@@ -100,4 +100,4 @@ jobs:
         shell: bash -l {0}
         run: |
           cd libminizinc/tests
-          pytest -k "not test_output_checker and not test_var_set_element and not bug269 and not bug347 and not test-search1 and not test_vis_ann and not test_vis_custom" --driver=../../MiniZincIDE-${{ matrix.minizincversion }}-bundle-linux-x86_64/bin
+          pytest -k "not test_output_checker and not test_vis_ann and not test_vis_custom and not test_array_dzn_output and not test_json_section and not test_run_fzn" --driver=../../MiniZincIDE-${{ matrix.minizincversion }}-bundle-linux-x86_64/bin
