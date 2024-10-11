@@ -334,7 +334,7 @@ fn fz_float1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a st
     let post = take_while(1.., is_dec_digit);
     let rest = opt(bpart);
 
-    (sign, pre, '.', post, rest).recognize().parse_next(input)
+    (sign, pre, '.', post, rest).take().parse_next(input)
 }
 
 fn fz_float2<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
@@ -343,9 +343,7 @@ fn fz_float2<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a st
     let e = alt(('e', 'E'));
     let sign2 = opt(alt(("-", "+")));
     let digits2 = take_while(1.., is_dec_digit);
-    (sign, digits, e, sign2, digits2)
-        .recognize()
-        .parse_next(input)
+    (sign, digits, e, sign2, digits2).take().parse_next(input)
 }
 
 fn bpart<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
