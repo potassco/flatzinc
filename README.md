@@ -14,7 +14,7 @@ In your `Cargo.toml`:
 
 ```toml
 [dependencies]
-flatzinc = "0.3.21"
+flatzinc = "0.3.22-dev"
 ```
 
 In your code:
