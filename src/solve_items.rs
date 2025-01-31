@@ -1,7 +1,7 @@
 use winnow::{
     combinator::{alt, cut_err},
     error::{AddContext, FromExternalError, ParserError, StrContext},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::{
@@ -18,7 +18,7 @@ pub struct SolveItem {
     pub annotations: Annotations,
 }
 
-pub fn solve_item<'a, E>(input: &mut &'a str) -> PResult<SolveItem, E>
+pub fn solve_item<'a, E>(input: &mut &'a str) -> ModalResult<SolveItem, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -30,7 +30,7 @@ where
     cut_err(solve_item_tail.context(StrContext::Label("Error while parsing solve statement")))
         .parse_next(input)
 }
-pub fn solve_item_tail<'a, E>(input: &mut &'a str) -> PResult<SolveItem, E>
+pub fn solve_item_tail<'a, E>(input: &mut &'a str) -> ModalResult<SolveItem, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -93,33 +93,33 @@ pub enum OptimizationType {
     Maximize,
 }
 
-pub fn satisfy<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E> {
+pub fn satisfy<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Goal, E> {
     "satisfy".parse_next(input)?;
     Ok(Goal::Satisfy)
 }
 
-fn opt_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<OptimizationType, E> {
+fn opt_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<OptimizationType, E> {
     alt((minimize, maximize)).parse_next(input)
 }
 
-fn minimize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<OptimizationType, E> {
+fn minimize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<OptimizationType, E> {
     "minimize".parse_next(input)?;
     Ok(OptimizationType::Minimize)
 }
 
-fn maximize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<OptimizationType, E> {
+fn maximize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<OptimizationType, E> {
     "maximize".parse_next(input)?;
     Ok(OptimizationType::Maximize)
 }
 
-pub fn optimize_bool<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Goal, E> {
+pub fn optimize_bool<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Goal, E> {
     let opt_type = opt_type(input)?;
     space_or_comment1(input)?;
     let be = bool_expr(input)?;
     Ok(Goal::OptimizeBool(opt_type, be))
 }
 
-pub fn optimize_int<'a, E>(input: &mut &'a str) -> PResult<Goal, E>
+pub fn optimize_int<'a, E>(input: &mut &'a str) -> ModalResult<Goal, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -129,7 +129,7 @@ where
     Ok(Goal::OptimizeInt(opt_type, be))
 }
 
-pub fn optimize_float<'a, E>(input: &mut &'a str) -> PResult<Goal, E>
+pub fn optimize_float<'a, E>(input: &mut &'a str) -> ModalResult<Goal, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -139,7 +139,7 @@ where
     Ok(Goal::OptimizeFloat(opt_type, be))
 }
 
-pub fn optimize_set<'a, E>(input: &mut &'a str) -> PResult<Goal, E>
+pub fn optimize_set<'a, E>(input: &mut &'a str) -> ModalResult<Goal, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>

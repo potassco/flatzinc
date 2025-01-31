@@ -3,7 +3,7 @@ use winnow::{
     combinator::{alt, delimited, opt, preceded, repeat, separated},
     error::{FromExternalError, ParserError},
     token::{take_till, take_while},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
 
 pub type Annotations = Vec<Annotation>;
 
-pub fn annotations<'a, E>(input: &mut &'a str) -> PResult<Annotations, E>
+pub fn annotations<'a, E>(input: &mut &'a str) -> ModalResult<Annotations, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -24,7 +24,7 @@ where
     repeat(0.., annotation1).parse_next(input)
 }
 
-fn annotation1<'a, E>(input: &mut &'a str) -> PResult<Annotation, E>
+fn annotation1<'a, E>(input: &mut &'a str) -> ModalResult<Annotation, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -43,7 +43,7 @@ pub struct Annotation {
 
 // <annotation> ::= <identifier>
 //                | <identifier> "(" <ann-expr> "," ... ")"
-fn annotation<'a, E>(input: &mut &'a str) -> PResult<Annotation, E>
+fn annotation<'a, E>(input: &mut &'a str) -> ModalResult<Annotation, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -77,7 +77,7 @@ pub enum AnnExpr {
     Expr(Expr),
 }
 
-fn ann_expr<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
+fn ann_expr<'a, E>(input: &mut &'a str) -> ModalResult<AnnExpr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -86,7 +86,7 @@ where
     alt((ann_non_array_expr, ae_annotations)).parse_next(input)
 }
 
-fn ae_annotations<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
+fn ae_annotations<'a, E>(input: &mut &'a str) -> ModalResult<AnnExpr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -108,7 +108,7 @@ where
 //     | var_par_id /* variable, possibly array */
 //     | var_par_id '[' ann_non_array_expr ']' /* array access */
 //     | FZ_STRING_LIT
-fn ann_non_array_expr<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
+fn ann_non_array_expr<'a, E>(input: &mut &'a str) -> ModalResult<AnnExpr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -117,7 +117,7 @@ where
     alt((ae_expr, string_lit)).parse_next(input)
 }
 
-fn ae_expr<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
+fn ae_expr<'a, E>(input: &mut &'a str) -> ModalResult<AnnExpr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -138,7 +138,7 @@ where
 /// Parse a unicode sequence, of the form `u{XXXX}`, where XXXX is 1 to 6
 /// hexadecimal numerals. We will combine this later with [`parse_escaped_char`]
 /// to parse sequences like `\u{00AC}`.
-fn parse_unicode<'a, E>(input: &mut &'a str) -> PResult<char, E>
+fn parse_unicode<'a, E>(input: &mut &'a str) -> ModalResult<char, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -171,7 +171,7 @@ where
 }
 
 /// Parse an escaped character: `\n`, `\t`, `\r`, `\u{00AC}`, etc.
-fn parse_escaped_char<'a, E>(input: &mut &'a str) -> PResult<StringFragment<'a>, E>
+fn parse_escaped_char<'a, E>(input: &mut &'a str) -> ModalResult<StringFragment<'a>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -198,7 +198,7 @@ where
 /// to discard any escaped whitespace.
 fn parse_escaped_whitespace<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<StringFragment<'a>, E> {
+) -> ModalResult<StringFragment<'a>, E> {
     preceded('\\', multispace1).parse_next(input)?;
     Ok(StringFragment::EscapedWS)
 }
@@ -206,7 +206,7 @@ fn parse_escaped_whitespace<'a, E: ParserError<&'a str>>(
 /// Parse a non-empty block of text that doesn't include `\` or `"`
 fn parse_literal<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<StringFragment<'a>, E> {
+) -> ModalResult<StringFragment<'a>, E> {
     let c = take_till(1.., ['\"', '\\']).parse_next(input)?;
     Ok(StringFragment::Literal(c))
 }
@@ -223,7 +223,7 @@ enum StringFragment<'a> {
 
 /// Combine [`parse_literal`], [`parse_escaped_whitespace`], and [`parse_escaped_char`]
 /// into a [`StringFragment`].
-fn parse_fragment<'a, E>(input: &mut &'a str) -> PResult<StringFragment<'a>, E>
+fn parse_fragment<'a, E>(input: &mut &'a str) -> ModalResult<StringFragment<'a>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -236,7 +236,7 @@ where
 }
 
 /// Parse a string literal, including escaped characters such as `\n` and `\"`.
-pub fn string_lit<'a, E>(input: &mut &'a str) -> PResult<AnnExpr, E>
+pub fn string_lit<'a, E>(input: &mut &'a str) -> ModalResult<AnnExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -276,7 +276,7 @@ pub enum BoolExpr {
     VarParIdentifier(String),
 }
 
-pub fn bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BoolExpr, E> {
+pub fn bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BoolExpr, E> {
     alt((be_bool_literal, be_var_par_identifier)).parse_next(input)
 }
 #[test]
@@ -289,7 +289,7 @@ fn test_bool_expr() {
     );
 }
 
-fn be_bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BoolExpr, E> {
+fn be_bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BoolExpr, E> {
     let expr = bool_literal(input)?;
     Ok(BoolExpr::Bool(expr))
 }
@@ -304,7 +304,7 @@ fn test_bool_literal() {
     assert_eq!(input, ");");
 }
 
-fn be_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BoolExpr, E> {
+fn be_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BoolExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(BoolExpr::VarParIdentifier(id))
 }
@@ -336,7 +336,7 @@ pub enum IntExpr {
     VarParIdentifier(String),
 }
 
-pub fn int_expr<'a, E>(input: &mut &'a str) -> PResult<IntExpr, E>
+pub fn int_expr<'a, E>(input: &mut &'a str) -> ModalResult<IntExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -345,7 +345,7 @@ where
     Ok(expr)
 }
 
-fn ie_int_literal<'a, E>(input: &mut &'a str) -> PResult<IntExpr, E>
+fn ie_int_literal<'a, E>(input: &mut &'a str) -> ModalResult<IntExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -353,7 +353,7 @@ where
     Ok(IntExpr::Int(expr))
 }
 
-fn ie_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<IntExpr, E> {
+fn ie_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<IntExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(IntExpr::VarParIdentifier(id))
 }
@@ -385,14 +385,14 @@ pub enum FloatExpr {
     VarParIdentifier(String),
 }
 
-pub fn float_expr<'a, E>(input: &mut &'a str) -> PResult<FloatExpr, E>
+pub fn float_expr<'a, E>(input: &mut &'a str) -> ModalResult<FloatExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
     alt((fe_float_literal, fe_var_par_identifier)).parse_next(input)
 }
 
-fn fe_float_literal<'a, E>(input: &mut &'a str) -> PResult<FloatExpr, E>
+fn fe_float_literal<'a, E>(input: &mut &'a str) -> ModalResult<FloatExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -402,7 +402,7 @@ where
 
 fn fe_var_par_identifier<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<FloatExpr, E> {
+) -> ModalResult<FloatExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(FloatExpr::VarParIdentifier(id))
 }
@@ -434,7 +434,7 @@ pub enum SetExpr {
     VarParIdentifier(String),
 }
 
-pub fn set_expr<'a, E>(input: &mut &'a str) -> PResult<SetExpr, E>
+pub fn set_expr<'a, E>(input: &mut &'a str) -> ModalResult<SetExpr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -443,7 +443,7 @@ where
     alt((se_set_literal_expr, se_var_par_identifier)).parse_next(input)
 }
 
-fn se_set_literal_expr<'a, E>(input: &mut &'a str) -> PResult<SetExpr, E>
+fn se_set_literal_expr<'a, E>(input: &mut &'a str) -> ModalResult<SetExpr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -453,7 +453,7 @@ where
     Ok(SetExpr::Set(sl))
 }
 
-fn se_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<SetExpr, E> {
+fn se_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<SetExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(SetExpr::VarParIdentifier(id))
 }
@@ -492,7 +492,7 @@ pub enum Expr {
     ArrayOfSet(Vec<SetExpr>),
 }
 
-pub fn expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
+pub fn expr<'a, E>(input: &mut &'a str) -> ModalResult<Expr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -526,17 +526,17 @@ fn test_expr() {
     );
 }
 
-fn e_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E> {
+fn e_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Expr, E> {
     let id = var_par_identifier(input)?;
     Ok(Expr::VarParIdentifier(id))
 }
 
-fn e_bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E> {
+fn e_bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Expr, E> {
     let b = bool_literal(input)?;
     Ok(Expr::Bool(b))
 }
 
-fn e_int_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_int_expr<'a, E>(input: &mut &'a str) -> ModalResult<Expr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -544,7 +544,7 @@ where
     Ok(Expr::Int(int))
 }
 
-fn e_float_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_float_expr<'a, E>(input: &mut &'a str) -> ModalResult<Expr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -552,7 +552,7 @@ where
     Ok(Expr::Float(float))
 }
 
-fn e_set_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_set_expr<'a, E>(input: &mut &'a str) -> ModalResult<Expr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -562,12 +562,12 @@ where
     Ok(Expr::Set(set))
 }
 
-fn e_array_of_bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Expr, E> {
+fn e_array_of_bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Expr, E> {
     let v = array_of_bool_expr_literal(input)?;
     Ok(Expr::ArrayOfBool(v))
 }
 
-fn e_array_of_int_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_array_of_int_expr<'a, E>(input: &mut &'a str) -> ModalResult<Expr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -575,7 +575,7 @@ where
     Ok(Expr::ArrayOfInt(v))
 }
 
-fn e_array_of_float_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_array_of_float_expr<'a, E>(input: &mut &'a str) -> ModalResult<Expr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -583,7 +583,7 @@ where
     Ok(Expr::ArrayOfFloat(v))
 }
 
-fn e_array_of_set_expr<'a, E>(input: &mut &'a str) -> PResult<Expr, E>
+fn e_array_of_set_expr<'a, E>(input: &mut &'a str) -> ModalResult<Expr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -601,7 +601,7 @@ pub enum SetLiteralExpr {
     SetInts(Vec<IntExpr>),
 }
 
-fn set_literal_expr<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn set_literal_expr<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteralExpr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -616,7 +616,7 @@ where
     .parse_next(input)
 }
 
-fn sle_int_in_range<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn sle_int_in_range<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteralExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -628,7 +628,7 @@ where
     Ok(SetLiteralExpr::IntInRange(lb, ub))
 }
 
-fn sle_bounded_float<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn sle_bounded_float<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteralExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -641,7 +641,7 @@ where
 }
 
 // "{" <int-expr> "," ... "}"
-fn sle_set_of_ints<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn sle_set_of_ints<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteralExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -654,7 +654,7 @@ where
 }
 
 // "{" <float-expr> "," ... "}"
-fn sle_set_of_floats<'a, E>(input: &mut &'a str) -> PResult<SetLiteralExpr, E>
+fn sle_set_of_floats<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteralExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -674,7 +674,7 @@ pub enum SetLiteral {
     SetInts(Vec<i128>),
 }
 
-pub fn set_literal<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
+pub fn set_literal<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteral, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -689,7 +689,7 @@ where
     .parse_next(input)
 }
 
-fn sl_int_range<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
+fn sl_int_range<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteral, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -701,7 +701,7 @@ where
     Ok(SetLiteral::IntRange(lb, ub))
 }
 
-fn sl_bounded_float<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
+fn sl_bounded_float<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteral, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -714,7 +714,7 @@ where
 }
 
 // "{" <int-literal> "," ... "}"
-fn sl_set_of_ints<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
+fn sl_set_of_ints<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteral, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -727,7 +727,7 @@ where
 }
 
 // "{" <float-literal> "," ... "}"
-fn sl_set_of_floats<'a, E>(input: &mut &'a str) -> PResult<SetLiteral, E>
+fn sl_set_of_floats<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteral, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -747,7 +747,7 @@ pub enum ArrayOfBoolExpr {
 
 pub fn array_of_bool_expr<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<ArrayOfBoolExpr, E> {
+) -> ModalResult<ArrayOfBoolExpr, E> {
     let id = opt(var_par_identifier).parse_next(input)?;
     if let Some(id) = id {
         Ok(ArrayOfBoolExpr::VarParIdentifier(id))
@@ -759,7 +759,7 @@ pub fn array_of_bool_expr<'a, E: ParserError<&'a str>>(
 
 fn array_of_bool_expr_literal<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<Vec<BoolExpr>, E> {
+) -> ModalResult<Vec<BoolExpr>, E> {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
     let v = separated(0.., bool_expr, separator).parse_next(input)?;
@@ -797,7 +797,7 @@ fn test_array_of_bool_expr_literal2() {
 }
 pub fn array_of_bool_literal<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<Vec<bool>, E> {
+) -> ModalResult<Vec<bool>, E> {
     '['.parse_next(input)?;
     space_or_comment0(input)?;
     let al = separated(0.., bool_literal, separator).parse_next(input)?;
@@ -833,7 +833,7 @@ pub enum ArrayOfIntExpr {
     VarParIdentifier(String),
 }
 
-pub fn array_of_int_expr<'a, E>(input: &mut &'a str) -> PResult<ArrayOfIntExpr, E>
+pub fn array_of_int_expr<'a, E>(input: &mut &'a str) -> ModalResult<ArrayOfIntExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -846,7 +846,7 @@ where
     }
 }
 
-fn array_of_int_expr_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<IntExpr>, E>
+fn array_of_int_expr_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<IntExpr>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -858,7 +858,7 @@ where
     Ok(v)
 }
 
-pub fn array_of_int_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<i128>, E>
+pub fn array_of_int_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<i128>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -897,7 +897,7 @@ pub enum ArrayOfFloatExpr {
     VarParIdentifier(String),
 }
 
-pub fn array_of_float_expr<'a, E>(input: &mut &'a str) -> PResult<ArrayOfFloatExpr, E>
+pub fn array_of_float_expr<'a, E>(input: &mut &'a str) -> ModalResult<ArrayOfFloatExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -910,7 +910,7 @@ where
     }
 }
 
-fn array_of_float_expr_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<FloatExpr>, E>
+fn array_of_float_expr_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<FloatExpr>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -922,7 +922,7 @@ where
     Ok(v)
 }
 
-pub fn array_of_float_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<f64>, E>
+pub fn array_of_float_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<f64>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -961,7 +961,7 @@ pub enum ArrayOfSetExpr {
     VarParIdentifier(String),
 }
 
-pub fn array_of_set_expr<'a, E>(input: &mut &'a str) -> PResult<ArrayOfSetExpr, E>
+pub fn array_of_set_expr<'a, E>(input: &mut &'a str) -> ModalResult<ArrayOfSetExpr, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -976,7 +976,7 @@ where
     }
 }
 
-fn array_of_set_expr_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<SetExpr>, E>
+fn array_of_set_expr_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<SetExpr>, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -990,7 +990,7 @@ where
     Ok(v)
 }
 
-pub fn array_of_set_literal<'a, E>(input: &mut &'a str) -> PResult<Vec<SetLiteral>, E>
+pub fn array_of_set_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<SetLiteral>, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>

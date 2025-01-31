@@ -3,22 +3,22 @@ use winnow::{
     combinator::{alt, opt},
     error::ParserError,
     token::take_till,
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::statements::Stmt;
 
-pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<Stmt, E> {
+pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Stmt, E> {
     let s = space_or_comment0(input)?;
     Ok(Stmt::Comment(s.into()))
 }
-pub fn space_or_comment0<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+pub fn space_or_comment0<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<&'a str, E> {
     alt((comment, multispace0)).parse_next(input)
 }
-pub fn space_or_comment1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+pub fn space_or_comment1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<&'a str, E> {
     alt((comment, multispace1)).parse_next(input)
 }
-fn comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+fn comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<&'a str, E> {
     multispace0.parse_next(input)?;
     '%'.parse_next(input)?;
     let string = take_till(0.., |c| c == '\n').parse_next(input)?;
@@ -44,7 +44,7 @@ fn test_comment2() {
 }
 
 // Separator comma that allows for white space and comments
-pub fn separator<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<(), E> {
+pub fn separator<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<(), E> {
     space_or_comment0(input)?;
     ','.parse_next(input)?;
     space_or_comment0(input)?;

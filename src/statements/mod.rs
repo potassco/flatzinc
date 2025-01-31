@@ -1,7 +1,7 @@
 use winnow::{
     combinator::alt,
     error::{AddContext, FromExternalError, ParserError, StrContext, TreeError},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::{
@@ -53,7 +53,7 @@ where
     ))
 }
 
-fn stmt_predicate<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_predicate<'a, E>(input: &mut &'a str) -> ModalResult<Stmt, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -64,7 +64,7 @@ where
     Ok(Stmt::Predicate(item))
 }
 
-fn stmt_parameter<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_parameter<'a, E>(input: &mut &'a str) -> ModalResult<Stmt, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -74,7 +74,7 @@ where
     Ok(Stmt::Parameter(item))
 }
 
-fn stmt_variable<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_variable<'a, E>(input: &mut &'a str) -> ModalResult<Stmt, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -84,7 +84,7 @@ where
     Ok(Stmt::Variable(item))
 }
 
-fn stmt_constraint<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_constraint<'a, E>(input: &mut &'a str) -> ModalResult<Stmt, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -95,7 +95,7 @@ where
     Ok(Stmt::Constraint(item))
 }
 
-fn stmt_solve_item<'a, E>(input: &mut &'a str) -> PResult<Stmt, E>
+fn stmt_solve_item<'a, E>(input: &mut &'a str) -> ModalResult<Stmt, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>

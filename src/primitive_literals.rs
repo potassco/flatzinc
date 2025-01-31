@@ -2,12 +2,12 @@ use winnow::{
     combinator::{alt, opt},
     error::{ErrorKind, FromExternalError, ParserError},
     token::{literal, one_of, take_while},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::comments::space_or_comment0;
 
-pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
+pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<String, E> {
     let first = one_of([
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
         's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
@@ -27,7 +27,7 @@ pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<S
     }
 }
 
-pub fn var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
+pub fn var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<String, E> {
     let first = one_of([
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
         's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
@@ -168,11 +168,11 @@ fn is_identifier_rest(c: char) -> bool {
     )
 }
 
-pub fn bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<bool, E> {
+pub fn bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<bool, E> {
     alt((literal("true").value(true), literal("false").value(false))).parse_next(input)
 }
 
-pub fn int_literal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
+pub fn int_literal<'a, E>(input: &mut &'a str) -> ModalResult<i128, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -185,7 +185,7 @@ fn test_int_literal() {
     assert_eq!(int_literal::<ContextError>(&mut input), Ok(1));
 }
 
-fn decimal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
+fn decimal<'a, E>(input: &mut &'a str) -> ModalResult<i128, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -227,7 +227,7 @@ fn test_decimal3() {
     assert!(decimal::<ContextError>(&mut input).is_err());
 }
 
-fn hexadecimal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
+fn hexadecimal<'a, E>(input: &mut &'a str) -> ModalResult<i128, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -250,7 +250,7 @@ fn test_hex() {
     assert_eq!(hexadecimal::<ContextError>(&mut input), Ok(-47));
 }
 
-fn octal<'a, E>(input: &mut &'a str) -> PResult<i128, E>
+fn octal<'a, E>(input: &mut &'a str) -> ModalResult<i128, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -287,7 +287,7 @@ fn is_dec_digit(c: char) -> bool {
     c.is_ascii_digit()
 }
 
-pub fn float_literal<'a, E>(input: &mut &'a str) -> PResult<f64, E>
+pub fn float_literal<'a, E>(input: &mut &'a str) -> ModalResult<f64, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -319,7 +319,7 @@ fn test_float_literal() {
     );
 }
 
-fn fz_float<'a, E>(input: &mut &'a str) -> PResult<f64, E>
+fn fz_float<'a, E>(input: &mut &'a str) -> ModalResult<f64, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -327,7 +327,7 @@ where
     winnow::ascii::float.parse_next(&mut fl)
 }
 
-fn fz_float1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+fn fz_float1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<&'a str, E> {
     let sign = opt('-');
 
     let pre = take_while(1.., is_dec_digit);
@@ -337,7 +337,7 @@ fn fz_float1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a st
     (sign, pre, '.', post, rest).take().parse_next(input)
 }
 
-fn fz_float2<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a str, E> {
+fn fz_float2<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<&'a str, E> {
     let sign = opt('-');
     let digits = take_while(1.., is_dec_digit);
     let e = alt(('e', 'E'));
@@ -346,7 +346,7 @@ fn fz_float2<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<&'a st
     (sign, digits, e, sign2, digits2).take().parse_next(input)
 }
 
-fn bpart<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E> {
+fn bpart<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<String, E> {
     let e = alt(('e', 'E')).parse_next(input)?;
     let sign = opt(alt(("-", "+"))).parse_next(input)?;
     let digits = take_while(1.., is_dec_digit).parse_next(input)?;
@@ -360,7 +360,7 @@ fn bpart<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<String, E>
 #[derive(PartialEq, Clone, Debug)]
 pub struct IndexSet(pub i128);
 
-pub fn index_set<'a, E>(input: &mut &'a str) -> PResult<IndexSet, E>
+pub fn index_set<'a, E>(input: &mut &'a str) -> ModalResult<IndexSet, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {

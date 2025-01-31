@@ -1,7 +1,7 @@
 use winnow::{
     combinator::alt,
     error::{FromExternalError, ParserError},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::{
@@ -18,18 +18,18 @@ pub enum BasicParType {
 
 pub fn basic_par_type<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<BasicParType, E> {
+) -> ModalResult<BasicParType, E> {
     alt((bpt_basic_type, bpt_set_of_int)).parse_next(input)
 }
 
-fn bpt_basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicParType, E> {
+fn bpt_basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BasicParType, E> {
     let bt = basic_type(input)?;
     Ok(BasicParType::BasicType(bt))
 }
 
 // "set" "of" "int"
 // Moved this be a basic-var-type basic-par-type
-fn bpt_set_of_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicParType, E> {
+fn bpt_set_of_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BasicParType, E> {
     "set".parse_next(input)?;
     space_or_comment1(input)?;
     "of".parse_next(input)?;
@@ -47,7 +47,7 @@ pub enum ParType {
     },
 }
 
-pub fn par_type<'a, E>(input: &mut &'a str) -> PResult<ParType, E>
+pub fn par_type<'a, E>(input: &mut &'a str) -> ModalResult<ParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -67,12 +67,12 @@ fn test_par_type() {
     );
 }
 
-fn pt_basic_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<ParType, E> {
+fn pt_basic_par_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<ParType, E> {
     let pt = basic_par_type(input)?;
     Ok(ParType::BasicParType(pt))
 }
 
-fn array_par_type<'a, E>(input: &mut &'a str) -> PResult<ParType, E>
+fn array_par_type<'a, E>(input: &mut &'a str) -> ModalResult<ParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {

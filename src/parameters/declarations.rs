@@ -1,6 +1,6 @@
 use winnow::{
     error::{FromExternalError, ParserError},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::{
@@ -54,7 +54,7 @@ pub enum ParDeclItem {
     },
 }
 
-pub fn par_decl_item<'a, E>(input: &mut &'a str) -> PResult<ParDeclItem, E>
+pub fn par_decl_item<'a, E>(input: &mut &'a str) -> ModalResult<ParDeclItem, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>

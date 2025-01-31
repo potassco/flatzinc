@@ -6,7 +6,7 @@ use crate::{
 use winnow::{
     combinator::{cut_err, separated},
     error::{AddContext, FromExternalError, ParserError, StrContext},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 #[derive(PartialEq, Clone, Debug)]
@@ -16,7 +16,7 @@ pub struct ConstraintItem {
     pub annos: Vec<Annotation>,
 }
 
-pub fn constraint_item<'a, E>(input: &mut &'a str) -> PResult<ConstraintItem, E>
+pub fn constraint_item<'a, E>(input: &mut &'a str) -> ModalResult<ConstraintItem, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -28,7 +28,7 @@ where
     cut_err(constraint_tail.context(StrContext::Label("Error while parsing constraint")))
         .parse_next(input)
 }
-pub fn constraint_tail<'a, E>(input: &mut &'a str) -> PResult<ConstraintItem, E>
+pub fn constraint_tail<'a, E>(input: &mut &'a str) -> ModalResult<ConstraintItem, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>

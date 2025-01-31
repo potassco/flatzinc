@@ -1,7 +1,7 @@
 use winnow::{
     combinator::opt,
     error::{FromExternalError, ParserError},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::{
@@ -137,7 +137,7 @@ pub enum VarDeclItem {
     },
 }
 
-pub fn var_decl_item<'a, E>(input: &mut &'a str) -> PResult<VarDeclItem, E>
+pub fn var_decl_item<'a, E>(input: &mut &'a str) -> ModalResult<VarDeclItem, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -264,7 +264,7 @@ fn test_var_decl_item_5() {
     );
 }
 
-fn vdi_var<'a, E>(input: &mut &'a str) -> PResult<VarDeclItem, E>
+fn vdi_var<'a, E>(input: &mut &'a str) -> ModalResult<VarDeclItem, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -434,9 +434,9 @@ where
 /// Parse the right hand side of a variable declaration if there is an assignment
 fn parse_rhs<'a, O, E>(
     assign: bool,
-    parser: impl Fn(&mut &'a str) -> PResult<O, E>,
+    parser: impl Fn(&mut &'a str) -> ModalResult<O, E>,
     input: &mut &'a str,
-) -> PResult<Option<O>, E> {
+) -> ModalResult<Option<O>, E> {
     Ok(if assign {
         let expr = parser(input)?;
         Some(expr)

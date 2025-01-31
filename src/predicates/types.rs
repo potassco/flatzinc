@@ -1,7 +1,7 @@
 use winnow::{
     combinator::alt,
     error::{FromExternalError, ParserError},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::{
@@ -27,7 +27,7 @@ pub enum BasicPredParType {
     SubSetOfIntRange(i128, i128),
 }
 
-pub fn basic_pred_par_type<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+pub fn basic_pred_par_type<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -60,12 +60,12 @@ fn test_basic_pred_par_type() {
 
 fn bppt_basic_par_type<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<BasicPredParType, E> {
+) -> ModalResult<BasicPredParType, E> {
     let bpt = basic_par_type(input)?;
     Ok(BasicPredParType::BasicParType(bpt))
 }
 
-fn bppt_basic_var_type<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+fn bppt_basic_var_type<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -77,7 +77,7 @@ where
 
 fn bppt_var_set_of_int<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
-) -> PResult<BasicPredParType, E> {
+) -> ModalResult<BasicPredParType, E> {
     space_or_comment0(input)?;
     "var".parse_next(input)?;
     space_or_comment1(input)?;
@@ -90,7 +90,7 @@ fn bppt_var_set_of_int<'a, E: ParserError<&'a str>>(
     Ok(BasicPredParType::VarSetOfInt)
 }
 
-fn bppt_int_in_range<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+fn bppt_int_in_range<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -98,7 +98,7 @@ where
     Ok(BasicPredParType::IntInRange(lb, ub))
 }
 
-fn bppt_int_in_set<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+fn bppt_int_in_set<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -106,7 +106,7 @@ where
     Ok(BasicPredParType::IntInSet(set))
 }
 
-fn bppt_bounded_float<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+fn bppt_bounded_float<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -114,7 +114,7 @@ where
     Ok(BasicPredParType::BoundedFloat(lb, ub))
 }
 
-fn bppt_float_in_set<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+fn bppt_float_in_set<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -122,7 +122,7 @@ where
     Ok(BasicPredParType::FloatInSet(set))
 }
 
-fn bppt_subset_of_int_range<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+fn bppt_subset_of_int_range<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -130,7 +130,7 @@ where
     Ok(BasicPredParType::SubSetOfIntRange(lb, ub))
 }
 
-fn bppt_subset_of_int_set<'a, E>(input: &mut &'a str) -> PResult<BasicPredParType, E>
+fn bppt_subset_of_int_set<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -147,7 +147,7 @@ pub enum PredParType {
     },
 }
 
-pub fn pred_par_type<'a, E>(input: &mut &'a str) -> PResult<PredParType, E>
+pub fn pred_par_type<'a, E>(input: &mut &'a str) -> ModalResult<PredParType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -192,7 +192,7 @@ fn test_pred_par_type_3() {
         ))
     );
 }
-fn ppt_basic_pred_par_type<'a, E>(input: &mut &'a str) -> PResult<PredParType, E>
+fn ppt_basic_pred_par_type<'a, E>(input: &mut &'a str) -> ModalResult<PredParType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -202,7 +202,7 @@ where
     Ok(PredParType::Basic(bppt))
 }
 
-fn array_of_pred_index_set<'a, E>(input: &mut &'a str) -> PResult<PredParType, E>
+fn array_of_pred_index_set<'a, E>(input: &mut &'a str) -> ModalResult<PredParType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -229,19 +229,19 @@ pub enum PredIndexSet {
     Int,
 }
 
-fn pred_index_set<'a, E>(input: &mut &'a str) -> PResult<PredIndexSet, E>
+fn pred_index_set<'a, E>(input: &mut &'a str) -> ModalResult<PredIndexSet, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     alt((pis_int, pis_index_set)).parse_next(input)
 }
 
-fn pis_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<PredIndexSet, E> {
+fn pis_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<PredIndexSet, E> {
     "int".parse_next(input)?;
     Ok(PredIndexSet::Int)
 }
 
-fn pis_index_set<'a, E>(input: &mut &'a str) -> PResult<PredIndexSet, E>
+fn pis_index_set<'a, E>(input: &mut &'a str) -> ModalResult<PredIndexSet, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {

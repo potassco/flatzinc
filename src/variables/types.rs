@@ -2,7 +2,7 @@ use winnow::{
     combinator::alt,
     combinator::separated,
     error::{FromExternalError, ParserError},
-    PResult, Parser,
+    ModalResult, Parser,
 };
 
 use crate::{
@@ -20,7 +20,7 @@ pub enum VarType {
     },
 }
 
-pub fn var_type<'a, E>(input: &mut &'a str) -> PResult<VarType, E>
+pub fn var_type<'a, E>(input: &mut &'a str) -> ModalResult<VarType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -29,7 +29,7 @@ where
     alt((vt_basic_var_type, array_var_type)).parse_next(input)
 }
 
-fn vt_basic_var_type<'a, E>(input: &mut &'a str) -> PResult<VarType, E>
+fn vt_basic_var_type<'a, E>(input: &mut &'a str) -> ModalResult<VarType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -39,7 +39,7 @@ where
     Ok(VarType::BasicVarType(vt))
 }
 
-fn array_var_type<'a, E>(input: &mut &'a str) -> PResult<VarType, E>
+fn array_var_type<'a, E>(input: &mut &'a str) -> ModalResult<VarType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -69,7 +69,7 @@ pub enum BasicVarType {
     SubSetOfIntRange(i128, i128),
 }
 
-pub fn basic_var_type<'a, E>(input: &mut &'a str) -> PResult<BasicVarType, E>
+pub fn basic_var_type<'a, E>(input: &mut &'a str) -> ModalResult<BasicVarType, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>
@@ -90,12 +90,12 @@ where
     Ok(vt)
 }
 
-fn bvt_basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> PResult<BasicVarType, E> {
+fn bvt_basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BasicVarType, E> {
     let bt = basic_type(input)?;
     Ok(BasicVarType::BasicType(bt))
 }
 
-fn bvt_int_in_range<'a, E>(input: &mut &'a str) -> PResult<BasicVarType, E>
+fn bvt_int_in_range<'a, E>(input: &mut &'a str) -> ModalResult<BasicVarType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -103,7 +103,7 @@ where
     Ok(BasicVarType::IntInRange(lb, ub))
 }
 
-fn bvt_int_in_set<'a, E>(input: &mut &'a str) -> PResult<BasicVarType, E>
+fn bvt_int_in_set<'a, E>(input: &mut &'a str) -> ModalResult<BasicVarType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -111,7 +111,7 @@ where
     Ok(BasicVarType::IntInSet(set))
 }
 
-fn bvt_bounded_float<'a, E>(input: &mut &'a str) -> PResult<BasicVarType, E>
+fn bvt_bounded_float<'a, E>(input: &mut &'a str) -> ModalResult<BasicVarType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -119,7 +119,7 @@ where
     Ok(BasicVarType::BoundedFloat(lb, ub))
 }
 
-fn bvt_subset_of_int_range<'a, E>(input: &mut &'a str) -> PResult<BasicVarType, E>
+fn bvt_subset_of_int_range<'a, E>(input: &mut &'a str) -> ModalResult<BasicVarType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -127,7 +127,7 @@ where
     Ok(BasicVarType::SubSetOfIntRange(lb, ub))
 }
 
-fn bvt_subset_of_int_set<'a, E>(input: &mut &'a str) -> PResult<BasicVarType, E>
+fn bvt_subset_of_int_set<'a, E>(input: &mut &'a str) -> ModalResult<BasicVarType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -135,7 +135,7 @@ where
     Ok(BasicVarType::SubSetOfIntSet(set))
 }
 
-pub fn int_in_range<'a, E>(input: &mut &'a str) -> PResult<(i128, i128), E>
+pub fn int_in_range<'a, E>(input: &mut &'a str) -> ModalResult<(i128, i128), E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -147,7 +147,7 @@ where
     Ok((lb, ub))
 }
 
-pub fn bounded_float<'a, E>(input: &mut &'a str) -> PResult<(f64, f64), E>
+pub fn bounded_float<'a, E>(input: &mut &'a str) -> ModalResult<(f64, f64), E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -160,7 +160,7 @@ where
 }
 
 // "{" <float-literal> "," ... "}"
-pub fn float_in_set<'a, E>(input: &mut &'a str) -> PResult<Vec<f64>, E>
+pub fn float_in_set<'a, E>(input: &mut &'a str) -> ModalResult<Vec<f64>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
 {
@@ -173,7 +173,7 @@ where
 }
 
 // "set" "of" <int_literal> ".." <int_literal>
-pub fn subset_of_int_range<'a, E>(input: &mut &'a str) -> PResult<(i128, i128), E>
+pub fn subset_of_int_range<'a, E>(input: &mut &'a str) -> ModalResult<(i128, i128), E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -190,7 +190,7 @@ where
 }
 
 // "set" "of" "{" [ <int-literal> "," ... ] "}"
-pub fn subset_of_int_set<'a, E>(input: &mut &'a str) -> PResult<Vec<i128>, E>
+pub fn subset_of_int_set<'a, E>(input: &mut &'a str) -> ModalResult<Vec<i128>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
@@ -207,7 +207,7 @@ where
 }
 
 // "{" <int-literal> "," ... "}"
-pub fn int_in_set<'a, E>(input: &mut &'a str) -> PResult<Vec<i128>, E>
+pub fn int_in_set<'a, E>(input: &mut &'a str) -> ModalResult<Vec<i128>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
