@@ -151,21 +151,18 @@ where
             if let Some(x) = std::char::from_u32(u) {
                 Ok(x)
             } else {
-                Err(ParserError::from_error_kind(
-                    input,
-                    winnow::error::ErrorKind::Assert,
+                Err(ParserError::from_input(
+                    input
                 ))
             }
         } else {
-            Err(ParserError::from_error_kind(
+            Err(ParserError::from_input(
                 input,
-                winnow::error::ErrorKind::Assert,
             ))
         }
     } else {
-        Err(ParserError::from_error_kind(
+        Err(ParserError::from_input(
             input,
-            winnow::error::ErrorKind::Assert,
         ))
     }
 }
