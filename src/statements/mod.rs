@@ -1,7 +1,7 @@
 use winnow::{
     combinator::alt,
     error::{AddContext, FromExternalError, ParserError, StrContext, TreeError},
-    ModalResult, Parser,
+    ModalParser, ModalResult, Parser,
 };
 
 use crate::{
@@ -36,7 +36,7 @@ impl std::str::FromStr for Stmt {
     }
 }
 
-fn statement<'a, E>() -> impl Parser<&'a str, Stmt, E>
+fn statement<'a, E>() -> impl ModalParser<&'a str, Stmt, E>
 where
     E: ParserError<&'a str>
         + FromExternalError<&'a str, std::num::ParseIntError>

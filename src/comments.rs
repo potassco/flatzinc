@@ -12,10 +12,14 @@ pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> Mod
     let s = space_or_comment0(input)?;
     Ok(Stmt::Comment(s.into()))
 }
-pub fn space_or_comment0<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<&'a str, E> {
+pub fn space_or_comment0<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<&'a str, E> {
     alt((comment, multispace0)).parse_next(input)
 }
-pub fn space_or_comment1<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<&'a str, E> {
+pub fn space_or_comment1<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<&'a str, E> {
     alt((comment, multispace1)).parse_next(input)
 }
 fn comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<&'a str, E> {

@@ -90,7 +90,9 @@ where
     Ok(vt)
 }
 
-fn bvt_basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BasicVarType, E> {
+fn bvt_basic_type<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<BasicVarType, E> {
     let bt = basic_type(input)?;
     Ok(BasicVarType::BasicType(bt))
 }

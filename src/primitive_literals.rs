@@ -1,6 +1,6 @@
 use winnow::{
     combinator::{alt, opt},
-    error::{ErrorKind, FromExternalError, ParserError},
+    error::{FromExternalError, ParserError},
     token::{literal, one_of, take_while},
     ModalResult, Parser,
 };
@@ -18,15 +18,15 @@ pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResu
     let combine = format!("{}{}", first, rest);
     // check for reserved key words
     if is_reserved_key_word(&combine) {
-        Err(winnow::error::ErrMode::Cut(ParserError::from_input(
-            input,
-        )))
+        Err(winnow::error::ErrMode::Cut(ParserError::from_input(input)))
     } else {
         Ok(combine)
     }
 }
 
-pub fn var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<String, E> {
+pub fn var_par_identifier<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<String, E> {
     let first = one_of([
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
         's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
@@ -38,9 +38,9 @@ pub fn var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> M
     let combine = format!("{}{}", first, rest);
     // check for reserved key words
     if is_reserved_key_word(&combine) {
-        Err(winnow::error::ErrMode::Backtrack(
-            ParserError::from_input(input),
-        ))
+        Err(winnow::error::ErrMode::Backtrack(ParserError::from_input(
+            input,
+        )))
     } else {
         Ok(combine)
     }
@@ -192,7 +192,7 @@ where
     let int = take_while(1.., is_dec_digit)
         .parse_next(input)?
         .parse::<i128>()
-        .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
+        .map_err(|e| winnow::error::ErrMode::from_external_error(input, e))?;
 
     if negation.is_some() {
         Ok(-int)
@@ -234,7 +234,7 @@ where
     "0x".parse_next(input)?;
     let int = take_while(1.., is_hex_digit).parse_next(input)?;
     let int = i128::from_str_radix(int, 16)
-        .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
+        .map_err(|e| winnow::error::ErrMode::from_external_error(input, e))?;
 
     if negation.is_some() {
         Ok(-int)
@@ -257,7 +257,7 @@ where
     "0o".parse_next(input)?;
     let int = take_while(1.., is_oct_digit).parse_next(input)?;
     let int = i128::from_str_radix(int, 8)
-        .map_err(|e| winnow::error::ErrMode::from_external_error(input, ErrorKind::Verify, e))?;
+        .map_err(|e| winnow::error::ErrMode::from_external_error(input, e))?;
     if negation.is_some() {
         Ok(-int)
     } else {

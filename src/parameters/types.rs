@@ -22,14 +22,18 @@ pub fn basic_par_type<'a, E: ParserError<&'a str>>(
     alt((bpt_basic_type, bpt_set_of_int)).parse_next(input)
 }
 
-fn bpt_basic_type<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BasicParType, E> {
+fn bpt_basic_type<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<BasicParType, E> {
     let bt = basic_type(input)?;
     Ok(BasicParType::BasicType(bt))
 }
 
 // "set" "of" "int"
 // Moved this be a basic-var-type basic-par-type
-fn bpt_set_of_int<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BasicParType, E> {
+fn bpt_set_of_int<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<BasicParType, E> {
     "set".parse_next(input)?;
     space_or_comment1(input)?;
     "of".parse_next(input)?;

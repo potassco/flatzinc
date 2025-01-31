@@ -151,19 +151,13 @@ where
             if let Some(x) = std::char::from_u32(u) {
                 Ok(x)
             } else {
-                Err(ParserError::from_input(
-                    input
-                ))
+                Err(ParserError::from_input(input))
             }
         } else {
-            Err(ParserError::from_input(
-                input,
-            ))
+            Err(ParserError::from_input(input))
         }
     } else {
-        Err(ParserError::from_input(
-            input,
-        ))
+        Err(ParserError::from_input(input))
     }
 }
 
@@ -301,7 +295,9 @@ fn test_bool_literal() {
     assert_eq!(input, ");");
 }
 
-fn be_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BoolExpr, E> {
+fn be_var_par_identifier<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<BoolExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(BoolExpr::VarParIdentifier(id))
 }
@@ -350,7 +346,9 @@ where
     Ok(IntExpr::Int(expr))
 }
 
-fn ie_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<IntExpr, E> {
+fn ie_var_par_identifier<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<IntExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(IntExpr::VarParIdentifier(id))
 }
@@ -450,7 +448,9 @@ where
     Ok(SetExpr::Set(sl))
 }
 
-fn se_var_par_identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<SetExpr, E> {
+fn se_var_par_identifier<'a, E: ParserError<&'a str>>(
+    input: &mut &'a str,
+) -> ModalResult<SetExpr, E> {
     let id = var_par_identifier(input)?;
     Ok(SetExpr::VarParIdentifier(id))
 }
