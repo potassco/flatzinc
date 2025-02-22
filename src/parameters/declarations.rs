@@ -15,43 +15,20 @@ use crate::{
 };
 
 #[derive(PartialEq, Clone, Debug)]
-pub enum ParDeclItem {
-    Bool {
-        id: String,
-        bool: bool,
-    },
-    Int {
-        id: String,
-        int: i128,
-    },
-    Float {
-        id: String,
-        float: f64,
-    },
-    SetOfInt {
-        id: String,
-        set_literal: SetLiteral,
-    },
-    ArrayOfBool {
-        ix: IndexSet,
-        id: String,
-        v: Vec<bool>,
-    },
-    ArrayOfInt {
-        ix: IndexSet,
-        id: String,
-        v: Vec<i128>,
-    },
-    ArrayOfFloat {
-        ix: IndexSet,
-        id: String,
-        v: Vec<f64>,
-    },
-    ArrayOfSet {
-        ix: IndexSet,
-        id: String,
-        v: Vec<SetLiteral>,
-    },
+pub struct ParDeclItem {
+    id: String,
+    expr: ParDeclExpr,
+}
+#[derive(PartialEq, Clone, Debug)]
+pub enum ParDeclExpr {
+    Bool(bool),
+    Int(i128),
+    Float(f64),
+    SetOfInt(SetLiteral),
+    ArrayOfBool { ix: IndexSet, v: Vec<bool> },
+    ArrayOfInt { ix: IndexSet, v: Vec<i128> },
+    ArrayOfFloat { ix: IndexSet, v: Vec<f64> },
+    ArrayOfSet { ix: IndexSet, v: Vec<SetLiteral> },
 }
 
 pub fn par_decl_item<'a, E>(input: &mut &'a str) -> ModalResult<ParDeclItem, E>
@@ -77,21 +54,30 @@ where
                     space_or_comment0(input)?;
                     ';'.parse_next(input)?;
                     space_or_comment0(input)?;
-                    Ok(ParDeclItem::Bool { id, bool })
+                    Ok(ParDeclItem {
+                        id,
+                        expr: ParDeclExpr::Bool(bool),
+                    })
                 }
                 BasicType::Int => {
                     let int = int_literal(input)?;
                     space_or_comment0(input)?;
                     ';'.parse_next(input)?;
                     space_or_comment0(input)?;
-                    Ok(ParDeclItem::Int { id, int })
+                    Ok(ParDeclItem {
+                        id,
+                        expr: ParDeclExpr::Int(int),
+                    })
                 }
                 BasicType::Float => {
                     let float = float_literal(input)?;
                     space_or_comment0(input)?;
                     ';'.parse_next(input)?;
                     space_or_comment0(input)?;
-                    Ok(ParDeclItem::Float { id, float })
+                    Ok(ParDeclItem {
+                        id,
+                        expr: ParDeclExpr::Float(float),
+                    })
                 }
             },
             BasicParType::SetOfInt => {
@@ -99,7 +85,10 @@ where
                 space_or_comment0(input)?;
                 ';'.parse_next(input)?;
                 space_or_comment0(input)?;
-                Ok(ParDeclItem::SetOfInt { id, set_literal })
+                Ok(ParDeclItem {
+                    id,
+                    expr: ParDeclExpr::SetOfInt(set_literal),
+                })
             }
         },
         ParType::Array { ix, par_type } => match par_type {
@@ -109,21 +98,30 @@ where
                     space_or_comment0(input)?;
                     ';'.parse_next(input)?;
                     space_or_comment0(input)?;
-                    Ok(ParDeclItem::ArrayOfBool { ix, id, v })
+                    Ok(ParDeclItem {
+                        id,
+                        expr: ParDeclExpr::ArrayOfBool { ix, v },
+                    })
                 }
                 BasicType::Int => {
                     let v = array_of_int_literal(input)?;
                     space_or_comment0(input)?;
                     ';'.parse_next(input)?;
                     space_or_comment0(input)?;
-                    Ok(ParDeclItem::ArrayOfInt { ix, id, v })
+                    Ok(ParDeclItem {
+                        id,
+                        expr: ParDeclExpr::ArrayOfInt { ix, v },
+                    })
                 }
                 BasicType::Float => {
                     let v = array_of_float_literal(input)?;
                     space_or_comment0(input)?;
                     ';'.parse_next(input)?;
                     space_or_comment0(input)?;
-                    Ok(ParDeclItem::ArrayOfFloat { ix, id, v })
+                    Ok(ParDeclItem {
+                        id,
+                        expr: ParDeclExpr::ArrayOfFloat { ix, v },
+                    })
                 }
             },
             BasicParType::SetOfInt => {
@@ -131,7 +129,10 @@ where
                 space_or_comment0(input)?;
                 ';'.parse_next(input)?;
                 space_or_comment0(input)?;
-                Ok(ParDeclItem::ArrayOfSet { ix, id, v })
+                Ok(ParDeclItem {
+                    id,
+                    expr: ParDeclExpr::ArrayOfSet { ix, v },
+                })
             }
         },
     }
@@ -143,10 +144,12 @@ fn test_par_decl_item_1() {
     let mut input = "array [1..3] of  float: X_139 = [1.0,1.0,1.0];";
     assert_eq!(
         par_decl_item::<ContextError>(&mut input),
-        Ok(ParDeclItem::ArrayOfFloat {
-            ix: IndexSet(3),
+        Ok(ParDeclItem {
             id: "X_139".to_string(),
-            v: vec![1.0, 1.0, 1.0]
+            expr: ParDeclExpr::ArrayOfFloat {
+                ix: IndexSet(3),
+                v: vec![1.0, 1.0, 1.0]
+            }
         })
     );
 }
@@ -165,14 +168,17 @@ fn test_par_decl_item_3() {
     let mut input = "array [1..3] of set of int : h = [{42,17},1..5,{}];";
     assert_eq!(
         par_decl_item::<ContextError>(&mut input),
-        Ok(ParDeclItem::ArrayOfSet {
-            ix: IndexSet(3),
+        Ok(ParDeclItem {
             id: "h".to_string(),
-            v: vec![
-                SetLiteral::SetInts(vec![42, 17]),
-                SetLiteral::IntRange(1, 5),
-                SetLiteral::SetInts(vec![])
-            ]
+            expr: ParDeclExpr::ArrayOfSet {
+                ix: IndexSet(3),
+
+                v: vec![
+                    SetLiteral::SetInts(vec![42, 17]),
+                    SetLiteral::IntRange(1, 5),
+                    SetLiteral::SetInts(vec![])
+                ]
+            }
         })
     );
 }
