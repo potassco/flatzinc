@@ -1,17 +1,17 @@
 use winnow::{
+    ModalParser, ModalResult, Parser,
     combinator::alt,
     error::{AddContext, FromExternalError, ParserError, StrContext, TreeError},
-    ModalParser, ModalResult, Parser,
 };
 
 use crate::{
     comments::space_or_comment,
-    constraints::{constraint_item, ConstraintItem},
+    constraints::{ConstraintItem, constraint_item},
     parameters::declarations as parameter_declarations,
     parameters::declarations::ParDeclItem,
     predicates::declarations as predicate_declarations,
     predicates::declarations::PredicateItem,
-    solve_items::{solve_item, SolveItem},
+    solve_items::{SolveItem, solve_item},
     variables::declarations as variable_declarations,
     variables::declarations::VarDeclItem,
 };

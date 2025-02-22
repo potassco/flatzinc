@@ -1,16 +1,16 @@
 use winnow::{
+    ModalResult, Parser,
     combinator::alt,
     error::{FromExternalError, ParserError},
-    ModalResult, Parser,
 };
 
 use crate::{
     comments::{space_or_comment0, space_or_comment1},
-    parameters::types::{basic_par_type, BasicParType},
+    parameters::types::{BasicParType, basic_par_type},
     primitive_literals::index_set,
     variables::types::{
-        basic_var_type, bounded_float, float_in_set, int_in_range, int_in_set, subset_of_int_range,
-        subset_of_int_set, BasicVarType,
+        BasicVarType, basic_var_type, bounded_float, float_in_set, int_in_range, int_in_set,
+        subset_of_int_range, subset_of_int_set,
     },
 };
 

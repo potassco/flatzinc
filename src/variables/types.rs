@@ -1,14 +1,14 @@
 use winnow::{
+    ModalResult, Parser,
     combinator::alt,
     combinator::separated,
     error::{FromExternalError, ParserError},
-    ModalResult, Parser,
 };
 
 use crate::{
-    basic_types::{basic_type, BasicType},
+    basic_types::{BasicType, basic_type},
     comments::{separator, space_or_comment0, space_or_comment1},
-    primitive_literals::{float_literal, index_set, int_literal, IndexSet},
+    primitive_literals::{IndexSet, float_literal, index_set, int_literal},
 };
 
 #[derive(PartialEq, Clone, Debug)]

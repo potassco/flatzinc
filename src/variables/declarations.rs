@@ -1,19 +1,19 @@
 use winnow::{
+    ModalResult, Parser,
     combinator::opt,
     error::{FromExternalError, ParserError},
-    ModalResult, Parser,
 };
 
 use crate::{
     basic_types::BasicType,
     comments::space_or_comment0,
     expressions::{
-        annotations, array_of_bool_expr, array_of_float_expr, array_of_int_expr, array_of_set_expr,
-        bool_expr, float_expr, int_expr, set_expr, Annotations, ArrayOfBoolExpr, ArrayOfFloatExpr,
-        ArrayOfIntExpr, ArrayOfSetExpr, BoolExpr, FloatExpr, IntExpr, SetExpr,
+        Annotations, ArrayOfBoolExpr, ArrayOfFloatExpr, ArrayOfIntExpr, ArrayOfSetExpr, BoolExpr,
+        FloatExpr, IntExpr, SetExpr, annotations, array_of_bool_expr, array_of_float_expr,
+        array_of_int_expr, array_of_set_expr, bool_expr, float_expr, int_expr, set_expr,
     },
-    primitive_literals::{var_par_identifier, IndexSet},
-    variables::types::{var_type, BasicVarType, VarType},
+    primitive_literals::{IndexSet, var_par_identifier},
+    variables::types::{BasicVarType, VarType, var_type},
 };
 
 #[derive(PartialEq, Clone, Debug)]

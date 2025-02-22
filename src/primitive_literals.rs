@@ -1,8 +1,8 @@
 use winnow::{
+    ModalResult, Parser,
     combinator::{alt, opt},
     error::{FromExternalError, ParserError},
     token::{literal, one_of, take_while},
-    ModalResult, Parser,
 };
 
 use crate::comments::space_or_comment0;

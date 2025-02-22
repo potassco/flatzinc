@@ -1,17 +1,17 @@
 use winnow::{
-    error::{FromExternalError, ParserError},
     ModalResult, Parser,
+    error::{FromExternalError, ParserError},
 };
 
 use crate::{
     basic_types::BasicType,
     comments::space_or_comment0,
     expressions::{
-        array_of_bool_literal, array_of_float_literal, array_of_int_literal, array_of_set_literal,
-        set_literal, SetLiteral,
+        SetLiteral, array_of_bool_literal, array_of_float_literal, array_of_int_literal,
+        array_of_set_literal, set_literal,
     },
-    parameters::types::{par_type, BasicParType, ParType},
-    primitive_literals::{bool_literal, float_literal, int_literal, var_par_identifier, IndexSet},
+    parameters::types::{BasicParType, ParType, par_type},
+    primitive_literals::{IndexSet, bool_literal, float_literal, int_literal, var_par_identifier},
 };
 
 #[derive(PartialEq, Clone, Debug)]

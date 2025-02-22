@@ -1,12 +1,12 @@
 use crate::{
     comments::{separator, space_or_comment0, space_or_comment1},
-    expressions::{annotations, expr, Annotation, Expr},
+    expressions::{Annotation, Expr, annotations, expr},
     primitive_literals::identifier,
 };
 use winnow::{
+    ModalResult, Parser,
     combinator::{cut_err, separated},
     error::{AddContext, FromExternalError, ParserError, StrContext},
-    ModalResult, Parser,
 };
 
 #[derive(PartialEq, Clone, Debug)]
@@ -184,5 +184,8 @@ fn test_constraint_item_6() {
     let mut input = "constraintX int_lin_le_reif(X_INTRODUCED_22_,,-2,X_INTRODUCED_58_):: defines_var(X_INTRODUCED_58_);";
     let res = constraint_item::<ContextError>(&mut input);
     assert!(res.is_err());
-    assert_eq!("Parsing Failure: ContextError { context: [Label(\"Error while parsing constraint\")], cause: None }", res.unwrap_err().to_string());
+    assert_eq!(
+        "Parsing Failure: ContextError { context: [Label(\"Error while parsing constraint\")], cause: None }",
+        res.unwrap_err().to_string()
+    );
 }

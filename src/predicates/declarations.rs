@@ -1,12 +1,12 @@
 use winnow::{
+    ModalResult, Parser,
     combinator::{cut_err, separated},
     error::{AddContext, FromExternalError, ParserError, StrContext},
-    ModalResult, Parser,
 };
 
 use crate::{
     comments::{separator, space_or_comment0, space_or_comment1},
-    predicates::types::{pred_par_type, PredParType},
+    predicates::types::{PredParType, pred_par_type},
     primitive_literals::identifier,
 };
 

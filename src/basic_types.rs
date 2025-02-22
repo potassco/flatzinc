@@ -1,4 +1,4 @@
-use winnow::{combinator::alt, error::ParserError, ModalResult, Parser};
+use winnow::{ModalResult, Parser, combinator::alt, error::ParserError};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicType {

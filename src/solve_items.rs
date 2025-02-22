@@ -1,14 +1,14 @@
 use winnow::{
+    ModalResult, Parser,
     combinator::{alt, cut_err},
     error::{AddContext, FromExternalError, ParserError, StrContext},
-    ModalResult, Parser,
 };
 
 use crate::{
     comments::{space_or_comment0, space_or_comment1},
     expressions::{
-        annotations, bool_expr, float_expr, int_expr, set_expr, Annotations, BoolExpr, FloatExpr,
-        IntExpr, SetExpr,
+        Annotations, BoolExpr, FloatExpr, IntExpr, SetExpr, annotations, bool_expr, float_expr,
+        int_expr, set_expr,
     },
 };
 

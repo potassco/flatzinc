@@ -1,9 +1,9 @@
 use winnow::{
+    ModalResult, Parser,
     ascii::multispace1,
     combinator::{alt, delimited, opt, preceded, repeat, separated},
     error::{FromExternalError, ParserError},
     token::{take_till, take_while},
-    ModalResult, Parser,
 };
 
 use crate::{

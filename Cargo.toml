@@ -9,7 +9,7 @@ categories = ["parser-implementations"]
 documentation = "https://docs.rs/flatzinc"
 repository = "https://github.com/potassco/flatzinc"
 license = "MIT"
-edition = "2021"
+edition = "2024"
 exclude = ["/.github"]
 
 [dependencies]

@@ -1,13 +1,13 @@
 use winnow::{
+    ModalResult, Parser,
     combinator::alt,
     error::{FromExternalError, ParserError},
-    ModalResult, Parser,
 };
 
 use crate::{
-    basic_types::{basic_type, BasicType},
+    basic_types::{BasicType, basic_type},
     comments::{space_or_comment0, space_or_comment1},
-    primitive_literals::{index_set, IndexSet},
+    primitive_literals::{IndexSet, index_set},
 };
 
 #[derive(PartialEq, Clone, Debug)]
