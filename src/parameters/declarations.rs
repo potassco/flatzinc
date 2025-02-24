@@ -17,10 +17,10 @@ use crate::{
 #[derive(PartialEq, Clone, Debug)]
 pub struct ParDeclItem {
     id: String,
-    expr: ParDeclExpr,
+    kind: ParDeclKind,
 }
 #[derive(PartialEq, Clone, Debug)]
-pub enum ParDeclExpr {
+pub enum ParDeclKind {
     Bool(bool),
     Int(i128),
     Float(f64),
@@ -56,7 +56,7 @@ where
                     space_or_comment0(input)?;
                     Ok(ParDeclItem {
                         id,
-                        expr: ParDeclExpr::Bool(bool),
+                        kind: ParDeclKind::Bool(bool),
                     })
                 }
                 BasicType::Int => {
@@ -66,7 +66,7 @@ where
                     space_or_comment0(input)?;
                     Ok(ParDeclItem {
                         id,
-                        expr: ParDeclExpr::Int(int),
+                        kind: ParDeclKind::Int(int),
                     })
                 }
                 BasicType::Float => {
@@ -76,7 +76,7 @@ where
                     space_or_comment0(input)?;
                     Ok(ParDeclItem {
                         id,
-                        expr: ParDeclExpr::Float(float),
+                        kind: ParDeclKind::Float(float),
                     })
                 }
             },
@@ -87,7 +87,7 @@ where
                 space_or_comment0(input)?;
                 Ok(ParDeclItem {
                     id,
-                    expr: ParDeclExpr::SetOfInt(set_literal),
+                    kind: ParDeclKind::SetOfInt(set_literal),
                 })
             }
         },
@@ -100,7 +100,7 @@ where
                     space_or_comment0(input)?;
                     Ok(ParDeclItem {
                         id,
-                        expr: ParDeclExpr::ArrayOfBool { ix, v },
+                        kind: ParDeclKind::ArrayOfBool { ix, v },
                     })
                 }
                 BasicType::Int => {
@@ -110,7 +110,7 @@ where
                     space_or_comment0(input)?;
                     Ok(ParDeclItem {
                         id,
-                        expr: ParDeclExpr::ArrayOfInt { ix, v },
+                        kind: ParDeclKind::ArrayOfInt { ix, v },
                     })
                 }
                 BasicType::Float => {
@@ -120,7 +120,7 @@ where
                     space_or_comment0(input)?;
                     Ok(ParDeclItem {
                         id,
-                        expr: ParDeclExpr::ArrayOfFloat { ix, v },
+                        kind: ParDeclKind::ArrayOfFloat { ix, v },
                     })
                 }
             },
@@ -131,7 +131,7 @@ where
                 space_or_comment0(input)?;
                 Ok(ParDeclItem {
                     id,
-                    expr: ParDeclExpr::ArrayOfSet { ix, v },
+                    kind: ParDeclKind::ArrayOfSet { ix, v },
                 })
             }
         },
@@ -146,7 +146,7 @@ fn test_par_decl_item_1() {
         par_decl_item::<ContextError>(&mut input),
         Ok(ParDeclItem {
             id: "X_139".to_string(),
-            expr: ParDeclExpr::ArrayOfFloat {
+            kind: ParDeclKind::ArrayOfFloat {
                 ix: IndexSet(3),
                 v: vec![1.0, 1.0, 1.0]
             }
@@ -170,7 +170,7 @@ fn test_par_decl_item_3() {
         par_decl_item::<ContextError>(&mut input),
         Ok(ParDeclItem {
             id: "h".to_string(),
-            expr: ParDeclExpr::ArrayOfSet {
+            kind: ParDeclKind::ArrayOfSet {
                 ix: IndexSet(3),
 
                 v: vec![

@@ -18,13 +18,13 @@ use crate::{
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct VarDeclItem {
-    pub expr: VarDeclExpr,
+    pub kind: VarDeclKind,
     pub id: String,
     pub annos: Annotations,
 }
 
 #[derive(PartialEq, Clone, Debug)]
-pub enum VarDeclExpr {
+pub enum VarDeclKind {
     Bool(Option<BoolExpr>),
     Int(Option<IntExpr>),
     IntInRange {
@@ -123,7 +123,7 @@ fn test_var_decl_item_1() {
     assert_eq!(
         var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem {
-            expr: VarDeclExpr::ArrayOfSubSetOfIntRange {
+            kind: VarDeclKind::ArrayOfSubSetOfIntRange {
                 ix: IndexSet(1),
                 lb: 1,
                 ub: 10,
@@ -148,7 +148,7 @@ fn test_var_decl_item_2() {
     assert_eq!(
         var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem {
-            expr: VarDeclExpr::ArrayOfIntInRange {
+            kind: VarDeclKind::ArrayOfIntInRange {
                 ix: IndexSet(5),
                 lb: 0,
                 ub: 3,
@@ -166,7 +166,7 @@ fn test_var_decl_item_3() {
     assert_eq!(
         var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem {
-            expr: VarDeclExpr::ArrayOfIntInSet {
+            kind: VarDeclKind::ArrayOfIntInSet {
                 ix: IndexSet(5),
                 set: vec![1, 2, 3],
                 array_expr: None,
@@ -184,7 +184,7 @@ fn test_var_decl_item_4() {
     assert_eq!(
         var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem {
-            expr: VarDeclExpr::ArrayOfIntInRange {
+            kind: VarDeclKind::ArrayOfIntInRange {
                 ix: IndexSet(5),
                 lb: 0,
                 ub: 3,
@@ -198,7 +198,7 @@ fn test_var_decl_item_4() {
     assert_eq!(
         var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem {
-            expr: VarDeclExpr::IntInRange {
+            kind: VarDeclKind::IntInRange {
                 lb: 1,
                 ub: 101,
                 expr: Some(IntExpr::VarParIdentifier("X_2586".to_string())),
@@ -219,7 +219,7 @@ fn test_var_decl_item_5() {
     assert_eq!(
         var_decl_item::<ContextError>(&mut input),
         Ok(VarDeclItem {
-            expr: VarDeclExpr::ArrayOfSubSetOfIntRange {
+            kind: VarDeclKind::ArrayOfSubSetOfIntRange {
                 lb: 17,
                 ub: 42,
                 ix: IndexSet(3),
@@ -265,7 +265,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::Bool(expr),
+                    kind: VarDeclKind::Bool(expr),
                 })
             }
             BasicVarType::BasicType(BasicType::Int) => {
@@ -273,7 +273,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::Int(expr),
+                    kind: VarDeclKind::Int(expr),
                 })
             }
             BasicVarType::BasicType(BasicType::Float) => {
@@ -281,7 +281,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::Float(expr),
+                    kind: VarDeclKind::Float(expr),
                 })
             }
             BasicVarType::IntInRange(lb, ub) => {
@@ -289,7 +289,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::IntInRange { lb, ub, expr },
+                    kind: VarDeclKind::IntInRange { lb, ub, expr },
                 })
             }
             BasicVarType::IntInSet(set) => {
@@ -297,7 +297,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::IntInSet { set, expr },
+                    kind: VarDeclKind::IntInSet { set, expr },
                 })
             }
             BasicVarType::BoundedFloat(lb, ub) => {
@@ -305,7 +305,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::BoundedFloat { lb, ub, expr },
+                    kind: VarDeclKind::BoundedFloat { lb, ub, expr },
                 })
             }
             BasicVarType::SubSetOfIntRange(lb, ub) => {
@@ -313,7 +313,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::SubSetOfIntRange { lb, ub, set_expr },
+                    kind: VarDeclKind::SubSetOfIntRange { lb, ub, set_expr },
                 })
             }
             BasicVarType::SubSetOfIntSet(set) => {
@@ -321,7 +321,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::SubSetOfIntSet {
+                    kind: VarDeclKind::SubSetOfIntSet {
                         set,
                         set_expr: expr,
                     },
@@ -335,7 +335,7 @@ where
                     Ok(VarDeclItem {
                         id,
                         annos,
-                        expr: VarDeclExpr::ArrayOfBool { ix, array_expr },
+                        kind: VarDeclKind::ArrayOfBool { ix, array_expr },
                     })
                 }
                 BasicType::Int => {
@@ -343,7 +343,7 @@ where
                     Ok(VarDeclItem {
                         id,
                         annos,
-                        expr: VarDeclExpr::ArrayOfInt { ix, array_expr },
+                        kind: VarDeclKind::ArrayOfInt { ix, array_expr },
                     })
                 }
                 BasicType::Float => {
@@ -351,7 +351,7 @@ where
                     Ok(VarDeclItem {
                         id,
                         annos,
-                        expr: VarDeclExpr::ArrayOfFloat { ix, array_expr },
+                        kind: VarDeclKind::ArrayOfFloat { ix, array_expr },
                     })
                 }
             },
@@ -360,7 +360,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::ArrayOfIntInRange {
+                    kind: VarDeclKind::ArrayOfIntInRange {
                         lb,
                         ub,
                         ix,
@@ -374,7 +374,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::ArrayOfIntInSet {
+                    kind: VarDeclKind::ArrayOfIntInSet {
                         set,
                         ix,
                         array_expr,
@@ -386,7 +386,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::ArrayOfBoundedFloat {
+                    kind: VarDeclKind::ArrayOfBoundedFloat {
                         lb,
                         ub,
                         ix,
@@ -399,7 +399,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::ArrayOfSubSetOfIntRange {
+                    kind: VarDeclKind::ArrayOfSubSetOfIntRange {
                         lb,
                         ub,
                         ix,
@@ -412,7 +412,7 @@ where
                 Ok(VarDeclItem {
                     id,
                     annos,
-                    expr: VarDeclExpr::ArrayOfSubSetOfIntSet {
+                    kind: VarDeclKind::ArrayOfSubSetOfIntSet {
                         set,
                         ix,
                         array_expr,
