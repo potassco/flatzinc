@@ -14,6 +14,7 @@ use crate::{
     },
 };
 
+/// Enum representing different basic predicate parameter types.
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicPredParType {
     BasicParType(BasicParType),
@@ -27,6 +28,7 @@ pub enum BasicPredParType {
     SubSetOfIntRange(i128, i128),
 }
 
+/// Parses a basic predicate parameter type from the input string.
 pub fn basic_pred_par_type<'a, E>(input: &mut &'a str) -> ModalResult<BasicPredParType, E>
 where
     E: ParserError<&'a str>
@@ -138,6 +140,7 @@ where
     Ok(BasicPredParType::SubSetOfIntSet(set))
 }
 
+/// Enum representing different predicate parameter types.
 #[derive(PartialEq, Clone, Debug)]
 pub enum PredParType {
     Basic(BasicPredParType),
@@ -147,6 +150,7 @@ pub enum PredParType {
     },
 }
 
+/// Parses a predicate parameter type from the input string.
 pub fn pred_par_type<'a, E>(input: &mut &'a str) -> ModalResult<PredParType, E>
 where
     E: ParserError<&'a str>
@@ -223,12 +227,14 @@ where
     Ok(PredParType::Array { ix, par_type })
 }
 
+/// Enum representing different predicate index sets.
 #[derive(PartialEq, Clone, Debug)]
 pub enum PredIndexSet {
     IndexSet(i128),
     Int,
 }
 
+/// Parses a predicate index set from the input string.
 fn pred_index_set<'a, E>(input: &mut &'a str) -> ModalResult<PredIndexSet, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,

@@ -12,12 +12,16 @@ use crate::{
     },
 };
 
+/// Represents a solve item.
 #[derive(PartialEq, Clone, Debug)]
 pub struct SolveItem {
+    /// The goal of the solve item.
     pub goal: Goal,
+    /// The annotations associated with the solve item.
     pub annotations: Annotations,
 }
 
+/// Parses a solve item from the input string.
 pub fn solve_item<'a, E>(input: &mut &'a str) -> ModalResult<SolveItem, E>
 where
     E: ParserError<&'a str>
@@ -30,6 +34,8 @@ where
     cut_err(solve_item_tail.context(StrContext::Label("Error while parsing solve statement")))
         .parse_next(input)
 }
+
+/// Parses the tail of a solve item from the input string.
 pub fn solve_item_tail<'a, E>(input: &mut &'a str) -> ModalResult<SolveItem, E>
 where
     E: ParserError<&'a str>
@@ -52,6 +58,7 @@ where
     space_or_comment0(input)?;
     Ok(SolveItem { goal, annotations })
 }
+
 #[test]
 fn test_solve_item() {
     use crate::solve_items::{Goal, OptimizationType};
@@ -78,6 +85,7 @@ fn test_solve_item() {
     );
 }
 
+/// Enum representing different goals for a solve item.
 #[derive(PartialEq, Clone, Debug)]
 pub enum Goal {
     Satisfy,
@@ -87,12 +95,14 @@ pub enum Goal {
     OptimizeSet(OptimizationType, SetExpr),
 }
 
+/// Enum representing different optimization types.
 #[derive(PartialEq, Clone, Debug)]
 pub enum OptimizationType {
     Minimize,
     Maximize,
 }
 
+/// Parses a satisfy goal from the input string.
 pub fn satisfy<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Goal, E> {
     "satisfy".parse_next(input)?;
     Ok(Goal::Satisfy)
@@ -112,6 +122,7 @@ fn maximize<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Opt
     Ok(OptimizationType::Maximize)
 }
 
+/// Parses an optimize bool goal from the input string.
 pub fn optimize_bool<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Goal, E> {
     let opt_type = opt_type(input)?;
     space_or_comment1(input)?;
@@ -119,6 +130,7 @@ pub fn optimize_bool<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalR
     Ok(Goal::OptimizeBool(opt_type, be))
 }
 
+/// Parses an optimize int goal from the input string.
 pub fn optimize_int<'a, E>(input: &mut &'a str) -> ModalResult<Goal, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -129,6 +141,7 @@ where
     Ok(Goal::OptimizeInt(opt_type, be))
 }
 
+/// Parses an optimize float goal from the input string.
 pub fn optimize_float<'a, E>(input: &mut &'a str) -> ModalResult<Goal, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -139,6 +152,7 @@ where
     Ok(Goal::OptimizeFloat(opt_type, be))
 }
 
+/// Parses an optimize set goal from the input string.
 pub fn optimize_set<'a, E>(input: &mut &'a str) -> ModalResult<Goal, E>
 where
     E: ParserError<&'a str>

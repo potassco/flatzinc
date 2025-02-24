@@ -14,11 +14,16 @@ use crate::{
     primitive_literals::{IndexSet, bool_literal, float_literal, int_literal, var_par_identifier},
 };
 
+/// Represents a parameter declaration item.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ParDeclItem {
+    /// The identifier of the parameter.
     id: String,
+    /// The kind of parameter declaration.
     kind: ParDeclKind,
 }
+
+/// Enum representing different kinds of parameter declarations.
 #[derive(PartialEq, Clone, Debug)]
 pub enum ParDeclKind {
     Bool(bool),
@@ -31,6 +36,7 @@ pub enum ParDeclKind {
     ArrayOfSet { ix: IndexSet, v: Vec<SetLiteral> },
 }
 
+/// Parses a parameter declaration item from the input string.
 pub fn par_decl_item<'a, E>(input: &mut &'a str) -> ModalResult<ParDeclItem, E>
 where
     E: ParserError<&'a str>

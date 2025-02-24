@@ -8,15 +8,20 @@ use winnow::{
 
 use crate::statements::Stmt;
 
+/// Parses spaces or comments from the input string.
 pub fn space_or_comment<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<Stmt, E> {
     let s = space_or_comment0(input)?;
     Ok(Stmt::Comment(s.into()))
 }
+
+/// Parses zero or more spaces or comments from the input string.
 pub fn space_or_comment0<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> ModalResult<&'a str, E> {
     alt((comment, multispace0)).parse_next(input)
 }
+
+/// Parses one or more spaces or comments from the input string.
 pub fn space_or_comment1<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> ModalResult<&'a str, E> {
@@ -47,7 +52,7 @@ fn test_comment2() {
     assert!(res.is_err());
 }
 
-// Separator comma that allows for white space and comments
+/// Parses a separator comma that allows for white space and comments.
 pub fn separator<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<(), E> {
     space_or_comment0(input)?;
     ','.parse_next(input)?;

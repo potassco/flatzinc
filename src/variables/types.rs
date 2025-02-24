@@ -11,6 +11,7 @@ use crate::{
     primitive_literals::{IndexSet, float_literal, index_set, int_literal},
 };
 
+/// Enum representing different variable types.
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarType {
     BasicVarType(BasicVarType),
@@ -20,6 +21,7 @@ pub enum VarType {
     },
 }
 
+/// Parses a variable type from the input string.
 pub fn var_type<'a, E>(input: &mut &'a str) -> ModalResult<VarType, E>
 where
     E: ParserError<&'a str>
@@ -59,6 +61,7 @@ where
     Ok(VarType::Array { ix, var_type })
 }
 
+/// Enum representing different basic variable types.
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicVarType {
     BasicType(BasicType),
@@ -69,6 +72,7 @@ pub enum BasicVarType {
     SubSetOfIntRange(i128, i128),
 }
 
+/// Parses a basic variable type from the input string.
 pub fn basic_var_type<'a, E>(input: &mut &'a str) -> ModalResult<BasicVarType, E>
 where
     E: ParserError<&'a str>
@@ -137,6 +141,7 @@ where
     Ok(BasicVarType::SubSetOfIntSet(set))
 }
 
+/// Parses an integer range from the input string.
 pub fn int_in_range<'a, E>(input: &mut &'a str) -> ModalResult<(i128, i128), E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -149,6 +154,7 @@ where
     Ok((lb, ub))
 }
 
+/// Parses a bounded float range from the input string.
 pub fn bounded_float<'a, E>(input: &mut &'a str) -> ModalResult<(f64, f64), E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -161,7 +167,8 @@ where
     Ok((lb, ub))
 }
 
-// "{" <float-literal> "," ... "}"
+/// Parses a set of floats from the input string.
+/// "{" \<float-literal> "," ... "}"
 pub fn float_in_set<'a, E>(input: &mut &'a str) -> ModalResult<Vec<f64>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -174,7 +181,8 @@ where
     Ok(v)
 }
 
-// "set" "of" <int_literal> ".." <int_literal>
+/// Parses a subset of an integer range from the input string.
+/// "set" "of" <int_literal> ".." <int_literal>
 pub fn subset_of_int_range<'a, E>(input: &mut &'a str) -> ModalResult<(i128, i128), E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -191,7 +199,8 @@ where
     Ok((lb, ub))
 }
 
-// "set" "of" "{" [ <int-literal> "," ... ] "}"
+/// Parses a subset of an integer set from the input string.
+/// "set" "of" "{" [ \<int-literal> "," ... ] "}"
 pub fn subset_of_int_set<'a, E>(input: &mut &'a str) -> ModalResult<Vec<i128>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -208,7 +217,8 @@ where
     Ok(v)
 }
 
-// "{" <int-literal> "," ... "}"
+/// Parses a set of integers from the input string.
+/// "{" \<int-literal> "," ... "}"
 pub fn int_in_set<'a, E>(input: &mut &'a str) -> ModalResult<Vec<i128>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,

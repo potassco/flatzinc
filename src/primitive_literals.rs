@@ -7,6 +7,7 @@ use winnow::{
 
 use crate::comments::space_or_comment0;
 
+/// Parses an identifier from the input string.
 pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<String, E> {
     let first = one_of([
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
@@ -24,6 +25,7 @@ pub fn identifier<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResu
     }
 }
 
+/// Parses a variable or parameter identifier from the input string.
 pub fn var_par_identifier<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> ModalResult<String, E> {
@@ -167,10 +169,12 @@ fn is_identifier_rest(c: char) -> bool {
     )
 }
 
+/// Parses a boolean literal from the input string.
 pub fn bool_literal<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<bool, E> {
     alt((literal("true").value(true), literal("false").value(false))).parse_next(input)
 }
 
+/// Parses an integer literal from the input string.
 pub fn int_literal<'a, E>(input: &mut &'a str) -> ModalResult<i128, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -286,6 +290,7 @@ fn is_dec_digit(c: char) -> bool {
     c.is_ascii_digit()
 }
 
+/// Parses a float literal from the input string.
 pub fn float_literal<'a, E>(input: &mut &'a str) -> ModalResult<f64, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -356,9 +361,11 @@ fn bpart<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<String
     }
 }
 
+/// Represents an index set.
 #[derive(PartialEq, Clone, Debug)]
 pub struct IndexSet(pub i128);
 
+/// Parses an index set from the input string.
 pub fn index_set<'a, E>(input: &mut &'a str) -> ModalResult<IndexSet, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,

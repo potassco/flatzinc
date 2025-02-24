@@ -9,13 +9,18 @@ use winnow::{
     error::{AddContext, FromExternalError, ParserError, StrContext},
 };
 
+/// Represents a constraint item.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ConstraintItem {
+    /// The identifier of the constraint.
     pub id: String,
+    /// The expressions associated with the constraint.
     pub exprs: Vec<Expr>,
+    /// The annotations associated with the constraint.
     pub annos: Vec<Annotation>,
 }
 
+/// Parses a constraint item from the input string.
 pub fn constraint_item<'a, E>(input: &mut &'a str) -> ModalResult<ConstraintItem, E>
 where
     E: ParserError<&'a str>
@@ -28,6 +33,8 @@ where
     cut_err(constraint_tail.context(StrContext::Label("Error while parsing constraint")))
         .parse_next(input)
 }
+
+/// Parses the tail of a constraint item from the input string.
 pub fn constraint_tail<'a, E>(input: &mut &'a str) -> ModalResult<ConstraintItem, E>
 where
     E: ParserError<&'a str>
@@ -48,6 +55,7 @@ where
     space_or_comment0(input)?;
     Ok(ConstraintItem { id, exprs, annos })
 }
+
 #[test]
 fn test_constraint_item_1() {
     use crate::{AnnExpr, Annotation, Expr, IntExpr, SetLiteralExpr};

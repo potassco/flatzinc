@@ -10,12 +10,16 @@ use crate::{
     primitive_literals::identifier,
 };
 
+/// Represents a predicate item.
 #[derive(PartialEq, Clone, Debug)]
 pub struct PredicateItem {
+    /// The identifier of the predicate.
     pub id: String,
+    /// The parameters of the predicate.
     pub parameters: Vec<(PredParType, String)>,
 }
 
+/// Parses a predicate item from the input string.
 pub fn predicate_item<'a, E>(input: &mut &'a str) -> ModalResult<PredicateItem, E>
 where
     E: ParserError<&'a str>
@@ -28,6 +32,8 @@ where
     cut_err(predicate_item_tail.context(StrContext::Label("Error while parsing solve statement")))
         .parse_next(input)
 }
+
+/// Parses the tail of a predicate item from the input string.
 pub fn predicate_item_tail<'a, E>(input: &mut &'a str) -> ModalResult<PredicateItem, E>
 where
     E: ParserError<&'a str>
@@ -44,6 +50,7 @@ where
     space_or_comment0(input)?;
     Ok(PredicateItem { id, parameters })
 }
+
 #[test]
 fn test_predicate_item() {
     use crate::predicates::types::BasicPredParType;
@@ -60,6 +67,7 @@ fn test_predicate_item() {
         })
     );
 }
+
 #[test]
 fn test_predicate_item2() {
     use crate::predicates::types::BasicPredParType;
@@ -76,6 +84,7 @@ fn test_predicate_item2() {
         })
     );
 }
+
 #[test]
 #[should_panic]
 fn test_predicate_item_3() {
@@ -84,6 +93,7 @@ fn test_predicate_item_3() {
     predicate_item::<ContextError>(&mut input).unwrap();
 }
 
+/// Parses a predicate parameter type and identifier pair from the input string.
 pub fn pred_par_type_ident_pair<'a, E>(input: &mut &'a str) -> ModalResult<(PredParType, String), E>
 where
     E: ParserError<&'a str>
@@ -99,6 +109,7 @@ where
     space_or_comment0(input)?;
     Ok((pred_par_type, ident))
 }
+
 #[test]
 fn test_pred_par_type_ident_pair() {
     use crate::predicates::declarations;

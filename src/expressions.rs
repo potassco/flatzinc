@@ -13,8 +13,10 @@ use crate::{
     },
 };
 
+/// Type alias for a vector of annotations.
 pub type Annotations = Vec<Annotation>;
 
+/// Parses a list of annotations from the input string.
 pub fn annotations<'a, E>(input: &mut &'a str) -> ModalResult<Annotations, E>
 where
     E: ParserError<&'a str>
@@ -35,9 +37,12 @@ where
     annotation(input)
 }
 
+/// Represents an annotation.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Annotation {
+    /// The identifier of the annotation.
     pub id: String,
+    /// The expressions associated with the annotation.
     pub expressions: Vec<AnnExpr>,
 }
 
@@ -70,6 +75,7 @@ where
 // <ann_expr> ::= <expr>
 //              | <string_literal>
 //              | "[" <annotation> "," ... "]"
+/// Represents an annotation expression.
 #[derive(PartialEq, Clone, Debug)]
 pub enum AnnExpr {
     Annotations(Annotations),
@@ -261,12 +267,14 @@ fn test_string_lit_escaped_characters() {
     );
 }
 
+/// Represents a boolean expression.
 #[derive(PartialEq, Clone, Debug)]
 pub enum BoolExpr {
     Bool(bool),
     VarParIdentifier(String),
 }
 
+/// Parses a boolean expression from the input string.
 pub fn bool_expr<'a, E: ParserError<&'a str>>(input: &mut &'a str) -> ModalResult<BoolExpr, E> {
     alt((be_bool_literal, be_var_par_identifier)).parse_next(input)
 }
@@ -323,12 +331,14 @@ impl From<BoolExpr> for Expr {
     }
 }
 
+/// Represents an integer expression.
 #[derive(PartialEq, Clone, Debug)]
 pub enum IntExpr {
     Int(i128),
     VarParIdentifier(String),
 }
 
+/// Parses an integer expression from the input string.
 pub fn int_expr<'a, E>(input: &mut &'a str) -> ModalResult<IntExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -374,12 +384,14 @@ impl From<IntExpr> for Expr {
     }
 }
 
+/// Represents a float expression.
 #[derive(PartialEq, Clone, Debug)]
 pub enum FloatExpr {
     Float(f64),
     VarParIdentifier(String),
 }
 
+/// Parses a float expression from the input string.
 pub fn float_expr<'a, E>(input: &mut &'a str) -> ModalResult<FloatExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -423,12 +435,14 @@ impl From<FloatExpr> for Expr {
     }
 }
 
+/// Represents a set expression.
 #[derive(PartialEq, Clone, Debug)]
 pub enum SetExpr {
     Set(SetLiteralExpr),
     VarParIdentifier(String),
 }
 
+/// Parses a set expression from the input string.
 pub fn set_expr<'a, E>(input: &mut &'a str) -> ModalResult<SetExpr, E>
 where
     E: ParserError<&'a str>
@@ -476,6 +490,7 @@ impl From<SetExpr> for Expr {
     }
 }
 
+/// Represents an expression.
 #[derive(PartialEq, Clone, Debug)]
 pub enum Expr {
     VarParIdentifier(String),
@@ -489,6 +504,7 @@ pub enum Expr {
     ArrayOfSet(Vec<SetExpr>),
 }
 
+/// Parses an expression from the input string.
 pub fn expr<'a, E>(input: &mut &'a str) -> ModalResult<Expr, E>
 where
     E: ParserError<&'a str>
@@ -590,6 +606,7 @@ where
     Ok(Expr::ArrayOfSet(v))
 }
 
+/// Represents a set literal expression.
 #[derive(PartialEq, Clone, Debug)]
 pub enum SetLiteralExpr {
     IntInRange(IntExpr, IntExpr),
@@ -598,6 +615,7 @@ pub enum SetLiteralExpr {
     SetInts(Vec<IntExpr>),
 }
 
+/// Parses a set literal expression from the input string.
 fn set_literal_expr<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteralExpr, E>
 where
     E: ParserError<&'a str>
@@ -663,6 +681,7 @@ where
     Ok(SetLiteralExpr::SetFloats(v))
 }
 
+/// Represents a set literal.
 #[derive(PartialEq, Clone, Debug)]
 pub enum SetLiteral {
     IntRange(i128, i128),
@@ -671,6 +690,7 @@ pub enum SetLiteral {
     SetInts(Vec<i128>),
 }
 
+/// Parses a set literal from the input string.
 pub fn set_literal<'a, E>(input: &mut &'a str) -> ModalResult<SetLiteral, E>
 where
     E: ParserError<&'a str>
@@ -736,12 +756,14 @@ where
     Ok(SetLiteral::SetFloats(v))
 }
 
+/// Represents an array of boolean expressions.
 #[derive(PartialEq, Clone, Debug)]
 pub enum ArrayOfBoolExpr {
     Array(Vec<BoolExpr>),
     VarParIdentifier(String),
 }
 
+/// Parses an array of boolean expressions from the input string.
 pub fn array_of_bool_expr<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> ModalResult<ArrayOfBoolExpr, E> {
@@ -824,12 +846,14 @@ impl From<ArrayOfBoolExpr> for Expr {
     }
 }
 
+/// Represents an array of integer expressions.
 #[derive(PartialEq, Clone, Debug)]
 pub enum ArrayOfIntExpr {
     Array(Vec<IntExpr>),
     VarParIdentifier(String),
 }
 
+/// Parses an array of integer expressions from the input string.
 pub fn array_of_int_expr<'a, E>(input: &mut &'a str) -> ModalResult<ArrayOfIntExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -855,6 +879,7 @@ where
     Ok(v)
 }
 
+/// Parses an array of integer literals from the input string.
 pub fn array_of_int_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<i128>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
@@ -888,12 +913,14 @@ impl From<ArrayOfIntExpr> for Expr {
     }
 }
 
+/// Represents an array of float expressions.
 #[derive(PartialEq, Clone, Debug)]
 pub enum ArrayOfFloatExpr {
     Array(Vec<FloatExpr>),
     VarParIdentifier(String),
 }
 
+/// Parses an array of float expressions from the input string.
 pub fn array_of_float_expr<'a, E>(input: &mut &'a str) -> ModalResult<ArrayOfFloatExpr, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -919,6 +946,7 @@ where
     Ok(v)
 }
 
+/// Parses an array of float literals from the input string.
 pub fn array_of_float_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<f64>, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseFloatError>,
@@ -952,12 +980,14 @@ impl From<ArrayOfFloatExpr> for Expr {
     }
 }
 
+/// Represents an array of set expressions.
 #[derive(PartialEq, Clone, Debug)]
 pub enum ArrayOfSetExpr {
     Array(Vec<SetExpr>),
     VarParIdentifier(String),
 }
 
+/// Parses an array of set expressions from the input string.
 pub fn array_of_set_expr<'a, E>(input: &mut &'a str) -> ModalResult<ArrayOfSetExpr, E>
 where
     E: ParserError<&'a str>
@@ -987,6 +1017,7 @@ where
     Ok(v)
 }
 
+/// Parses an array of set literals from the input string.
 pub fn array_of_set_literal<'a, E>(input: &mut &'a str) -> ModalResult<Vec<SetLiteral>, E>
 where
     E: ParserError<&'a str>

@@ -16,13 +16,18 @@ use crate::{
     variables::types::{BasicVarType, VarType, var_type},
 };
 
+/// Represents a variable declaration item.
 #[derive(PartialEq, Clone, Debug)]
 pub struct VarDeclItem {
+    /// The kind of variable declaration.
     pub kind: VarDeclKind,
+    /// The identifier of the variable.
     pub id: String,
+    /// The annotations associated with the variable.
     pub annos: Annotations,
 }
 
+/// Enum representing different kinds of variable declarations.
 #[derive(PartialEq, Clone, Debug)]
 pub enum VarDeclKind {
     Bool(Option<BoolExpr>),
@@ -102,6 +107,7 @@ pub enum VarDeclKind {
     },
 }
 
+/// Parses a variable declaration item from the input string.
 pub fn var_decl_item<'a, E>(input: &mut &'a str) -> ModalResult<VarDeclItem, E>
 where
     E: ParserError<&'a str>
@@ -241,6 +247,7 @@ fn test_var_decl_item_5() {
     );
 }
 
+/// Parses a variable declaration item from the input string.
 fn vdi_var<'a, E>(input: &mut &'a str) -> ModalResult<VarDeclItem, E>
 where
     E: ParserError<&'a str>
@@ -423,7 +430,7 @@ where
     }
 }
 
-/// Parse the right hand side of a variable declaration if there is an assignment
+/// Parses the right-hand side of a variable declaration if there is an assignment.
 fn parse_rhs<'a, O, E>(
     assign: bool,
     parser: impl Fn(&mut &'a str) -> ModalResult<O, E>,

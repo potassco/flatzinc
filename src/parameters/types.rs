@@ -10,12 +10,14 @@ use crate::{
     primitive_literals::{IndexSet, index_set},
 };
 
+/// Enum representing different basic parameter types.
 #[derive(PartialEq, Clone, Debug)]
 pub enum BasicParType {
     BasicType(BasicType),
     SetOfInt,
 }
 
+/// Parses a basic parameter type from the input string.
 pub fn basic_par_type<'a, E: ParserError<&'a str>>(
     input: &mut &'a str,
 ) -> ModalResult<BasicParType, E> {
@@ -42,6 +44,7 @@ fn bpt_set_of_int<'a, E: ParserError<&'a str>>(
     Ok(BasicParType::SetOfInt)
 }
 
+/// Enum representing different parameter types.
 #[derive(PartialEq, Clone, Debug)]
 pub enum ParType {
     BasicParType(BasicParType),
@@ -51,12 +54,14 @@ pub enum ParType {
     },
 }
 
+/// Parses a parameter type from the input string.
 pub fn par_type<'a, E>(input: &mut &'a str) -> ModalResult<ParType, E>
 where
     E: ParserError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
 {
     alt((pt_basic_par_type, array_par_type)).parse_next(input)
 }
+
 #[test]
 fn test_par_type() {
     use crate::IndexSet;
