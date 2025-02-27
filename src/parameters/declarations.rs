@@ -18,9 +18,9 @@ use crate::{
 #[derive(PartialEq, Clone, Debug)]
 pub struct ParDeclItem {
     /// The identifier of the parameter.
-    id: String,
+    pub id: String,
     /// The kind of parameter declaration.
-    kind: ParDeclKind,
+    pub kind: ParDeclKind,
 }
 
 /// Enum representing different kinds of parameter declarations.
