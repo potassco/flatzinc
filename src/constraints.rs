@@ -9,12 +9,12 @@ use winnow::{
     error::{AddContext, FromExternalError, ParserError, StrContext},
 };
 
-/// Represents a constraint item.
+/// A constraint in a FlatZinc model.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ConstraintItem {
     /// The identifier of the constraint.
     pub id: String,
-    /// The expressions associated with the constraint.
+    /// The expressions that form the constraint's arguments.
     pub exprs: Vec<Expr>,
     /// The annotations associated with the constraint.
     pub annos: Vec<Annotation>,

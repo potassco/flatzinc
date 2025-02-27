@@ -10,7 +10,7 @@ use crate::{
     primitive_literals::identifier,
 };
 
-/// Represents a predicate item.
+/// A predicate declaration in a FlatZinc model.
 #[derive(PartialEq, Clone, Debug)]
 pub struct PredicateItem {
     /// The identifier of the predicate.

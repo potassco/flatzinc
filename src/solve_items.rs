@@ -12,10 +12,10 @@ use crate::{
     },
 };
 
-/// Represents a solve item.
+/// A solve item in a FlatZinc model.
 #[derive(PartialEq, Clone, Debug)]
 pub struct SolveItem {
-    /// The goal of the solve item.
+    /// The goal of the solve item (satisfy or optimize).
     pub goal: Goal,
     /// The annotations associated with the solve item.
     pub annotations: Annotations,
@@ -85,20 +85,27 @@ fn test_solve_item() {
     );
 }
 
-/// Enum representing different goals for a solve item.
+/// The different kinds of solve goals in a FlatZinc model.
 #[derive(PartialEq, Clone, Debug)]
 pub enum Goal {
+    /// A satisfaction problem.
     Satisfy,
+    /// Optimize a boolean expression.
     OptimizeBool(OptimizationType, BoolExpr),
+    /// Optimize an integer expression.
     OptimizeInt(OptimizationType, IntExpr),
+    /// Optimize a float expression.
     OptimizeFloat(OptimizationType, FloatExpr),
+    /// Optimize a set expression.
     OptimizeSet(OptimizationType, SetExpr),
 }
 
-/// Enum representing different optimization types.
+/// The type of optimization goal.
 #[derive(PartialEq, Clone, Debug)]
 pub enum OptimizationType {
+    /// Minimize the objective.
     Minimize,
+    /// Maximize the objective.
     Maximize,
 }
 
